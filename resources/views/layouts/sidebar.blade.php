@@ -67,27 +67,39 @@
                 </a>
             </li>
 
-        @elseif($current_role == 'captain')
-            <!-- Captain Menu -->
-            <li class="menu-item {{ request()->routeIs('captain.approvals.*') ? 'active' : '' }}">
-                <a href="{{ route('captain.approvals.index') }}">
-                    <x-heroicon-o-check-badge class="menu-icon" />
-                    <span class="menu-text">Approvals</span>
-                </a>
-            </li>
-            <li class="menu-item {{ request()->routeIs('captain.residents.*') ? 'active' : '' }}">
-                <a href="{{ route('captain.residents.index') }}">
-                    <x-heroicon-o-users class="menu-icon" />
-                    <span class="menu-text">Residents</span>
-                </a>
-            </li>
-            <li class="menu-item {{ request()->routeIs('captain.blotter.*') ? 'active' : '' }}">
-                <a href="{{ route('captain.blotters.index') }}">
-                    <x-heroicon-o-scale class="menu-icon" />
-                    <span class="menu-text">Blotter Records</span>
-                </a>
-            </li>
-        @endif
+@elseif($current_role == 'captain')
+    <!-- Captain Menu -->
+    <li class="menu-item {{ request()->routeIs('captain.approvals.*') ? 'active' : '' }}">
+        <a href="{{ route('captain.approvals.index') }}">
+            <x-heroicon-o-check-badge class="menu-icon" />
+            <span class="menu-text">Approvals</span>
+        </a>
+    </li>
+    <li class="menu-item {{ request()->routeIs('captain.residents.*') ? 'active' : '' }}">
+        <a href="{{ route('captain.residents.index') }}">
+            <x-heroicon-o-users class="menu-icon" />
+            <span class="menu-text">Residents</span>
+        </a>
+    </li>
+    <li class="menu-item {{ request()->routeIs('captain.blotters.*') ? 'active' : '' }}">
+        <a href="{{ route('captain.blotters.index') }}">
+            <x-heroicon-o-scale class="menu-icon" />
+            <span class="menu-text">Blotter Cases</span>
+        </a>
+    </li>
+    <li class="menu-item {{ request()->routeIs('captain.certificates.*') ? 'active' : '' }}">
+        <a href="{{ route('captain.certificates.index') }}">
+            <x-heroicon-o-document-text class="menu-icon" />
+            <span class="menu-text">Certificates</span>
+        </a>
+    </li>
+    <li class="menu-item {{ request()->routeIs('captain.reports.*') ? 'active' : '' }}">
+        <a href="{{ route('captain.reports.index') }}">
+            <x-heroicon-o-chart-bar class="menu-icon" />
+            <span class="menu-text">Reports</span>
+        </a>
+    </li>
+@endif
         <!-- Logout -->
         <li class="menu-item">
             <form action="{{ route('logout') }}" method="POST" style="display: inline;">

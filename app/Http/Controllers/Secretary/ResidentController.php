@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Resident;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 use App\Models\ActivityLog;
 
 class ResidentController extends Controller
@@ -284,7 +286,7 @@ class ResidentController extends Controller
     /**
      * Remove the specified resident from storage.
      */
-    public function destroy(Request $request, Resident $resident)  // Added Request parameter
+    public function destroy(Request $request, Resident $resident)
     {
         try {
             $residentName = $resident->first_name . ' ' . $resident->last_name;
@@ -309,5 +311,269 @@ class ResidentController extends Controller
             return redirect()->back()
                 ->with('error', 'Error deleting resident: ' . $e->getMessage());
         }
+    }
+
+    // ============= NEW IMPORT FUNCTIONS =============
+
+    /**
+     * Show the import form
+     */
+    public function showImportForm()
+    {
+        return view('secretary.residents.import');
+    }
+
+    /**
+ * Import residents from CSV
+ */
+public function import(Request $request)
+{
+    $request->validate([
+        'csv_file' => 'required|file|mimes:csv,txt|max:10240' // max 10MB
+    ]);
+
+    $file = $request->file('csv_file');
+    $importCount = 0;
+    $skippedCount = 0;
+    $duplicateCount = 0;
+    $failedRows = [];
+    $duplicateRows = [];
+
+    try {
+        $handle = fopen($file->getRealPath(), 'r');
+
+        // Read header row (skip it)
+        $headers = fgetcsv($handle);
+
+        $rowNumber = 1;
+        $importedResidents = [];
+
+        while (($data = fgetcsv($handle, 1000, ',')) !== FALSE) {
+            $rowNumber++;
+
+            // Skip empty rows
+            if (empty(array_filter($data))) {
+                $skippedCount++;
+                $failedRows[] = "Row $rowNumber: Empty row";
+                continue;
+            }
+
+            // Prepare resident data
+            $residentData = $this->prepareImportData($data, $rowNumber);
+
+            // Validate the data
+            $validator = $this->validateImportRow($residentData);
+
+            if ($validator->fails()) {
+                $skippedCount++;
+                $failedRows[] = "Row $rowNumber: " . implode(', ', $validator->errors()->all());
+                continue;
+            }
+
+            // Check for duplicate resident (by first+last+birthdate)
+            $existing = Resident::where('first_name', $residentData['first_name'])
+                ->where('last_name', $residentData['last_name'])
+                ->where('birthdate', $residentData['birthdate'])
+                ->first();
+
+            if ($existing) {
+                $skippedCount++;
+                $duplicateCount++;
+                $duplicateRows[] = "Row $rowNumber: " . $residentData['first_name'] . ' ' . $residentData['last_name'] .
+                                   ' (Already exists as ID: ' . $existing->resident_id . ')';
+                continue;
+            }
+
+            // Save to database
+            try {
+                $resident = Resident::create($residentData);
+                $importCount++;
+                $importedResidents[] = $resident->first_name . ' ' . $resident->last_name;
+            } catch (\Exception $e) {
+                $skippedCount++;
+                $failedRows[] = "Row $rowNumber: Database error - " . $e->getMessage();
+                Log::error('Import error: ' . $e->getMessage());
+            }
+        }
+
+        fclose($handle);
+
+        // Log the import activity
+        if ($importCount > 0) {
+            $importedList = implode(', ', array_slice($importedResidents, 0, 5));
+            $moreText = $importCount > 5 ? " and " . ($importCount - 5) . " more" : "";
+
+            ActivityLog::create([
+                'user_id' => Auth::id(),
+                'action' => 'IMPORT_RESIDENTS',
+                'description' => "Imported $importCount resident records" .
+                                ($importCount > 0 ? " (e.g., " . $importedList . $moreText . ")" : ""),
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent()
+            ]);
+
+            // Prepare success message
+            $message = "Successfully imported $importCount residents.";
+            if ($duplicateCount > 0) {
+                $message .= " Skipped $duplicateCount duplicate records.";
+            }
+            if ($skippedCount - $duplicateCount > 0) {
+                $message .= " Skipped " . ($skippedCount - $duplicateCount) . " invalid records.";
+            }
+
+            return redirect()->route('secretary.residents.import')
+                ->with('import_success', true)
+                ->with('import_count', $importCount)
+                ->with('skipped_count', $skippedCount)
+                ->with('duplicate_count', $duplicateCount)
+                ->with('failed_rows', $failedRows)
+                ->with('duplicate_rows', $duplicateRows)
+                ->with('success', $message);
+
+        } else {
+            // No records imported
+            if ($duplicateCount > 0 && $skippedCount == $duplicateCount) {
+                // All were duplicates
+                return redirect()->route('secretary.residents.import')
+                    ->with('error', 'No new records were imported. All ' . $duplicateCount . ' records were duplicates.')
+                    ->with('duplicate_count', $duplicateCount)
+                    ->with('duplicate_rows', $duplicateRows);
+            } else {
+                // Other errors
+                return redirect()->route('secretary.residents.import')
+                    ->with('error', 'No records were imported. Please check your CSV format.')
+                    ->with('failed_rows', $failedRows);
+            }
+        }
+
+    } catch (\Exception $e) {
+        Log::error('Import exception: ' . $e->getMessage());
+        return redirect()->route('secretary.residents.import')
+            ->with('error', 'Error processing file: ' . $e->getMessage());
+    }
+}
+
+    /**
+     * Prepare resident data from CSV row
+     */
+    private function prepareImportData($data, $rowNumber)
+    {
+        // Generate unique resident ID
+        $residentId = $this->generateResidentId();
+
+        return [
+            'resident_id' => $residentId,
+            'first_name' => trim($data[0] ?? ''),
+            'last_name' => trim($data[1] ?? ''),
+            'middle_name' => trim($data[2] ?? null) ?: null,
+            'birthdate' => $this->formatDateForDB(trim($data[3] ?? '')),
+            'gender' => $this->formatGender(trim($data[4] ?? '')),
+            'contact_number' => trim($data[5] ?? '') ?: null,
+            'email' => trim($data[6] ?? '') ?: null,
+            'address' => trim($data[7] ?? '') ?: null,
+            'purok' => trim($data[8] ?? '') ?: null,
+            'household_number' => trim($data[9] ?? '') ?: null,
+            'is_voter' => strtolower(trim($data[10] ?? 'no')) === 'yes' ? 1 : 0,
+            'is_senior' => strtolower(trim($data[11] ?? 'no')) === 'yes' ? 1 : 0,
+            'is_pwd' => strtolower(trim($data[12] ?? 'no')) === 'yes' ? 1 : 0,
+            'is_4ps' => strtolower(trim($data[13] ?? 'no')) === 'yes' ? 1 : 0,
+            'civil_status' => $this->formatCivilStatus(trim($data[14] ?? '')),
+        ];
+    }
+
+    /**
+     * Validate import row data
+     */
+    private function validateImportRow($data)
+    {
+        return Validator::make($data, [
+            'first_name' => 'required|string|max:50',
+            'last_name' => 'required|string|max:50',
+            'middle_name' => 'nullable|string|max:50',
+            'birthdate' => 'required|date',
+            'gender' => 'required|in:Male,Female',
+            'civil_status' => 'nullable|in:Single,Married,Widowed,Divorced',
+            'contact_number' => 'nullable|string|max:15',
+            'email' => 'nullable|email|max:100',
+            'address' => 'nullable|string',
+            'purok' => 'nullable|string|max:50',
+            'household_number' => 'nullable|string|max:20',
+            'is_voter' => 'boolean',
+            'is_senior' => 'boolean',
+            'is_pwd' => 'boolean',
+            'is_4ps' => 'boolean',
+        ]);
+    }
+
+    /**
+     * Format date for database
+     */
+    private function formatDateForDB($date)
+    {
+        if (empty($date)) return null;
+
+        $date = trim($date);
+
+        // Multiple date formats
+        $formats = [
+            'Y-m-d',  // 1990-05-15
+            'd/m/Y',  // 15/05/1990
+            'm/d/Y',  // 05/15/1990
+            'd-m-Y',  // 15-05-1990
+            'd.m.Y',  // 15.05.1990
+            'Y/m/d',  // 1990/05/15
+            'Y.m.d',  // 1990.05.15
+        ];
+
+        foreach ($formats as $format) {
+            $d = \DateTime::createFromFormat($format, $date);
+            if ($d && $d->format($format) == $date) {
+                return $d->format('Y-m-d');
+            }
+        }
+
+        // Try strtotime as last resort
+        $timestamp = strtotime($date);
+        if ($timestamp !== false) {
+            return date('Y-m-d', $timestamp);
+        }
+
+        return null;
+    }
+
+    /**
+     * Format gender
+     */
+    private function formatGender($gender)
+    {
+        $gender = strtolower(trim($gender));
+
+        if ($gender == 'm' || $gender == 'male' || $gender == 'lalaki') {
+            return 'Male';
+        } elseif ($gender == 'f' || $gender == 'female' || $gender == 'babae') {
+            return 'Female';
+        }
+
+        return ucfirst($gender);
+    }
+
+    /**
+     * Format civil status
+     */
+    private function formatCivilStatus($status)
+    {
+        if (empty($status)) return 'Single';
+
+        $status = strtolower(trim($status));
+
+        $statusMap = [
+            'single' => 'Single',
+            'married' => 'Married',
+            'widowed' => 'Widowed',
+            'divorced' => 'Divorced',
+            'separated' => 'Divorced',
+        ];
+
+        return $statusMap[$status] ?? 'Single';
     }
 }

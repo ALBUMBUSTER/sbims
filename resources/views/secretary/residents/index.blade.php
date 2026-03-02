@@ -22,6 +22,10 @@
                 <x-heroicon-o-plus class="icon-small" />
                 Add New Resident
             </a>
+            <a href="{{ route('secretary.residents.import') }}" class="btn-secondary">
+                <x-heroicon-o-cloud-arrow-up class="icon-small" />
+                Import CSV
+            </a>
         </div>
     </div>
 
@@ -33,6 +37,12 @@
                 <input type="text" name="search" placeholder="Search by name, ID, address, or contact..." value="{{ request('search') }}" class="search-input">
             </div>
             <button type="submit" class="btn-search">Search</button>
+            @if(request('search'))
+                <a href="{{ route('secretary.residents.index') }}" class="btn-clear">
+                    <x-heroicon-o-x-mark class="icon-small" />
+                    Clear
+                </a>
+            @endif
         </form>
     </div>
 
@@ -99,11 +109,17 @@
                                 <div class="empty-state">
                                     <x-heroicon-o-users class="empty-icon" />
                                     <h3>No residents found</h3>
-                                    <p>Get started by adding your first resident record.</p>
-                                    <a href="{{ route('secretary.residents.create') }}" class="btn-primary">
-                                        <x-heroicon-o-plus class="icon-small" />
-                                        Add New Resident
-                                    </a>
+                                    <p>Get started by adding your first resident record or import from CSV.</p>
+                                    <div class="empty-actions">
+                                        <a href="{{ route('secretary.residents.create') }}" class="btn-primary">
+                                            <x-heroicon-o-plus class="icon-small" />
+                                            Add New Resident
+                                        </a>
+                                        <a href="{{ route('secretary.residents.import') }}" class="btn-secondary">
+                                            <x-heroicon-o-cloud-arrow-up class="icon-small" />
+                                            Import CSV
+                                        </a>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -130,9 +146,42 @@
 .page-title h1 { color: #333; margin-bottom: 0.5rem; font-size: 1.8rem; }
 .page-title p { color: #666; font-size: 1rem; }
 
+/* Page Actions - New button styles */
+.page-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.btn-primary, .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: all 0.3s;
+    cursor: pointer;
+    border: none;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+.btn-primary:hover { opacity: 0.9; color: white; }
+
+.btn-secondary {
+    background: white;
+    color: #667eea;
+    border: 1px solid #667eea;
+}
+.btn-secondary:hover { background: #eef2ff; }
+
 /* Search Section */
 .search-section { margin-bottom: 1.5rem; }
-.search-form { display: flex; gap: 1rem; max-width: 500px; }
+.search-form { display: flex; gap: 1rem; max-width: 600px; }
 .search-wrapper { flex: 1; position: relative; }
 .search-icon {
     position: absolute;
@@ -165,31 +214,36 @@
 }
 .btn-search:hover { background: #5a67d8; }
 
-/* Buttons (shared) */
-.btn-primary, .btn-icon {
+.btn-clear {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
+    gap: 0.25rem;
+    padding: 0.75rem 1rem;
+    background: #f8f9fa;
+    color: #666;
+    text-decoration: none;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+    border: 1px solid #e2e8f0;
+}
+.btn-clear:hover {
+    background: #e2e8f0;
+    color: #333;
+}
+
+/* Buttons (shared) */
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
     border-radius: 5px;
     text-decoration: none;
-    font-size: 0.95rem;
     transition: all 0.3s;
     cursor: pointer;
     border: none;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-}
-.btn-primary:hover { opacity: 0.9; color: white; }
-
-.btn-icon {
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    justify-content: center;
     color: #667eea;
     background: none;
 }
@@ -278,6 +332,13 @@
 }
 .empty-state p { color: #666; margin-bottom: 1.5rem; }
 
+.empty-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
 /* Pagination */
 .pagination-wrapper { margin-top: 1.5rem; }
 .text-center { text-align: center; }
@@ -308,6 +369,28 @@
 .toast-icon { width: 24px; height: 24px; flex-shrink: 0; }
 .toast-icon.success { color: #10b981; }
 .toast-icon.error { color: #dc2626; }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .page-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .btn-primary, .btn-secondary {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .search-form {
+        flex-wrap: wrap;
+    }
+
+    .empty-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
 
 /* Animations */
 @keyframes slideUp {

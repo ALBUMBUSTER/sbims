@@ -69,7 +69,7 @@ class User extends Authenticatable
             1 => 'admin',
             2 => 'captain',
             3 => 'secretary',
-            4 => 'resident'
+            4 => 'clerk'
         ];
 
         return $roleMap[$roleId] ?? 'resident';
@@ -99,7 +99,7 @@ class User extends Authenticatable
             1 => 'Admin',
             2 => 'Captain',
             3 => 'Secretary',
-            4 => 'Resident'
+            4 => 'Clerk'
         ];
 
         return $names[$this->role_id] ?? 'Unknown';

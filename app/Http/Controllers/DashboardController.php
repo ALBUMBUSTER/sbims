@@ -16,7 +16,7 @@ class DashboardController extends Controller
             'admin' => \App\Models\User::where('role_id', 1)->where('is_active', true)->count(),
             'captain' => \App\Models\User::where('role_id', 2)->where('is_active', true)->count(),
             'secretary' => \App\Models\User::where('role_id', 3)->where('is_active', true)->count(),
-            'resident' => \App\Models\User::where('role_id', 4)->where('is_active', true)->count(),
+            'clerk' => \App\Models\User::where('role_id', 4)->where('is_active', true)->count(), // FIXED: Changed from 5 to 4
         ];
 
         // System-wide statistics
@@ -67,12 +67,13 @@ class DashboardController extends Controller
                 'admin' => ActivityLog::whereHas('user', function($q) { $q->where('role_id', 1); })->count(),
                 'captain' => ActivityLog::whereHas('user', function($q) { $q->where('role_id', 2); })->count(),
                 'secretary' => ActivityLog::whereHas('user', function($q) { $q->where('role_id', 3); })->count(),
+                'clerk' => ActivityLog::whereHas('user', function($q) { $q->where('role_id', 4); })->count(), // FIXED: Added clerk
             ];
 
         } catch (\Exception $e) {
             $recentActivities = collect([]);
             $activityStats = ['today' => 0, 'yesterday' => 0, 'this_week' => 0, 'this_month' => 0];
-            $activitiesByRole = ['admin' => 0, 'captain' => 0, 'secretary' => 0];
+            $activitiesByRole = ['admin' => 0, 'captain' => 0, 'secretary' => 0, 'clerk' => 0]; // FIXED: Added clerk
         }
 
         return view('admin.dashboard', [
@@ -161,15 +162,6 @@ class DashboardController extends Controller
         ]);
     }
 
-    public function resident()
-    {
-        // Create resident dashboard view if it doesn't exist
-        return view('resident.dashboard', [
-            'title' => 'Resident Dashboard',
-            'user' => Auth::user()
-        ]);
-    }
-
     public function redirectToRoleDashboard()
     {
         $user = Auth::user();
@@ -181,11 +173,16 @@ class DashboardController extends Controller
                 return redirect()->route('captain.dashboard');
             case 'secretary':
                 return redirect()->route('secretary.dashboard');
-            case 'resident':
-                return redirect()->route('resident.dashboard');
+            case 'clerk':
+                return redirect()->route('clerk.dashboard');
             default:
                 return redirect()->route('login');
         }
+    }
+
+    public function clerk()
+    {
+        return view('clerk.dashboard');
     }
 
     public function activities(Request $request)

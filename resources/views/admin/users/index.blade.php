@@ -63,7 +63,7 @@
     .role-admin { background: #dbeafe; color: #1e40af; }
     .role-captain { background: #f3e8ff; color: #7c3aed; }
     .role-secretary { background: #dcfce7; color: #166534; }
-    /* .role-resident { background: #fef3c7; color: #d97706; } */
+    .role-clerk { background: #f59e0b20; color: #f59e0b; }
 
     .action-buttons {
         display: flex;
@@ -74,6 +74,63 @@
     .btn-sm {
         padding: 0.3rem 0.7rem;
         font-size: 0.8rem;
+    }
+
+    .btn-outline {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: all 0.3s;
+        cursor: pointer;
+        border: 1px solid #667eea;
+        background: white;
+        color: #667eea;
+    }
+
+    .btn-outline:hover {
+        background: #eef2ff;
+    }
+
+    .btn-danger {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: all 0.3s;
+        cursor: pointer;
+        border: 1px solid #dc2626;
+        background: white;
+        color: #dc2626;
+    }
+
+    .btn-danger:hover {
+        background: #fee2e2;
+    }
+
+    .btn-success {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: all 0.3s;
+        cursor: pointer;
+        border: 1px solid #10b981;
+        background: white;
+        color: #10b981;
+    }
+
+    .btn-success:hover {
+        background: #d1fae5;
     }
 
     .no-data-message {
@@ -140,7 +197,9 @@
     }
 
     .action-dropdown-item {
-        display: block;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
         width: 100%;
         padding: 0.6rem 1rem;
         text-decoration: none;
@@ -151,6 +210,11 @@
         background: none;
         text-align: left;
         cursor: pointer;
+    }
+
+    .action-dropdown-item i {
+        width: 16px;
+        font-size: 0.9rem;
     }
 
     .action-dropdown-item:hover {
@@ -206,7 +270,86 @@
             font-size: 0.7rem;
         }
     }
-    
+
+    /* Table styles */
+    .data-table {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+
+    .table-header {
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .table-header h3 {
+        margin: 0;
+        color: #333;
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    thead {
+        background: #f8fafc;
+    }
+
+    th {
+        padding: 1.2rem 1.5rem;
+        text-align: left;
+        color: #666;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    td {
+        padding: 1.2rem 1.5rem;
+        border-bottom: 1px solid #e2e8f0;
+        color: #334155;
+    }
+
+    tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        background: white;
+        padding: 1.5rem 2rem;
+        border-radius: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    .page-title h1 {
+        color: #333;
+        margin-bottom: 0.5rem;
+        font-size: 2rem;
+        font-weight: 700;
+    }
+
+    .page-title p {
+        color: #666;
+        font-size: 1rem;
+    }
+
+    .page-actions {
+        display: flex;
+        gap: 0.75rem;
+    }
 </style>
 @endpush
 
@@ -219,7 +362,8 @@
                 <p>Manage system users and their permissions</p>
             </div>
             <div class="page-actions">
-                <a href="{{ route('admin.users.create') }}" class="btn btn-outline">
+                <a href="{{ route('admin.users.create') }}" class="btn-outline">
+                    <i class="fas fa-plus"></i>
                     <span>Add New User</span>
                 </a>
             </div>
@@ -248,7 +392,7 @@
         <!-- Users Table -->
         <div class="data-table">
             <div class="table-header">
-                <h3>System Users</h3>
+                <h3><i class="fas fa-users" style="margin-right: 0.5rem; color: #667eea;"></i> System Users</h3>
                 <div>
                     <input type="text" class="search-box" placeholder="Search users..." id="userSearch">
                 </div>
@@ -258,14 +402,14 @@
             <table>
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Username</th>
-                        <td>{{ $user->full_name ?? 'N/A' }}</td>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Status</th>
-                        <th>Last Login</th>
-                        <th>Actions</th>
+                        <th><i class="fas fa-hashtag"></i> ID</th>
+                        <th><i class="fas fa-user"></i> Username</th>
+                        <th><i class="fas fa-id-card"></i> Full Name</th>
+                        <th><i class="fas fa-envelope"></i> Email</th>
+                        <th><i class="fas fa-tag"></i> Role</th>
+                        <th><i class="fas fa-circle"></i> Status</th>
+                        <th><i class="fas fa-clock"></i> Last Login</th>
+                        <th><i class="fas fa-cog"></i> Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -295,8 +439,8 @@
         <td>
             <!-- Desktop Action Buttons (visible on larger screens) -->
             <div class="action-buttons">
-                <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-outline btn-sm">
-                    <span>✏️</span> Edit
+                <a href="{{ route('admin.users.edit', $user) }}" class="btn-outline btn-sm">
+                    <i class="fas fa-edit"></i> Edit
                 </a>
 
                 @if($user->id !== auth()->id())
@@ -305,8 +449,8 @@
                               style="display: inline;"
                               onsubmit="return confirm('Are you sure you want to deactivate this user?')">
                             @csrf
-                            <button type="submit" class="btn btn-danger btn-sm">
-                                <span>🚫</span> Deactivate
+                            <button type="submit" class="btn-danger btn-sm">
+                                <i class="fas fa-ban"></i> Deactivate
                             </button>
                         </form>
                     @else
@@ -314,8 +458,8 @@
                               style="display: inline;"
                               onsubmit="return confirm('Are you sure you want to activate this user?')">
                             @csrf
-                            <button type="submit" class="btn btn-success btn-sm">
-                                <span>✅</span> Activate
+                            <button type="submit" class="btn-success btn-sm">
+                                <i class="fas fa-check-circle"></i> Activate
                             </button>
                         </form>
                     @endif
@@ -325,8 +469,8 @@
                           onsubmit="return confirm('Delete this user permanently? This action cannot be undone.')">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="btn btn-danger btn-sm">
-                            <span>🗑️</span> Delete
+                        <button type="submit" class="btn-danger btn-sm">
+                            <i class="fas fa-trash-alt"></i> Delete
                         </button>
                     </form>
                 @else
@@ -337,11 +481,11 @@
             <!-- Mobile/Tablet Three Dots Menu (visible on smaller screens) -->
             <div class="action-menu-container">
                 <button class="three-dots-btn" onclick="toggleDropdown(this)">
-                    ⋮
+                    <i class="fas fa-ellipsis-v"></i>
                 </button>
                 <div class="action-dropdown">
                     <a href="{{ route('admin.users.edit', $user) }}" class="action-dropdown-item">
-                        ✏️ Edit
+                        <i class="fas fa-edit"></i> Edit
                     </a>
 
                     @if($user->id !== auth()->id())
@@ -353,7 +497,7 @@
                                   onsubmit="return confirm('Are you sure you want to deactivate this user?')">
                                 @csrf
                                 <button type="submit" class="action-dropdown-item">
-                                    🚫 Deactivate
+                                    <i class="fas fa-ban"></i> Deactivate
                                 </button>
                             </form>
                         @else
@@ -362,7 +506,7 @@
                                   onsubmit="return confirm('Are you sure you want to activate this user?')">
                                 @csrf
                                 <button type="submit" class="action-dropdown-item">
-                                    ✅ Activate
+                                    <i class="fas fa-check-circle"></i> Activate
                                 </button>
                             </form>
                         @endif
@@ -373,7 +517,7 @@
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="action-dropdown-item danger">
-                                🗑️ Delete
+                                <i class="fas fa-trash-alt"></i> Delete
                             </button>
                         </form>
                     @else
@@ -388,6 +532,7 @@
             </table>
             @else
             <div class="no-data-message">
+                <i class="fas fa-database fa-3x" style="color: #e9ecef; margin-bottom: 1rem;"></i>
                 <p>No users found in the system.</p>
             </div>
             @endif

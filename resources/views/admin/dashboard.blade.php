@@ -19,51 +19,63 @@
         </div>
 
         <!-- User Statistics Cards -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon admin-icon">
-                    <i class="fas fa-user-shield"></i>
-                </div>
-                <div class="stat-details">
-                    <h3>Administrators</h3>
-                    <div class="stat-value">{{ $userStats['admin'] ?? 0 }}</div>
-                    <span class="stat-label">System Administrators</span>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon captain-icon">
-                    <i class="fas fa-user-tie"></i>
-                </div>
-                <div class="stat-details">
-                    <h3>Barangay Captains</h3>
-                    <div class="stat-value">{{ $userStats['captain'] ?? 0 }}</div>
-                    <span class="stat-label">Barangay Officials</span>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon secretary-icon">
-                    <i class="fas fa-user-edit"></i>
-                </div>
-                <div class="stat-details">
-                    <h3>Secretaries</h3>
-                    <div class="stat-value">{{ $userStats['secretary'] ?? 0 }}</div>
-                    <span class="stat-label">Barangay Secretaries</span>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon resident-icon">
-                    <i class="fas fa-users"></i>
-                </div>
-                <div class="stat-details">
-                    <h3>Residents</h3>
-                    <div class="stat-value">{{ number_format($systemStats['total_residents'] ?? 0) }}</div>
-                    <span class="stat-label">Total Barangay Residents</span>
-                </div>
-            </div>
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon admin-icon">
+            <i class="fas fa-user-shield"></i>
         </div>
+        <div class="stat-details">
+            <h3>Administrators</h3>
+            <div class="stat-value">{{ $userStats['admin'] ?? 0 }}</div>
+            <span class="stat-label">System Administrators</span>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon captain-icon">
+            <i class="fas fa-user-tie"></i>
+        </div>
+        <div class="stat-details">
+            <h3>Barangay Captains</h3>
+            <div class="stat-value">{{ $userStats['captain'] ?? 0 }}</div>
+            <span class="stat-label">Barangay Officials</span>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon secretary-icon">
+            <i class="fas fa-user-edit"></i>
+        </div>
+        <div class="stat-details">
+            <h3>Secretaries</h3>
+            <div class="stat-value">{{ $userStats['secretary'] ?? 0 }}</div>
+            <span class="stat-label">Barangay Secretaries</span>
+        </div>
+    </div>
+
+    <!-- NEW: Clerk Stats Card -->
+    <div class="stat-card">
+        <div class="stat-icon clerk-icon">
+            <i class="fas fa-user-clock"></i>
+        </div>
+        <div class="stat-details">
+            <h3>Clerks</h3>
+            <div class="stat-value">{{ $userStats['clerk'] ?? 0 }}</div>
+            <span class="stat-label">Barangay Clerks</span>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon resident-icon">
+            <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-details">
+            <h3>Residents</h3>
+            <div class="stat-value">{{ number_format($systemStats['total_residents'] ?? 0) }}</div>
+            <span class="stat-label">Total Barangay Residents</span>
+        </div>
+    </div>
+</div>
 
         <!-- System Overview Cards -->
         <div class="overview-grid">
@@ -157,42 +169,51 @@
         </div>
 
         <!-- Activities by Role -->
-        <?php
-            $totalActivities = array_sum($activitiesByRole ?? []);
-            $adminWidth = isset($activitiesByRole['admin']) && $activitiesByRole['admin'] > 0 ? min(100, ($activitiesByRole['admin'] / max(1, $totalActivities) * 100)) : 0;
-            $captainWidth = isset($activitiesByRole['captain']) && $activitiesByRole['captain'] > 0 ? min(100, ($activitiesByRole['captain'] / max(1, $totalActivities) * 100)) : 0;
-            $secretaryWidth = isset($activitiesByRole['secretary']) && $activitiesByRole['secretary'] > 0 ? min(100, ($activitiesByRole['secretary'] / max(1, $totalActivities) * 100)) : 0;
-        ?>
+<?php
+    $totalActivities = array_sum($activitiesByRole ?? []);
+    $adminWidth = isset($activitiesByRole['admin']) && $activitiesByRole['admin'] > 0 ? min(100, ($activitiesByRole['admin'] / max(1, $totalActivities) * 100)) : 0;
+    $captainWidth = isset($activitiesByRole['captain']) && $activitiesByRole['captain'] > 0 ? min(100, ($activitiesByRole['captain'] / max(1, $totalActivities) * 100)) : 0;
+    $secretaryWidth = isset($activitiesByRole['secretary']) && $activitiesByRole['secretary'] > 0 ? min(100, ($activitiesByRole['secretary'] / max(1, $totalActivities) * 100)) : 0;
+    $clerkWidth = isset($activitiesByRole['clerk']) && $activitiesByRole['clerk'] > 0 ? min(100, ($activitiesByRole['clerk'] / max(1, $totalActivities) * 100)) : 0;
+?>
 
-        <div class="role-activity">
-            <div class="role-header">
-                <i class="fas fa-chart-bar"></i>
-                <h3>Activities by Role</h3>
+<div class="role-activity">
+    <div class="role-header">
+        <i class="fas fa-chart-bar"></i>
+        <h3>Activities by Role (Last 7 Days)</h3>
+    </div>
+    <div class="role-bars">
+        <div class="role-bar">
+            <span class="role-label">Admin</span>
+            <div class="bar-container">
+                <div class="bar admin" style="width: <?php echo $adminWidth; ?>%;"></div>
             </div>
-            <div class="role-bars">
-                <div class="role-bar">
-                    <span class="role-label">Admin</span>
-                    <div class="bar-container">
-                        <div class="bar admin" style="width: <?php echo $adminWidth; ?>%;"></div>
-                    </div>
-                    <span class="role-count"><?php echo $activitiesByRole['admin'] ?? 0; ?></span>
-                </div>
-                <div class="role-bar">
-                    <span class="role-label">Captain</span>
-                    <div class="bar-container">
-                        <div class="bar captain" style="width: <?php echo $captainWidth; ?>%;"></div>
-                    </div>
-                    <span class="role-count"><?php echo $activitiesByRole['captain'] ?? 0; ?></span>
-                </div>
-                <div class="role-bar">
-                    <span class="role-label">Secretary</span>
-                    <div class="bar-container">
-                        <div class="bar secretary" style="width: <?php echo $secretaryWidth; ?>%;"></div>
-                    </div>
-                    <span class="role-count"><?php echo $activitiesByRole['secretary'] ?? 0; ?></span>
-                </div>
-            </div>
+            <span class="role-count"><?php echo $activitiesByRole['admin'] ?? 0; ?></span>
         </div>
+        <div class="role-bar">
+            <span class="role-label">Captain</span>
+            <div class="bar-container">
+                <div class="bar captain" style="width: <?php echo $captainWidth; ?>%;"></div>
+            </div>
+            <span class="role-count"><?php echo $activitiesByRole['captain'] ?? 0; ?></span>
+        </div>
+        <div class="role-bar">
+            <span class="role-label">Secretary</span>
+            <div class="bar-container">
+                <div class="bar secretary" style="width: <?php echo $secretaryWidth; ?>%;"></div>
+            </div>
+            <span class="role-count"><?php echo $activitiesByRole['secretary'] ?? 0; ?></span>
+        </div>
+        <!-- NEW: Clerk Activity Bar -->
+        <div class="role-bar">
+            <span class="role-label">Clerk</span>
+            <div class="bar-container">
+                <div class="bar clerk" style="width: <?php echo $clerkWidth; ?>%; background: linear-gradient(90deg, #f59e0b, #d97706);"></div>
+            </div>
+            <span class="role-count"><?php echo $activitiesByRole['clerk'] ?? 0; ?></span>
+        </div>
+    </div>
+</div>
 
         <!-- Recent Activity -->
         @if(isset($recentActivities) && $recentActivities->count() > 0)
@@ -221,50 +242,55 @@
                     <tbody>
                         @foreach($recentActivities as $activity)
                         <tr>
-                            <td class="user-cell">
-                                @if($activity->user)
-                                    <?php
-                                        $avatarColor = '#4361ee'; // admin default
-                                        if($activity->user->role_id == 2) {
-                                            $avatarColor = '#f72585';
-                                        } elseif($activity->user->role_id == 3) {
-                                            $avatarColor = '#4cc9f0';
-                                        }
-                                        $userInitial = strtoupper(substr($activity->user->name ?? $activity->user->username, 0, 1));
-                                    ?>
-                                    <div class="user-info">
-                                        <span class="user-avatar" style="background: <?php echo $avatarColor; ?>;">
-                                            <?php echo $userInitial; ?>
-                                        </span>
-                                        <span>{{ $activity->user->name ?? $activity->user->username }}</span>
-                                    </div>
-                                @else
-                                    <div class="user-info">
-                                        <span class="user-avatar system">S</span>
-                                        <span>System</span>
-                                    </div>
-                                @endif
-                            </td>
+                           <td class="user-cell">
+    @if($activity->user)
+        <?php
+            $avatarColor = '#4361ee'; // admin default
+            if($activity->user->role_id == 2) {
+                $avatarColor = '#f72585'; // captain
+            } elseif($activity->user->role_id == 3) {
+                $avatarColor = '#4cc9f0'; // secretary
+            } elseif($activity->user->role_id == 4) {
+                $avatarColor = '#f59e0b'; // clerk (orange)
+            }
+            $userInitial = strtoupper(substr($activity->user->name ?? $activity->user->username, 0, 1));
+        ?>
+        <div class="user-info">
+            <span class="user-avatar" style="background: <?php echo $avatarColor; ?>;">
+                <?php echo $userInitial; ?>
+            </span>
+            <span>{{ $activity->user->name ?? $activity->user->username }}</span>
+        </div>
+    @else
+        <div class="user-info">
+            <span class="user-avatar system">S</span>
+            <span>System</span>
+        </div>
+    @endif
+</td>
                             <td>
-                                @if($activity->user)
-                                    <?php
-                                        $roleClass = 'admin';
-                                        $roleName = 'Admin';
-                                        if($activity->user->role_id == 2) {
-                                            $roleClass = 'captain';
-                                            $roleName = 'Captain';
-                                        } elseif($activity->user->role_id == 3) {
-                                            $roleClass = 'secretary';
-                                            $roleName = 'Secretary';
-                                        }
-                                    ?>
-                                    <span class="role-badge role-<?php echo $roleClass; ?>">
-                                        <?php echo $roleName; ?>
-                                    </span>
-                                @else
-                                    <span class="role-badge role-system">System</span>
-                                @endif
-                            </td>
+    @if($activity->user)
+        <?php
+            $roleClass = 'admin';
+            $roleName = 'Admin';
+            if($activity->user->role_id == 2) {
+                $roleClass = 'captain';
+                $roleName = 'Captain';
+            } elseif($activity->user->role_id == 3) {
+                $roleClass = 'secretary';
+                $roleName = 'Secretary';
+            } elseif($activity->user->role_id == 4) {
+                $roleClass = 'clerk';
+                $roleName = 'Clerk';
+            }
+        ?>
+        <span class="role-badge role-<?php echo $roleClass; ?>">
+            <?php echo $roleName; ?>
+        </span>
+    @else
+        <span class="role-badge role-system">System</span>
+    @endif
+</td>
                             <td>
                                 <span class="action-badge action-{{ $activity->action_type ?? 'other' }}">
                                     {{ $activity->action }}
@@ -826,6 +852,21 @@ tbody tr:hover {
         gap: 1rem;
         align-items: flex-start;
     }
+}
+/* Add Clerk icon style */
+.stat-icon.clerk-icon {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+/* Add Clerk role badge */
+.role-badge.role-clerk {
+    background: #f59e0b20;
+    color: #f59e0b;
+}
+
+/* Add Clerk bar color */
+.bar.clerk {
+    background: linear-gradient(90deg, #f59e0b, #d97706);
 }
 </style>
 @endpush

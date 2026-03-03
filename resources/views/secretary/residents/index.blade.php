@@ -129,10 +129,47 @@
             </div>
 
             @if($residents->hasPages())
-            <div class="pagination-wrapper">
-                {{ $residents->links() }}
-            </div>
+<div class="pagination-container">
+    <div class="pagination-info">
+        Showing <span>{{ $residents->firstItem() }}</span> to <span>{{ $residents->lastItem() }}</span> of <span>{{ $residents->total() }}</span> results
+    </div>
+
+    <div class="pagination-links">
+        {{-- Previous Page Link --}}
+        @if($residents->onFirstPage())
+            <span class="pagination-link disabled">Previous</span>
+        @else
+            <a href="{{ $residents->previousPageUrl() }}" class="pagination-link">Previous</a>
+        @endif
+
+        {{-- Pagination Elements --}}
+        @foreach($residents->links()->elements as $element)
+            {{-- "Three Dots" Separator --}}
+            @if(is_string($element))
+                <span class="pagination-link dots">{{ $element }}</span>
             @endif
+
+            {{-- Array Of Links --}}
+            @if(is_array($element))
+                @foreach($element as $page => $url)
+                    @if($page == $residents->currentPage())
+                        <span class="pagination-link active">{{ $page }}</span>
+                    @else
+                        <a href="{{ $url }}" class="pagination-link">{{ $page }}</a>
+                    @endif
+                @endforeach
+            @endif
+        @endforeach
+
+        {{-- Next Page Link --}}
+        @if($residents->hasMorePages())
+            <a href="{{ $residents->nextPageUrl() }}" class="pagination-link">Next →</a>
+        @else
+            <span class="pagination-link disabled">Next →</span>
+        @endif
+    </div>
+</div>
+@endif
         </div>
     </div>
 </div>
@@ -400,6 +437,86 @@
 @keyframes fadeOut {
     from { opacity: 1; transform: translate(-50%, 0); }
     to { opacity: 0; transform: translate(-50%, -10px); }
+}
+/* Pagination Styles */
+.pagination-container {
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+@media (min-width: 640px) {
+    .pagination-container {
+        flex-direction: row;
+        justify-content: space-between;
+    }
+}
+
+.pagination-info {
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.pagination-info span {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.pagination-links {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.pagination-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 0.75rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #4b5563;
+    background: white;
+    border: 1px solid #e2e8f0;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.pagination-link:hover:not(.disabled):not(.active) {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #1e293b;
+}
+
+.pagination-link.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: transparent;
+}
+
+.pagination-link.disabled {
+    background: #f1f5f9;
+    color: #94a3b8;
+    border-color: #e2e8f0;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.pagination-link.dots {
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    cursor: default;
+}
+
+.pagination-link.dots:hover {
+    background: transparent;
 }
 </style>
 @endpush

@@ -7,7 +7,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\BarangayInfoController;
 use App\Http\Controllers\Admin\SystemLogController;
 use App\Http\Controllers\Admin\BackupController;
-use App\Http\Controllers\NotificationController; // Add this
+use App\Http\Controllers\NotificationController;
 
 // Secretary Controllers
 use App\Http\Controllers\Secretary\ResidentController;
@@ -31,20 +31,21 @@ Route::middleware(['auth'])->group(function () {
     // Role-based dashboard redirect
     Route::get('/dashboard', [DashboardController::class, 'redirectToRoleDashboard'])->name('dashboard');
 
-   // Secretary Routes
+    // Secretary Routes
     Route::prefix('secretary')->name('secretary.')->group(function () {
-    // Dashboard & Activities
-    Route::get('/dashboard', [DashboardController::class, 'secretary'])->name('dashboard');
-    Route::get('/activities', [DashboardController::class, 'activities'])->name('activities');
+        // Dashboard & Activities
+        Route::get('/dashboard', [DashboardController::class, 'secretary'])->name('dashboard');
+        Route::get('/activities', [DashboardController::class, 'activities'])->name('activities');
 
-    // IMPORT ROUTES - Move these ABOVE the resource route
-    Route::get('/residents/import', [ResidentController::class, 'showImportForm'])->name('residents.import');
-    Route::post('/residents/import', [ResidentController::class, 'import'])->name('residents.import.post');
+        // IMPORT ROUTES - Move these ABOVE the resource route
+        Route::get('/residents/import', [ResidentController::class, 'showImportForm'])->name('residents.import');
+        Route::post('/residents/import', [ResidentController::class, 'import'])->name('residents.import.post');
 
-    // Resident Records (Resourceful routes) - This comes AFTER import routes
-    Route::resource('residents', ResidentController::class)->except(['show']);
-    Route::get('/residents/{resident}', [ResidentController::class, 'show'])->name('residents.show');
-    Route::get('/residents/generate-id', [ResidentController::class, 'generateId'])->name('residents.generate-id');
+        // Resident Records (Resourceful routes) - This comes AFTER import routes
+        Route::resource('residents', ResidentController::class)->except(['show']);
+        Route::get('/residents/{resident}', [ResidentController::class, 'show'])->name('residents.show');
+        Route::get('/residents/generate-id', [ResidentController::class, 'generateId'])->name('residents.generate-id');
+
         // Blotter Cases (Resourceful routes)
         Route::resource('blotter', BlotterController::class)->except(['show']);
         Route::get('/blotter/{blotter}', [BlotterController::class, 'show'])->name('blotter.show');
@@ -88,84 +89,113 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/backups/{backup}/restore', [BackupController::class, 'restore'])->name('backups.restore');
         Route::delete('/backups/{backup}', [BackupController::class, 'destroy'])->name('backups.destroy');
         Route::put('/backups/schedule', [BackupController::class, 'updateSchedule'])->name('backups.schedule');
+
+        // Barangay Information
+        Route::get('/barangay', [BarangayInfoController::class, 'index'])->name('barangay.index');
+        Route::put('/barangay', [BarangayInfoController::class, 'update'])->name('barangay.update');
+        Route::put('/barangay/update-stats', [BarangayInfoController::class, 'updateStats'])->name('barangay.update-stats'); // Add this line
     });
 
     // Captain Routes
     Route::prefix('captain')->name('captain.')->group(function () {
-    // Dashboard
-    Route::get('/dashboard', [App\Http\Controllers\Captain\CaptainController::class, 'dashboard'])->name('dashboard');
+        // Dashboard
+        Route::get('/dashboard', [App\Http\Controllers\Captain\CaptainController::class, 'dashboard'])->name('dashboard');
 
-    // Residents - Using Secretary ResidentController with Captain views
-    Route::get('/residents', [App\Http\Controllers\Secretary\ResidentController::class, 'index'])->name('residents.index');
-    Route::get('/residents/create', [App\Http\Controllers\Secretary\ResidentController::class, 'create'])->name('residents.create');
-    Route::post('/residents', [App\Http\Controllers\Secretary\ResidentController::class, 'store'])->name('residents.store');
-    Route::get('/residents/{resident}', [App\Http\Controllers\Secretary\ResidentController::class, 'show'])->name('residents.show');
-    Route::get('/residents/{resident}/edit', [App\Http\Controllers\Secretary\ResidentController::class, 'edit'])->name('residents.edit');
-    Route::put('/residents/{resident}', [App\Http\Controllers\Secretary\ResidentController::class, 'update'])->name('residents.update');
-    Route::delete('/residents/{resident}', [App\Http\Controllers\Secretary\ResidentController::class, 'destroy'])->name('residents.destroy');
-    Route::get('/residents/import', [App\Http\Controllers\Secretary\ResidentController::class, 'showImportForm'])->name('residents.import');
-    Route::post('/residents/import', [App\Http\Controllers\Secretary\ResidentController::class, 'import'])->name('residents.import.post');
-    Route::get('/residents/generate-id', [App\Http\Controllers\Secretary\ResidentController::class, 'generateId'])->name('residents.generate-id');
+        // Residents - Using Secretary ResidentController with Captain views
+        Route::get('/residents', [App\Http\Controllers\Secretary\ResidentController::class, 'index'])->name('residents.index');
+        Route::get('/residents/create', [App\Http\Controllers\Secretary\ResidentController::class, 'create'])->name('residents.create');
+        Route::post('/residents', [App\Http\Controllers\Secretary\ResidentController::class, 'store'])->name('residents.store');
+        Route::get('/residents/{resident}', [App\Http\Controllers\Secretary\ResidentController::class, 'show'])->name('residents.show');
+        Route::get('/residents/{resident}/edit', [App\Http\Controllers\Secretary\ResidentController::class, 'edit'])->name('residents.edit');
+        Route::put('/residents/{resident}', [App\Http\Controllers\Secretary\ResidentController::class, 'update'])->name('residents.update');
+        Route::delete('/residents/{resident}', [App\Http\Controllers\Secretary\ResidentController::class, 'destroy'])->name('residents.destroy');
+        Route::get('/residents/import', [App\Http\Controllers\Secretary\ResidentController::class, 'showImportForm'])->name('residents.import');
+        Route::post('/residents/import', [App\Http\Controllers\Secretary\ResidentController::class, 'import'])->name('residents.import.post');
+        Route::get('/residents/generate-id', [App\Http\Controllers\Secretary\ResidentController::class, 'generateId'])->name('residents.generate-id');
 
-    // Blotters - Using Secretary BlotterController with Captain views (note: plural 'blotters' matches your folder)
-    Route::get('/blotters', [App\Http\Controllers\Secretary\BlotterController::class, 'index'])->name('blotters.index');
-    Route::get('/blotters/create', [App\Http\Controllers\Secretary\BlotterController::class, 'create'])->name('blotters.create');
-    Route::post('/blotters', [App\Http\Controllers\Secretary\BlotterController::class, 'store'])->name('blotters.store');
-    Route::get('/blotters/{blotter}', [App\Http\Controllers\Secretary\BlotterController::class, 'show'])->name('blotters.show');
-    Route::get('/blotters/{blotter}/edit', [App\Http\Controllers\Secretary\BlotterController::class, 'edit'])->name('blotters.edit');
-    Route::put('/blotters/{blotter}', [App\Http\Controllers\Secretary\BlotterController::class, 'update'])->name('blotters.update');
-    Route::delete('/blotters/{blotter}', [App\Http\Controllers\Secretary\BlotterController::class, 'destroy'])->name('blotters.destroy');
-    Route::patch('/blotters/{blotter}/status', [App\Http\Controllers\Secretary\BlotterController::class, 'updateStatus'])->name('blotters.status');
+        // Blotters - Using Secretary BlotterController with Captain views
+        Route::get('/blotters', [App\Http\Controllers\Secretary\BlotterController::class, 'index'])->name('blotters.index');
+        Route::get('/blotters/create', [App\Http\Controllers\Secretary\BlotterController::class, 'create'])->name('blotters.create');
+        Route::post('/blotters', [App\Http\Controllers\Secretary\BlotterController::class, 'store'])->name('blotters.store');
+        Route::get('/blotters/{blotter}', [App\Http\Controllers\Secretary\BlotterController::class, 'show'])->name('blotters.show');
+        Route::get('/blotters/{blotter}/edit', [App\Http\Controllers\Secretary\BlotterController::class, 'edit'])->name('blotters.edit');
+        Route::put('/blotters/{blotter}', [App\Http\Controllers\Secretary\BlotterController::class, 'update'])->name('blotters.update');
+        Route::delete('/blotters/{blotter}', [App\Http\Controllers\Secretary\BlotterController::class, 'destroy'])->name('blotters.destroy');
+        Route::patch('/blotters/{blotter}/status', [App\Http\Controllers\Secretary\BlotterController::class, 'updateStatus'])->name('blotters.status');
 
-    // Certificates - Using Secretary CertificateController
-    Route::get('/certificates', [App\Http\Controllers\Secretary\CertificateController::class, 'index'])->name('certificates.index');
-    Route::get('/certificates/create', [App\Http\Controllers\Secretary\CertificateController::class, 'create'])->name('certificates.create');
-    Route::post('/certificates', [App\Http\Controllers\Secretary\CertificateController::class, 'store'])->name('certificates.store');
-    Route::get('/certificates/{certificate}', [App\Http\Controllers\Secretary\CertificateController::class, 'show'])->name('certificates.show');
-    Route::get('/certificates/{certificate}/edit', [App\Http\Controllers\Secretary\CertificateController::class, 'edit'])->name('certificates.edit');
-    Route::put('/certificates/{certificate}', [App\Http\Controllers\Secretary\CertificateController::class, 'update'])->name('certificates.update');
-    Route::delete('/certificates/{certificate}', [App\Http\Controllers\Secretary\CertificateController::class, 'destroy'])->name('certificates.destroy');
-    Route::post('/certificates/{certificate}/process', [App\Http\Controllers\Secretary\CertificateController::class, 'process'])->name('certificates.process');
-    Route::get('/certificates/{certificate}/print', [App\Http\Controllers\Secretary\CertificateController::class, 'print'])->name('certificates.print');
+        // Certificates - Using Secretary CertificateController
+        Route::get('/certificates', [App\Http\Controllers\Secretary\CertificateController::class, 'index'])->name('certificates.index');
+        Route::get('/certificates/create', [App\Http\Controllers\Secretary\CertificateController::class, 'create'])->name('certificates.create');
+        Route::post('/certificates', [App\Http\Controllers\Secretary\CertificateController::class, 'store'])->name('certificates.store');
+        Route::get('/certificates/{certificate}', [App\Http\Controllers\Secretary\CertificateController::class, 'show'])->name('certificates.show');
+        Route::get('/certificates/{certificate}/edit', [App\Http\Controllers\Secretary\CertificateController::class, 'edit'])->name('certificates.edit');
+        Route::put('/certificates/{certificate}', [App\Http\Controllers\Secretary\CertificateController::class, 'update'])->name('certificates.update');
+        Route::delete('/certificates/{certificate}', [App\Http\Controllers\Secretary\CertificateController::class, 'destroy'])->name('certificates.destroy');
+        Route::post('/certificates/{certificate}/process', [App\Http\Controllers\Secretary\CertificateController::class, 'process'])->name('certificates.process');
+        Route::get('/certificates/{certificate}/print', [App\Http\Controllers\Secretary\CertificateController::class, 'print'])->name('certificates.print');
 
-    // Reports - Using Secretary ReportController
-    Route::get('/reports', [App\Http\Controllers\Secretary\ReportController::class, 'index'])->name('reports.index');
-    Route::get('/reports/residents', [App\Http\Controllers\Secretary\ReportController::class, 'residents'])->name('reports.residents');
-    Route::get('/reports/certificates', [App\Http\Controllers\Secretary\ReportController::class, 'certificates'])->name('reports.certificates');
-    Route::get('/reports/blotter', [App\Http\Controllers\Secretary\ReportController::class, 'blotter'])->name('reports.blotter');
-    Route::get('/reports/summary', [App\Http\Controllers\Secretary\ReportController::class, 'summary'])->name('reports.summary');
-    Route::post('/reports/export', [App\Http\Controllers\Secretary\ReportController::class, 'export'])->name('reports.export');
+        // Reports - Using Secretary ReportController
+        Route::get('/reports', [App\Http\Controllers\Secretary\ReportController::class, 'index'])->name('reports.index');
+        Route::get('/reports/residents', [App\Http\Controllers\Secretary\ReportController::class, 'residents'])->name('reports.residents');
+        Route::get('/reports/certificates', [App\Http\Controllers\Secretary\ReportController::class, 'certificates'])->name('reports.certificates');
+        Route::get('/reports/blotter', [App\Http\Controllers\Secretary\ReportController::class, 'blotter'])->name('reports.blotter');
+        Route::get('/reports/summary', [App\Http\Controllers\Secretary\ReportController::class, 'summary'])->name('reports.summary');
+        Route::post('/reports/export', [App\Http\Controllers\Secretary\ReportController::class, 'export'])->name('reports.export');
 
-    // Approvals (Captain-specific) - Keep your existing routes
-    Route::get('/approvals', [App\Http\Controllers\Captain\CaptainController::class, 'approvals'])->name('approvals.index');
-    Route::post('/approvals/certificate/{certificate}/approve', [App\Http\Controllers\Captain\CaptainController::class, 'approveCertificate'])->name('approvals.certificate.approve');
-    Route::post('/approvals/certificate/{certificate}/reject', [App\Http\Controllers\Captain\CaptainController::class, 'rejectCertificate'])->name('approvals.certificate.reject');
-    Route::post('/certificates/{certificate}/release', [App\Http\Controllers\Captain\CaptainController::class, 'releaseCertificate'])->name('certificates.release');
-    Route::post('/generate-report', [App\Http\Controllers\Captain\CaptainController::class, 'generateReport'])->name('generate-report');
-});
+        // Approvals (Captain-specific)
+        Route::get('/approvals', [App\Http\Controllers\Captain\CaptainController::class, 'approvals'])->name('approvals.index');
+        Route::post('/approvals/certificate/{certificate}/approve', [App\Http\Controllers\Captain\CaptainController::class, 'approveCertificate'])->name('approvals.certificate.approve');
+        Route::post('/approvals/certificate/{certificate}/reject', [App\Http\Controllers\Captain\CaptainController::class, 'rejectCertificate'])->name('approvals.certificate.reject');
+        Route::post('/certificates/{certificate}/release', [App\Http\Controllers\Captain\CaptainController::class, 'releaseCertificate'])->name('certificates.release');
+        Route::post('/generate-report', [App\Http\Controllers\Captain\CaptainController::class, 'generateReport'])->name('generate-report');
+    });
+    // ============= NEW CLERK ROUTES =============
+    Route::prefix('clerk')->name('clerk.')->group(function () {
+        // Dashboard
+        Route::get('/dashboard', [App\Http\Controllers\Clerk\ClerkController::class, 'dashboard'])->name('dashboard');
+
+        // Residents (Read-only)
+        Route::get('/residents', [App\Http\Controllers\Secretary\ResidentController::class, 'index'])->name('residents.index');
+        Route::get('/residents/{resident}', [App\Http\Controllers\Secretary\ResidentController::class, 'show'])->name('residents.show');
+
+        // Certificates (Create and View only)
+        Route::get('/certificates', [App\Http\Controllers\Secretary\CertificateController::class, 'index'])->name('certificates.index');
+        Route::get('/certificates/create', [App\Http\Controllers\Secretary\CertificateController::class, 'create'])->name('certificates.create');
+        Route::post('/certificates', [App\Http\Controllers\Secretary\CertificateController::class, 'store'])->name('certificates.store');
+        Route::get('/certificates/{certificate}', [App\Http\Controllers\Secretary\CertificateController::class, 'show'])->name('certificates.show');
+        Route::get('/certificates/{certificate}/print', [App\Http\Controllers\Secretary\CertificateController::class, 'print'])->name('certificates.print');
+
+        // Reports (Read-only)
+        Route::get('/reports', [App\Http\Controllers\Secretary\ReportController::class, 'index'])->name('reports.index');
+        Route::get('/reports/residents', [App\Http\Controllers\Secretary\ReportController::class, 'residents'])->name('reports.residents');
+        Route::get('/reports/certificates', [App\Http\Controllers\Secretary\ReportController::class, 'certificates'])->name('reports.certificates');
+        Route::get('/reports/summary', [App\Http\Controllers\Secretary\ReportController::class, 'summary'])->name('reports.summary');
+    });
+
     // Resident Routes
     Route::prefix('resident')->name('resident.')->group(function () {
         Route::get('/certificates/track/{certificate_number}', [App\Http\Controllers\Secretary\CertificateController::class, 'track'])->name('certificates.track');
     });
+
     Route::get('/test-notification-creation', function() {
-    // Get first admin user
-    $admin = App\Models\User::where('role_id', 1)->first();
+        // Get first admin user
+        $admin = App\Models\User::where('role_id', 1)->first();
 
-    if (!$admin) {
-        return 'No admin user found!';
-    }
+        if (!$admin) {
+            return 'No admin user found!';
+        }
 
-    $notification = App\Models\Notification::create([
-        'user_id' => $admin->id,
-        'title' => 'Test Notification',
-        'message' => 'This is a test notification from ' . now(),
-        'type' => 'info',
-        'link' => '#',
-        'is_read' => false
-    ]);
+        $notification = App\Models\Notification::create([
+            'user_id' => $admin->id,
+            'title' => 'Test Notification',
+            'message' => 'This is a test notification from ' . now(),
+            'type' => 'info',
+            'link' => '#',
+            'is_read' => false
+        ]);
 
-    return 'Test notification created with ID: ' . $notification->id . ' for admin: ' . $admin->email;
-})->middleware('auth');
+        return 'Test notification created with ID: ' . $notification->id . ' for admin: ' . $admin->email;
+    })->middleware('auth');
 });
 
 // ========== GLOBAL NOTIFICATION ROUTES (accessible by all authenticated users) ==========
@@ -177,3 +207,4 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/notifications/clear-all', [NotificationController::class, 'clearAll'])->name('notifications.clear-all');
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
 });
+

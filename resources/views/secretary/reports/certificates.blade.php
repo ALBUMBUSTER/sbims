@@ -20,7 +20,7 @@
                 <input type="hidden" name="format" value="pdf">
                 <button type="submit" class="btn-primary">
                     <x-heroicon-o-document-arrow-down class="icon-small" />
-                    Export PDF
+                    Export
                 </button>
             </form>
         </div>

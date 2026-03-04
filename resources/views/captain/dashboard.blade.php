@@ -8,7 +8,7 @@
         <div class="page-header">
             <div class="page-title">
                 <h1>Captain Dashboard</h1>
-                <p class="welcome-text">Welcome back, Kap. {{ auth()->user()->full_name ?? auth()->user()->name ?? 'Captain' }}!</p>
+                <p class="welcome-text">Welcome back, {{ auth()->user()->full_name ?? auth()->user()->name ?? 'Captain' }}!</p>
             </div>
             <div class="page-actions">
                 <form action="{{ route('captain.generate-report') }}" method="POST" style="display: inline;">

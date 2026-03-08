@@ -40,7 +40,7 @@
         }
 
         .logo-img {
-            height: 80px;
+            height: 150px;
             width: auto;
             margin: 0 auto;
         }
@@ -137,7 +137,7 @@
     <div class="login-container">
         <div class="login-header">
             <div class="logo">
-                <img src="assets/img/logo.png" alt="BL Logo" class="logo-img">
+                <img src="assets/img/logo..jpg" alt="BL Logo" class="logo-img">
             </div>
             <h1>SBIMS-PRO</h1>
             <p>Brgy. Libertad, Isabel, Leyte</p>

@@ -170,12 +170,18 @@
                         <span class="nav-text">Certificates</span>
                     </a>
                 </li>
-                <li class="nav-item {{ request()->routeIs('clerk.reports.*') ? 'active' : '' }}">
+                <li class="nav-item {{ request()->routeIs('captain.blotters.*') ? 'active' : '' }}">
+                    <a href="{{ route('captain.blotters.index') }}">
+                        <span class="nav-icon"><x-heroicon-o-scale /></span>
+                        <span class="nav-text">Blotter Cases</span>
+                    </a>
+                </li>
+                <!-- <li class="nav-item {{ request()->routeIs('clerk.reports.*') ? 'active' : '' }}">
                     <a href="{{ route('clerk.reports.index') }}">
                         <span class="nav-icon"><x-heroicon-o-chart-bar /></span>
                         <span class="nav-text">Reports</span>
                     </a>
-                </li>
+                </li> enable if needed -->
             </ul>
         </div>
     @endif

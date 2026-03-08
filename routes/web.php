@@ -66,6 +66,11 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/summary', [ReportController::class, 'summary'])->name('summary');
             Route::post('/export', [ReportController::class, 'export'])->name('export');
         });
+        // Certificate Template Routes
+            Route::get('/certificates/{certificate}/generate-doc', [App\Http\Controllers\TemplateController::class, 'generateCertificate'])
+            ->name('certificates.generate-doc');
+            Route::get('/certificates/{certificate}/print-doc', [App\Http\Controllers\TemplateController::class, 'printCertificate'])
+            ->name('certificates.print-doc');
     });
 
     // Admin Routes
@@ -148,29 +153,36 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/approvals/certificate/{certificate}/reject', [App\Http\Controllers\Captain\CaptainController::class, 'rejectCertificate'])->name('approvals.certificate.reject');
         Route::post('/certificates/{certificate}/release', [App\Http\Controllers\Captain\CaptainController::class, 'releaseCertificate'])->name('certificates.release');
         Route::post('/generate-report', [App\Http\Controllers\Captain\CaptainController::class, 'generateReport'])->name('generate-report');
+        // Inside captain group
+        Route::get('/certificates/{certificate}/print-doc', [App\Http\Controllers\TemplateController::class, 'printCertificate'])
+        ->name('certificates.print-doc');
     });
-    // ============= NEW CLERK ROUTES =============
-    Route::prefix('clerk')->name('clerk.')->group(function () {
-        // Dashboard
-        Route::get('/dashboard', [App\Http\Controllers\Clerk\ClerkController::class, 'dashboard'])->name('dashboard');
+    // ============= CLERK ROUTES =============
+Route::prefix('clerk')->name('clerk.')->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [App\Http\Controllers\Clerk\ClerkController::class, 'dashboard'])->name('dashboard');
 
-        // Residents (Read-only)
-        Route::get('/residents', [App\Http\Controllers\Secretary\ResidentController::class, 'index'])->name('residents.index');
-        Route::get('/residents/{resident}', [App\Http\Controllers\Secretary\ResidentController::class, 'show'])->name('residents.show');
+    // Residents (Read-only) - Using Secretary ResidentController but with Clerk views
+    Route::get('/residents', [App\Http\Controllers\Secretary\ResidentController::class, 'index'])->name('residents.index');
+    Route::get('/residents/{resident}', [App\Http\Controllers\Secretary\ResidentController::class, 'show'])->name('residents.show');
 
-        // Certificates (Create and View only)
-        Route::get('/certificates', [App\Http\Controllers\Secretary\CertificateController::class, 'index'])->name('certificates.index');
-        Route::get('/certificates/create', [App\Http\Controllers\Secretary\CertificateController::class, 'create'])->name('certificates.create');
-        Route::post('/certificates', [App\Http\Controllers\Secretary\CertificateController::class, 'store'])->name('certificates.store');
-        Route::get('/certificates/{certificate}', [App\Http\Controllers\Secretary\CertificateController::class, 'show'])->name('certificates.show');
-        Route::get('/certificates/{certificate}/print', [App\Http\Controllers\Secretary\CertificateController::class, 'print'])->name('certificates.print');
+    // IMPORTANT: Do NOT include edit, update, or destroy routes for Clerk
 
-        // Reports (Read-only)
-        Route::get('/reports', [App\Http\Controllers\Secretary\ReportController::class, 'index'])->name('reports.index');
-        Route::get('/reports/residents', [App\Http\Controllers\Secretary\ReportController::class, 'residents'])->name('reports.residents');
-        Route::get('/reports/certificates', [App\Http\Controllers\Secretary\ReportController::class, 'certificates'])->name('reports.certificates');
-        Route::get('/reports/summary', [App\Http\Controllers\Secretary\ReportController::class, 'summary'])->name('reports.summary');
-    });
+    // Certificates (Create and View only)
+    Route::get('/certificates', [App\Http\Controllers\Secretary\CertificateController::class, 'index'])->name('certificates.index');
+    Route::get('/certificates/create', [App\Http\Controllers\Secretary\CertificateController::class, 'create'])->name('certificates.create');
+    Route::post('/certificates', [App\Http\Controllers\Secretary\CertificateController::class, 'store'])->name('certificates.store');
+    Route::get('/certificates/{certificate}', [App\Http\Controllers\Secretary\CertificateController::class, 'show'])->name('certificates.show');
+    Route::get('/certificates/{certificate}/print', [App\Http\Controllers\Secretary\CertificateController::class, 'print'])->name('certificates.print');
+
+    // Do NOT include edit, update, or process routes for Clerk
+
+    // Reports (Read-only)
+    Route::get('/reports', [App\Http\Controllers\Secretary\ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/residents', [App\Http\Controllers\Secretary\ReportController::class, 'residents'])->name('reports.residents');
+    Route::get('/reports/certificates', [App\Http\Controllers\Secretary\ReportController::class, 'certificates'])->name('reports.certificates');
+    Route::get('/reports/summary', [App\Http\Controllers\Secretary\ReportController::class, 'summary'])->name('reports.summary');
+});
 
     // Resident Routes
     Route::prefix('resident')->name('resident.')->group(function () {

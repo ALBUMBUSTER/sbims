@@ -11,13 +11,10 @@
                 <p class="welcome-text">Welcome back, {{ auth()->user()->full_name ?? auth()->user()->name ?? 'Captain' }}!</p>
             </div>
             <div class="page-actions">
-                <form action="{{ route('captain.generate-report') }}" method="POST" style="display: inline;">
-                    @csrf
-                    <button type="submit" class="btn-primary">
-                        <i class="fas fa-download"></i>
-                        Generate Report
-                    </button>
-                </form>
+                <a href="{{ route('captain.reports.index') }}" class="btn-primary">
+                    <i class="fas fa-download"></i>
+                    Generate Report
+                </a>
             </div>
         </div>
 

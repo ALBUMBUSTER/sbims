@@ -37,6 +37,6 @@ class ClerkController extends Controller
         ];
 
         return view('clerk.dashboard', compact('stats'));
-        
+
     }
 }

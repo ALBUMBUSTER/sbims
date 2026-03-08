@@ -6,7 +6,7 @@
 <header class="header">
     <div class="logo-container">
         <div class="logo">
-            <img src="{{ asset('assets/img/logo1.png') }}" alt="BL Logo" class="logo-img">
+            <img src="{{ asset('assets/img/logo..png') }}" alt="BL Logo" class="logo-img">
         </div>
 
         <div class="system-title">

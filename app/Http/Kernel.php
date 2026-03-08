@@ -1,19 +1,21 @@
-protected function schedule(Schedule $schedule)
+<?php
+
+namespace App\Http;
+
+use Illuminate\Foundation\Http\Kernel as HttpKernel;
+
+class Kernel extends HttpKernel
 {
-    // Add this to your schedule method:
-    $schedule->command('backup:create --type=database')
-        ->dailyAt('02:00')
-        ->runInBackground()
-        ->onSuccess(function () {
-            \Log::info('Scheduled database backup completed successfully.');
-        })
-        ->onFailure(function () {
-            \Log::error('Scheduled database backup failed.');
-        });
+    protected $routeMiddleware = [
+    'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
+    'auth.session' => \Illuminate\Session\Middleware\AuthenticateSession::class,
+    'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,
+    'can' => \Illuminate\Auth\Middleware\Authorize::class,
+    'password.confirm' => \Illuminate\Auth\Middleware\RequirePassword::class,
+    'precognitive' => \Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests::class,
+    'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
+    'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+    'clerk' => \App\Http\Middleware\ClerkMiddleware::class,
+    'share.notifications' => \App\Http\Middleware\ShareNotifications::class,
+    ];
 }
-protected $middlewareGroups = [
-    'web' => [
-        // ... other middleware (keep existing ones)
-        \App\Http\Middleware\ShareNotifications::class,
-    ],
-];

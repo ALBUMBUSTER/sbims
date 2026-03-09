@@ -68,13 +68,18 @@ class ResidentController extends Controller
     }
 
     /**
-     * Show the form for creating a new resident.
-     */
-    public function create()
-    {
-        $generatedId = $this->generateResidentId();
-        return view('secretary.residents.create', compact('generatedId'));
-    }
+ * Show the form for creating a new resident.
+ */
+public function create()
+{
+    $generatedId = $this->generateResidentId();
+
+    // Generate initial PWD ID
+    $pwdResponse = $this->generatePwdId();
+    $generatedPwdId = $pwdResponse->getData()->id;
+
+    return view('secretary.residents.create', compact('generatedId', 'generatedPwdId'));
+}
 
     /**
      * Generate ID for AJAX request
@@ -91,25 +96,25 @@ class ResidentController extends Controller
     {
         try {
             $validated = $request->validate([
-                'resident_id' => 'required|string|max:20|unique:residents',
-                'first_name' => 'required|string|max:50',
-                'last_name' => 'required|string|max:50',
-                'middle_name' => 'nullable|string|max:50',
-                'birthdate' => 'required|date',
-                'gender' => 'required|in:Male,Female',
-                'civil_status' => 'required|in:Single,Married,Widowed,Divorced',
-                'contact_number' => 'nullable|string|max:15',
-                'email' => 'nullable|email|max:100',
-                'address' => 'required|string',
-                'purok' => 'required|string|max:50',
-                'household_number' => 'nullable|string|max:20',
-                'is_voter' => 'sometimes|boolean',
-                'is_4ps' => 'sometimes|boolean',
-                'is_senior' => 'sometimes|boolean',
-                'is_pwd' => 'sometimes|boolean',
-                'pwd_id' => 'nullable|string|max:50',
-                'disability_type' => 'nullable|string|max:100',
-            ]);
+    'resident_id' => 'required|string|max:20|unique:residents',
+    'first_name' => 'required|string|max:50',
+    'last_name' => 'required|string|max:50',
+    'middle_name' => 'nullable|string|max:50',
+    'birthdate' => 'required|date',
+    'gender' => 'required|in:Male,Female',
+    'civil_status' => 'required|in:Single,Married,Widowed,Divorced',
+    'contact_number' => 'nullable|string|max:15',
+    'email' => 'nullable|email|max:100',
+    'address' => 'required|string',
+    'purok' => 'required|string|max:50',
+    'household_number' => 'nullable|string|max:20',
+    'is_voter' => 'sometimes|boolean',
+    'is_4ps' => 'sometimes|boolean',
+    'is_senior' => 'sometimes|boolean',
+    'is_pwd' => 'sometimes|boolean',
+    'pwd_id' => 'nullable|required_if:is_pwd,true|string|max:50|unique:residents,pwd_id',
+    'disability_type' => 'nullable|required_if:is_pwd,true|string|max:100',
+]);
 
             // Set checkbox values
             $validated['is_voter'] = $request->has('is_voter') ? 1 : 0;
@@ -480,7 +485,33 @@ public function import(Request $request)
             'civil_status' => $this->formatCivilStatus(trim($data[14] ?? '')),
         ];
     }
+    /**
+ * Generate a unique PWD ID
+ */
+public function generatePwdId()
+{
+    // Format: PWD-YYYY-XXXXX (e.g., PWD-2024-00001)
+    $year = date('Y');
 
+    // Get the latest PWD ID for this year
+    $latestPwd = Resident::where('pwd_id', 'LIKE', "PWD-{$year}-%")
+                         ->where('is_pwd', true)
+                         ->orderBy('pwd_id', 'desc')
+                         ->first();
+
+    if ($latestPwd && $latestPwd->pwd_id) {
+        // Extract the sequence number and increment
+        $parts = explode('-', $latestPwd->pwd_id);
+        $lastNumber = isset($parts[2]) ? intval($parts[2]) : 0;
+        $newNumber = str_pad($lastNumber + 1, 5, '0', STR_PAD_LEFT);
+    } else {
+        $newNumber = '00001';
+    }
+
+    $pwdId = 'PWD-' . $year . '-' . $newNumber;
+
+    return response()->json(['id' => $pwdId]);
+}
     /**
      * Validate import row data
      */

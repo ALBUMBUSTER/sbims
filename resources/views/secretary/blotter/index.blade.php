@@ -11,7 +11,7 @@
         </div>
         <div class="page-actions">
             <a href="{{ route('secretary.blotter.create') }}" class="btn-primary">
-                <x-heroicon-o-plus class="icon-small" />
+                <i class="fas fa-plus icon-small"></i>
                 New Blotter Case
             </a>
         </div>
@@ -21,7 +21,7 @@
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-icon pending">
-                <x-heroicon-o-clock />
+                <i class="fas fa-clock"></i>
             </div>
             <div class="stat-content">
                 <span class="stat-label">Pending</span>
@@ -30,7 +30,7 @@
         </div>
         <div class="stat-card">
             <div class="stat-icon ongoing">
-                <x-heroicon-o-magnifying-glass />
+                <i class="fas fa-search"></i>
             </div>
             <div class="stat-content">
                 <span class="stat-label">Ongoing</span>
@@ -39,7 +39,7 @@
         </div>
         <div class="stat-card">
             <div class="stat-icon settled">
-                <x-heroicon-o-check-badge />
+                <i class="fas fa-check-circle"></i>
             </div>
             <div class="stat-content">
                 <span class="stat-label">Settled</span>
@@ -48,7 +48,7 @@
         </div>
         <div class="stat-card">
             <div class="stat-icon referred">
-                <x-heroicon-o-arrow-right-circle />
+                <i class="fas fa-arrow-right"></i>
             </div>
             <div class="stat-content">
                 <span class="stat-label">Referred</span>
@@ -61,7 +61,7 @@
     <div class="filters-section">
         <form action="{{ route('secretary.blotter.index') }}" method="GET" class="filters-form">
             <div class="search-wrapper">
-                <x-heroicon-o-magnifying-glass class="search-icon" />
+                <i class="fas fa-search search-icon"></i>
                 <input type="text"
                        name="search"
                        placeholder="Search by case ID, complainant, respondent, incident..."
@@ -134,14 +134,14 @@
                             <td>
                                 <div class="action-buttons">
                                     <a href="{{ route('secretary.blotter.show', $blotter) }}" class="btn-icon" title="View">
-                                        <x-heroicon-o-eye />
+                                        <i class="fas fa-eye"></i>
                                     </a>
                                     <a href="{{ route('secretary.blotter.edit', $blotter) }}" class="btn-icon" title="Edit">
-                                        <x-heroicon-o-pencil />
+                                        <i class="fas fa-pencil-alt"></i>
                                     </a>
                                     <button type="button" class="btn-icon delete-btn" title="Delete"
                                         onclick="confirmDelete('{{ $blotter->id }}')">
-                                        <x-heroicon-o-trash />
+                                        <i class="fas fa-trash"></i>
                                     </button>
                                     <form id="delete-form-{{ $blotter->id }}"
                                           action="{{ route('secretary.blotter.destroy', $blotter) }}"
@@ -156,11 +156,11 @@
                         <tr>
                             <td colspan="8" class="text-center">
                                 <div class="empty-state">
-                                    <x-heroicon-o-document-text class="empty-icon" />
+                                    <i class="fas fa-file-alt empty-icon"></i>
                                     <h3>No blotter cases found</h3>
                                     <p>Get started by filing your first blotter case.</p>
                                     <a href="{{ route('secretary.blotter.create') }}" class="btn-primary">
-                                        <x-heroicon-o-plus class="icon-small" />
+                                        <i class="fas fa-plus icon-small"></i>
                                         New Blotter Case
                                     </a>
                                 </div>
@@ -234,9 +234,8 @@
     margin-right: 1rem;
 }
 
-.stat-icon svg {
-    width: 24px;
-    height: 24px;
+.stat-icon i {
+    font-size: 24px;
     color: white;
 }
 
@@ -290,8 +289,7 @@
     left: 1rem;
     top: 50%;
     transform: translateY(-50%);
-    width: 20px;
-    height: 20px;
+    font-size: 20px;
     color: #999;
 }
 
@@ -468,9 +466,8 @@
     transform: translateY(-2px);
 }
 
-.btn-icon svg {
-    width: 18px;
-    height: 18px;
+.btn-icon i {
+    font-size: 18px;
 }
 
 .delete-btn:hover {
@@ -504,8 +501,7 @@
 }
 
 .empty-icon {
-    width: 64px;
-    height: 64px;
+    font-size: 64px;
     color: #cbd5e0;
     margin-bottom: 1rem;
 }
@@ -531,8 +527,7 @@
 }
 
 .icon-small {
-    width: 16px;
-    height: 16px;
+    font-size: 16px;
 }
 </style>
 @endpush

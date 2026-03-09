@@ -71,6 +71,9 @@ Route::middleware(['auth'])->group(function () {
             ->name('certificates.generate-doc');
             Route::get('/certificates/{certificate}/print-doc', [App\Http\Controllers\TemplateController::class, 'printCertificate'])
             ->name('certificates.print-doc');
+            // Add these routes for ID generation
+            Route::get('residents/generate-id', [App\Http\Controllers\Secretary\ResidentController::class, 'generateId'])->name('residents.generate-id');
+            Route::get('residents/generate-pwd-id', [App\Http\Controllers\Secretary\ResidentController::class, 'generatePwdId'])->name('residents.generate-pwd-id');
     });
 
     // Admin Routes

@@ -374,4 +374,5 @@ class ReportController extends Controller
         }
         return $months;
     }
+    
 }

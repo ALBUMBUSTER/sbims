@@ -53,6 +53,13 @@
         color: #333;
         margin-bottom: 1rem;
         font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .backup-creation-card h3 i {
+        color: #667eea;
     }
 
     .warning-box {
@@ -66,8 +73,9 @@
         gap: 0.8rem;
     }
 
-    .warning-box span {
+    .warning-box i {
         font-size: 1.2rem;
+        color: #d97706;
     }
 
     .warning-box p {
@@ -107,6 +115,10 @@
         gap: 0.5rem;
         text-decoration: none;
         transition: all 0.3s;
+    }
+
+    .btn-backup i {
+        font-size: 1rem;
     }
 
     .btn-backup-primary {
@@ -149,6 +161,13 @@
     .table-header h3 {
         color: #333;
         margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .table-header h3 i {
+        color: #667eea;
     }
 
     .backup-count {
@@ -171,6 +190,11 @@
         border-bottom: 2px solid #e2e8f0;
     }
 
+    th i {
+        margin-right: 0.5rem;
+        color: #667eea;
+    }
+
     td {
         padding: 1rem 1.5rem;
         border-bottom: 1px solid #e2e8f0;
@@ -186,6 +210,14 @@
     .backup-filename {
         font-weight: 500;
         color: #2d3748;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .backup-filename i {
+        color: #667eea;
+        font-size: 0.9rem;
     }
 
     .backup-path {
@@ -210,6 +242,10 @@
         gap: 0.3rem;
         transition: all 0.2s;
         text-decoration: none;
+    }
+
+    .btn-action i {
+        font-size: 0.8rem;
     }
 
     .btn-restore {
@@ -254,6 +290,13 @@
         color: #333;
         margin-bottom: 1.5rem;
         font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .schedule-card h3 i {
+        color: #667eea;
     }
 
     .schedule-form {
@@ -272,6 +315,14 @@
         margin-bottom: 0.5rem;
         font-weight: 500;
         color: #4a5568;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+
+    .form-group label i {
+        color: #667eea;
         font-size: 0.9rem;
     }
 
@@ -309,6 +360,97 @@
 
     .file-date {
         color: #718096;
+        font-size: 0.9rem;
+    }
+
+    .text-muted {
+        color: #9ca3af;
+        font-style: italic;
+        font-size: 0.85rem;
+    }
+
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        padding: 2rem;
+        border-radius: 10px;
+        max-width: 500px;
+        width: 90%;
+    }
+
+    .modal-content h3 {
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .modal-content h3.warning {
+        color: #dc2626;
+    }
+
+    .modal-content h3 i {
+        font-size: 1.2rem;
+    }
+
+    .modal-content p {
+        margin-bottom: 1.5rem;
+        color: #4b5563;
+    }
+
+    .modal-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+    }
+
+    .modal-actions button {
+        padding: 0.6rem 1.2rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .btn-cancel {
+        background: #e5e7eb;
+        color: #374151;
+    }
+
+    .btn-cancel:hover {
+        background: #d1d5db;
+    }
+
+    .btn-confirm {
+        background: #dc2626;
+        color: white;
+    }
+
+    .btn-confirm:hover {
+        background: #b91c1c;
+    }
+
+    .btn-confirm i {
         font-size: 0.9rem;
     }
 </style>
@@ -355,15 +497,15 @@
 
         <!-- Create New Backup Section -->
         <div class="backup-creation-card">
-            <h3>Create New Backup</h3>
+            <h3><i class="fas fa-database"></i> Create New Backup</h3>
 
             <div class="warning-box">
-                <span>⚠️</span>
+                <i class="fas fa-exclamation-triangle"></i>
                 <p><strong>Important:</strong> Create regular backups to prevent data loss.</p>
             </div>
 
             <div class="backup-type-info">
-                <p>Backups include all database tables and data.</p>
+                <p><i class="fas fa-info-circle"></i> Backups include all database tables and data.</p>
             </div>
 
             <div class="backup-actions">
@@ -371,12 +513,12 @@
                     @csrf
                     <input type="hidden" name="type" value="database">
                     <button type="submit" class="btn-backup btn-backup-primary">
-                        <span>💾</span> Create Backup Now
+                        <i class="fas fa-save"></i> Create Backup Now
                     </button>
                 </form>
 
                 <button type="button" class="btn-backup btn-backup-secondary" onclick="showScheduleModal()">
-                    <span>⏰</span> Schedule Backup
+                    <i class="fas fa-clock"></i> Schedule Backup
                 </button>
             </div>
         </div>
@@ -384,7 +526,7 @@
         <!-- Available Backups -->
         <div class="backups-table">
             <div class="table-header">
-                <h3>Available Backups</h3>
+                <h3><i class="fas fa-archive"></i> Available Backups</h3>
                 <div class="backup-count">{{ $backups->count() }} backup files</div>
             </div>
 
@@ -392,10 +534,10 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Backup File</th>
-                        <th>Size</th>
-                        <th>Created</th>
-                        <th>Actions</th>
+                        <th><i class="fas fa-file-archive"></i> Backup File</th>
+                        <th><i class="fas fa-weight-hanging"></i> Size</th>
+                        <th><i class="fas fa-calendar-alt"></i> Created</th>
+                        <th><i class="fas fa-cog"></i> Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -403,7 +545,9 @@
                     <tr>
                         <td>
                             <div class="backup-file">
-                                <div class="backup-filename">{{ $backup->filename ?? 'Unknown' }}</div>
+                                <div class="backup-filename">
+                                    <i class="fas fa-database"></i> {{ $backup->filename ?? 'Unknown' }}
+                                </div>
                                 <div class="backup-path">{{ $backup->path ?? 'Unknown' }}</div>
                             </div>
                         </td>
@@ -419,20 +563,20 @@
         @if($backupId)
         <button type="button" class="btn-action btn-restore"
                 onclick="confirmRestore('{{ $backupId }}')">
-            <span>🔄</span> Restore
+            <i class="fas fa-undo-alt"></i> Restore
         </button>
 
         <a href="{{ route('admin.backups.download', $backupId) }}"
            class="btn-action btn-download">
-            <span>📥</span> Download
+            <i class="fas fa-download"></i> Download
         </a>
 
         <button type="button" class="btn-action btn-delete"
                 onclick="confirmDelete('{{ $backupId }}')">
-            <span>🗑️</span> Delete
+            <i class="fas fa-trash-alt"></i> Delete
         </button>
         @else
-        <span class="text-muted" style="font-size: 0.85rem;">No actions available</span>
+        <span class="text-muted"><i class="fas fa-ban"></i> No actions available</span>
         @endif
     </div>
 </td>
@@ -442,6 +586,7 @@
             </table>
             @else
             <div class="no-backups">
+                <i class="fas fa-database fa-3x" style="color: #e2e8f0; margin-bottom: 1rem;"></i>
                 <p>No backup files found. Create your first backup above.</p>
             </div>
             @endif
@@ -449,7 +594,7 @@
 
         <!-- Backup Schedule Settings -->
         <div class="schedule-card">
-            <h3>Backup Schedule Settings</h3>
+            <h3><i class="fas fa-clock"></i> Backup Schedule Settings</h3>
 
             <form action="{{ route('admin.backups.schedule') }}" method="POST">
                 @csrf
@@ -457,7 +602,7 @@
 
                 <div class="schedule-form">
                     <div class="form-group">
-                        <label for="schedule_type">Schedule Type</label>
+                        <label for="schedule_type"><i class="fas fa-calendar"></i> Schedule Type</label>
                         <select id="schedule_type" name="schedule_type">
                             <option value="daily">Daily</option>
                             <option value="weekly">Weekly</option>
@@ -466,7 +611,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="backup_time">Backup Time (Daily)</label>
+                        <label for="backup_time"><i class="fas fa-hourglass"></i> Backup Time (Daily)</label>
                         <input type="time"
                                id="backup_time"
                                name="backup_time"
@@ -475,7 +620,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="retention_days">Retention Period</label>
+                        <label for="retention_days"><i class="fas fa-calendar-day"></i> Retention Period</label>
                         <input type="number"
                                id="retention_days"
                                name="retention_days"
@@ -488,7 +633,7 @@
 
                 <div class="form-actions">
                     <button type="submit" class="btn-backup btn-backup-primary">
-                        <span>💾</span> Save Schedule
+                        <i class="fas fa-save"></i> Save Schedule
                     </button>
                 </div>
             </form>
@@ -497,7 +642,7 @@
         <!-- Last Backup Info -->
         @if(isset($stats['last_backup']))
         <div style="text-align: center; color: #666; font-size: 0.9rem; margin-top: 2rem; padding: 1rem; border-top: 1px solid #e2e8f0;">
-            📊 <strong>Database Information:</strong>
+            <i class="fas fa-info-circle"></i> <strong>Database Information:</strong>
             Last backup: {{ $stats['last_backup']->format('M d, Y h:i A') }}
         </div>
         @endif
@@ -505,22 +650,22 @@
 </div>
 
 <!-- Restore Confirmation Modal -->
-<div id="restoreModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-    <div style="background: white; padding: 2rem; border-radius: 10px; max-width: 500px; width: 90%;">
-        <h3 style="margin-bottom: 1rem; color: #dc2626;">⚠️ Restore Backup</h3>
-        <p style="margin-bottom: 1.5rem; color: #4b5563;">
+<div id="restoreModal" class="modal">
+    <div class="modal-content">
+        <h3 class="warning"><i class="fas fa-exclamation-triangle"></i> Restore Backup</h3>
+        <p>
             <strong>Warning:</strong> Restoring will overwrite all current data with the backup data.
             This action cannot be undone. Are you sure you want to proceed?
         </p>
-        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
-            <button type="button" onclick="hideRestoreModal()" style="padding: 0.6rem 1.2rem; background: #e5e7eb; border: none; border-radius: 6px; cursor: pointer;">
-                Cancel
+        <div class="modal-actions">
+            <button type="button" onclick="hideRestoreModal()" class="btn-cancel">
+                <i class="fas fa-times"></i> Cancel
             </button>
             <form id="restoreForm" method="POST" style="display: inline;">
                 @csrf
                 @method('POST')
-                <button type="submit" style="padding: 0.6rem 1.2rem; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                    Yes, Restore Backup
+                <button type="submit" class="btn-confirm">
+                    <i class="fas fa-check"></i> Yes, Restore Backup
                 </button>
             </form>
         </div>
@@ -528,21 +673,21 @@
 </div>
 
 <!-- Delete Confirmation Modal -->
-<div id="deleteModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-    <div style="background: white; padding: 2rem; border-radius: 10px; max-width: 500px; width: 90%;">
-        <h3 style="margin-bottom: 1rem; color: #dc2626;">🗑️ Delete Backup</h3>
-        <p style="margin-bottom: 1.5rem; color: #4b5563;">
+<div id="deleteModal" class="modal">
+    <div class="modal-content">
+        <h3 class="warning"><i class="fas fa-trash-alt"></i> Delete Backup</h3>
+        <p>
             Are you sure you want to delete this backup file? This action cannot be undone.
         </p>
-        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
-            <button type="button" onclick="hideDeleteModal()" style="padding: 0.6rem 1.2rem; background: #e5e7eb; border: none; border-radius: 6px; cursor: pointer;">
-                Cancel
+        <div class="modal-actions">
+            <button type="button" onclick="hideDeleteModal()" class="btn-cancel">
+                <i class="fas fa-times"></i> Cancel
             </button>
             <form id="deleteForm" method="POST" style="display: inline;">
                 @csrf
                 @method('DELETE')
-                <button type="submit" style="padding: 0.6rem 1.2rem; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                    Yes, Delete Backup
+                <button type="submit" class="btn-confirm">
+                    <i class="fas fa-check"></i> Yes, Delete Backup
                 </button>
             </form>
         </div>
@@ -556,22 +701,22 @@
     function confirmRestore(backupId) {
         currentBackupId = backupId;
         document.getElementById('restoreForm').action = `/admin/backups/${backupId}/restore`;
-        document.getElementById('restoreModal').style.display = 'flex';
+        document.getElementById('restoreModal').classList.add('active');
     }
 
     function confirmDelete(backupId) {
         currentBackupId = backupId;
         document.getElementById('deleteForm').action = `/admin/backups/${backupId}`;
-        document.getElementById('deleteModal').style.display = 'flex';
+        document.getElementById('deleteModal').classList.add('active');
     }
 
     function hideRestoreModal() {
-        document.getElementById('restoreModal').style.display = 'none';
+        document.getElementById('restoreModal').classList.remove('active');
         currentBackupId = null;
     }
 
     function hideDeleteModal() {
-        document.getElementById('deleteModal').style.display = 'none';
+        document.getElementById('deleteModal').classList.remove('active');
         currentBackupId = null;
     }
 

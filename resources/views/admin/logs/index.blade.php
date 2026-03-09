@@ -57,6 +57,11 @@
         gap: 0.5rem;
     }
 
+    .filter-title i {
+        color: #667eea;
+        font-size: 1.2rem;
+    }
+
     .filter-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -110,6 +115,10 @@
         align-items: center;
         gap: 0.5rem;
         border: 2px solid transparent;
+    }
+
+    .filter-actions button i {
+        font-size: 1rem;
     }
 
     .filter-actions button[type="button"] {
@@ -330,6 +339,10 @@
         box-shadow: none;
     }
 
+    .export-btn i {
+        font-size: 1rem;
+    }
+
     /* Table Styles */
     .data-table {
         background: white;
@@ -385,7 +398,7 @@
             </div>
             <div class="page-actions">
                 <a href="{{ route('admin.logs.export', $filters) }}" class="export-btn">
-                    <span>📥</span> Export Logs
+                    <i class="fas fa-download"></i> Export Logs
                 </a>
             </div>
         </div>
@@ -417,7 +430,7 @@
         <!-- Filter Section -->
         <div class="filter-container">
             <div class="filter-title">
-                <span>🔍</span> Filter Logs
+                <i class="fas fa-filter"></i> Filter Logs
             </div>
 
             <form method="GET" action="{{ route('admin.logs.index') }}">
@@ -467,10 +480,10 @@
 
                 <div class="filter-actions">
                     <button type="button" onclick="resetFilters()">
-                        <span>🔄</span> Reset
+                        <i class="fas fa-redo-alt"></i> Reset
                     </button>
                     <button type="submit">
-                        <span>✅</span> Apply Filters
+                        <i class="fas fa-check"></i> Apply Filters
                     </button>
                 </div>
             </form>
@@ -599,7 +612,7 @@
 
         // Set default "to date" to today if empty
         const toDateInput = document.getElementById('to_date');
-        if (!fromDateInput.value) {
+        if (!toDateInput.value) {
             toDateInput.value = today;
         }
     });

@@ -11,7 +11,7 @@
         </div>
         <div class="page-actions">
             <a href="{{ route('secretary.certificates.create') }}" class="btn-primary">
-                <x-heroicon-o-plus class="icon-small" />
+                <i class="fas fa-plus icon-small"></i>
                 New Certificate
             </a>
         </div>
@@ -21,7 +21,7 @@
 <div class="stats-grid">
     <div class="stat-card">
         <div class="stat-icon pending">
-            <x-heroicon-o-clock />
+            <i class="fas fa-clock"></i>
         </div>
         <div class="stat-content">
             <span class="stat-label">Pending</span>
@@ -30,7 +30,7 @@
     </div>
     <div class="stat-card">
         <div class="stat-icon approved">
-            <x-heroicon-o-check-badge />
+            <i class="fas fa-check-circle"></i>
         </div>
         <div class="stat-content">
             <span class="stat-label">Approved</span>
@@ -39,7 +39,7 @@
     </div>
     <div class="stat-card">
         <div class="stat-icon released">
-            <x-heroicon-o-check-circle />
+            <i class="fas fa-check-double"></i>
         </div>
         <div class="stat-content">
             <span class="stat-label">Released</span>
@@ -48,7 +48,7 @@
     </div>
     <div class="stat-card">
         <div class="stat-icon rejected">
-            <x-heroicon-o-x-circle />
+            <i class="fas fa-times-circle"></i>
         </div>
         <div class="stat-content">
             <span class="stat-label">Rejected</span>
@@ -61,7 +61,7 @@
     <div class="filters-section">
         <form action="{{ route('secretary.certificates.index') }}" method="GET" class="filters-form">
             <div class="search-wrapper">
-                <x-heroicon-o-magnifying-glass class="search-icon" />
+                <i class="fas fa-search search-icon"></i>
                 <input type="text"
                        name="search"
                        placeholder="Search by certificate #, name, purpose, OR #..."
@@ -145,23 +145,19 @@
     <td>
     <div class="action-buttons">
         <a href="{{ route('secretary.certificates.show', $certificate) }}" class="btn-icon" title="View">
-            <x-heroicon-o-eye />
+            <i class="fas fa-eye"></i>
         </a>
         <a href="{{ route('secretary.certificates.edit', $certificate) }}" class="btn-icon" title="Edit">
-            <x-heroicon-o-pencil />
+            <i class="fas fa-pencil-alt"></i>
         </a>
         @if($certificate->status === 'Released')
         <a href="{{ route('secretary.certificates.generate-doc', $certificate) }}" class="btn-icon" title="Download DOCX">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
+            <i class="fas fa-download"></i>
         </a>
         @endif
         <button type="button" class="btn-icon delete-btn" title="Delete"
             onclick="confirmDelete('{{ $certificate->id }}')">
-            <x-heroicon-o-trash />
+            <i class="fas fa-trash"></i>
         </button>
         <form id="delete-form-{{ $certificate->id }}"
               action="{{ route('secretary.certificates.destroy', $certificate) }}"
@@ -176,11 +172,11 @@
     <tr>
         <td colspan="8" class="text-center">
             <div class="empty-state">
-                <x-heroicon-o-document-text class="empty-icon" />
+                <i class="fas fa-file-alt empty-icon"></i>
                 <h3>No certificates found</h3>
                 <p>Get started by creating your first certificate request.</p>
                 <a href="{{ route('secretary.certificates.create') }}" class="btn-primary">
-                    <x-heroicon-o-plus class="icon-small" />
+                    <i class="fas fa-plus icon-small"></i>
                     New Certificate
                 </a>
             </div>
@@ -254,16 +250,17 @@
     margin-right: 1rem;
 }
 
-.stat-icon svg {
+.stat-icon i {
     width: 24px;
     height: 24px;
     color: white;
+    font-size: 24px;
 }
 
 .stat-icon.pending { background: #f59e0b; }
-.stat-icon.processing { background: #3b82f6; }
-.stat-icon.ready { background: #8b5cf6; }
+.stat-icon.approved { background: #10b981; }
 .stat-icon.released { background: #10b981; }
+.stat-icon.rejected { background: #dc2626; }
 
 .stat-content {
     flex: 1;
@@ -310,9 +307,8 @@
     left: 1rem;
     top: 50%;
     transform: translateY(-50%);
-    width: 20px;
-    height: 20px;
     color: #999;
+    font-size: 20px;
 }
 
 .search-input {
@@ -493,9 +489,8 @@
     transform: translateY(-2px);
 }
 
-.btn-icon svg {
-    width: 18px;
-    height: 18px;
+.btn-icon i {
+    font-size: 18px;
 }
 
 .delete-btn:hover {
@@ -529,8 +524,7 @@
 }
 
 .empty-icon {
-    width: 64px;
-    height: 64px;
+    font-size: 64px;
     color: #cbd5e0;
     margin-bottom: 1rem;
 }
@@ -556,8 +550,7 @@
 }
 
 .icon-small {
-    width: 16px;
-    height: 16px;
+    font-size: 16px;
 }
 </style>
 @endpush

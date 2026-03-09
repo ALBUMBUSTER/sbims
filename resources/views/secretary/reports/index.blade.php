@@ -16,7 +16,7 @@
         <!-- Residents Report Card -->
         <div class="report-card">
             <div class="report-icon residents">
-                <x-heroicon-o-users />
+                <i class="fas fa-users fa-3x"></i>
             </div>
             <div class="report-content">
                 <h3>Residents Report</h3>
@@ -29,7 +29,7 @@
                 </div>
                 <a href="{{ route('secretary.reports.residents') }}" class="btn-generate">
                     Generate Report
-                    <x-heroicon-o-arrow-right class="icon-small" />
+                    <i class="fas fa-arrow-right icon-small"></i>
                 </a>
             </div>
         </div>
@@ -37,7 +37,7 @@
         <!-- Certificates Report Card -->
         <div class="report-card">
             <div class="report-icon certificates">
-                <x-heroicon-o-document-text />
+                <i class="fas fa-file-alt fa-3x"></i>
             </div>
             <div class="report-content">
                 <h3>Certificates Report</h3>
@@ -54,7 +54,7 @@
                 </div>
                 <a href="{{ route('secretary.reports.certificates') }}" class="btn-generate">
                     Generate Report
-                    <x-heroicon-o-arrow-right class="icon-small" />
+                    <i class="fas fa-arrow-right icon-small"></i>
                 </a>
             </div>
         </div>
@@ -62,7 +62,7 @@
         <!-- Blotter Report Card -->
         <div class="report-card">
             <div class="report-icon blotter">
-                <x-heroicon-o-scale />
+                <i class="fas fa-gavel fa-3x"></i>
             </div>
             <div class="report-content">
                 <h3>Blotter Report</h3>
@@ -79,7 +79,7 @@
                 </div>
                 <a href="{{ route('secretary.reports.blotter') }}" class="btn-generate">
                     Generate Report
-                    <x-heroicon-o-arrow-right class="icon-small" />
+                    <i class="fas fa-arrow-right icon-small"></i>
                 </a>
             </div>
         </div>
@@ -87,7 +87,7 @@
         <!-- Summary Report Card -->
         <div class="report-card">
             <div class="report-icon summary">
-                <x-heroicon-o-chart-bar />
+                <i class="fas fa-chart-bar fa-3x"></i>
             </div>
             <div class="report-content">
                 <h3>Summary Report</h3>
@@ -100,7 +100,7 @@
                 </div>
                 <a href="{{ route('secretary.reports.summary') }}" class="btn-generate">
                     Generate Report
-                    <x-heroicon-o-arrow-right class="icon-small" />
+                    <i class="fas fa-arrow-right icon-small"></i>
                 </a>
             </div>
         </div>
@@ -158,9 +158,7 @@
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
-.report-icon svg {
-    width: 48px;
-    height: 48px;
+.report-icon i {
     color: white;
 }
 
@@ -245,8 +243,9 @@
 }
 
 .icon-small {
-    width: 16px;
-    height: 16px;
+    width: auto;
+    height: auto;
+    font-size: 16px;
 }
 </style>
 @endpush

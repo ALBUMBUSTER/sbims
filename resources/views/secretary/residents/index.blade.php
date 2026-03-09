@@ -6,7 +6,7 @@
 <!-- Toast Notification -->
 <div id="toast" class="toast">
     <div class="toast-content">
-        <x-heroicon-o-check-circle class="toast-icon success" />
+        <i class="fas fa-check-circle toast-icon success"></i>
         <span id="toastMessage">Resident saved successfully!</span>
     </div>
 </div>
@@ -19,11 +19,11 @@
         </div>
         <div class="page-actions">
             <a href="{{ route('secretary.residents.create') }}" class="btn-primary">
-                <x-heroicon-o-plus class="icon-small" />
+                <i class="fas fa-plus icon-small"></i>
                 Add New Resident
             </a>
             <a href="{{ route('secretary.residents.import') }}" class="btn-secondary">
-                <x-heroicon-o-cloud-arrow-up class="icon-small" />
+                <i class="fas fa-cloud-upload-alt icon-small"></i>
                 Import CSV
             </a>
         </div>
@@ -33,13 +33,13 @@
     <div class="search-section">
         <form action="{{ route('secretary.residents.index') }}" method="GET" class="search-form">
             <div class="search-wrapper">
-                <x-heroicon-o-magnifying-glass class="search-icon" />
+                <i class="fas fa-search search-icon"></i>
                 <input type="text" name="search" placeholder="Search by name, ID, address, or contact..." value="{{ request('search') }}" class="search-input">
             </div>
             <button type="submit" class="btn-search">Search</button>
             @if(request('search'))
                 <a href="{{ route('secretary.residents.index') }}" class="btn-clear">
-                    <x-heroicon-o-x-mark class="icon-small" />
+                    <i class="fas fa-times icon-small"></i>
                     Clear
                 </a>
             @endif
@@ -89,13 +89,13 @@
                             <td>
                                 <div class="action-buttons">
                                     <a href="{{ route('secretary.residents.show', $resident) }}" class="btn-icon" title="View">
-                                        <x-heroicon-o-eye />
+                                        <i class="fas fa-eye"></i>
                                     </a>
                                     <a href="{{ route('secretary.residents.edit', $resident) }}" class="btn-icon" title="Edit">
-                                        <x-heroicon-o-pencil />
+                                        <i class="fas fa-pencil-alt"></i>
                                     </a>
                                     <button type="button" class="btn-icon delete-btn" title="Delete" onclick="confirmDelete('{{ $resident->id }}')">
-                                        <x-heroicon-o-trash />
+                                        <i class="fas fa-trash"></i>
                                     </button>
                                     <form id="delete-form-{{ $resident->id }}" action="{{ route('secretary.residents.destroy', $resident) }}" method="POST" style="display: none;">
                                         @csrf @method('DELETE')
@@ -107,16 +107,16 @@
                         <tr>
                             <td colspan="8" class="text-center">
                                 <div class="empty-state">
-                                    <x-heroicon-o-users class="empty-icon" />
+                                    <i class="fas fa-users empty-icon"></i>
                                     <h3>No residents found</h3>
                                     <p>Get started by adding your first resident record or import from CSV.</p>
                                     <div class="empty-actions">
                                         <a href="{{ route('secretary.residents.create') }}" class="btn-primary">
-                                            <x-heroicon-o-plus class="icon-small" />
+                                            <i class="fas fa-plus icon-small"></i>
                                             Add New Resident
                                         </a>
                                         <a href="{{ route('secretary.residents.import') }}" class="btn-secondary">
-                                            <x-heroicon-o-cloud-arrow-up class="icon-small" />
+                                            <i class="fas fa-cloud-upload-alt icon-small"></i>
                                             Import CSV
                                         </a>
                                     </div>
@@ -137,9 +137,9 @@
     <div class="pagination-links">
         {{-- Previous Page Link --}}
         @if($residents->onFirstPage())
-            <span class="pagination-link disabled">Previous</span>
+            <span class="pagination-link disabled"><i class="fas fa-chevron-left"></i> Previous</span>
         @else
-            <a href="{{ $residents->previousPageUrl() }}" class="pagination-link">Previous</a>
+            <a href="{{ $residents->previousPageUrl() }}" class="pagination-link"><i class="fas fa-chevron-left"></i> Previous</a>
         @endif
 
         {{-- Pagination Elements --}}
@@ -163,9 +163,9 @@
 
         {{-- Next Page Link --}}
         @if($residents->hasMorePages())
-            <a href="{{ $residents->nextPageUrl() }}" class="pagination-link">Next →</a>
+            <a href="{{ $residents->nextPageUrl() }}" class="pagination-link">Next <i class="fas fa-chevron-right"></i></a>
         @else
-            <span class="pagination-link disabled">Next →</span>
+            <span class="pagination-link disabled">Next <i class="fas fa-chevron-right"></i></span>
         @endif
     </div>
 </div>
@@ -225,8 +225,7 @@
     left: 1rem;
     top: 50%;
     transform: translateY(-50%);
-    width: 20px;
-    height: 20px;
+    font-size: 20px;
     color: #999;
 }
 .search-input {
@@ -288,10 +287,10 @@
     background: #eef2ff;
     transform: translateY(-2px);
 }
-.btn-icon svg { width: 18px; height: 18px; }
+.btn-icon i { font-size: 18px; }
 .delete-btn:hover { background: #fee2e2; color: #dc2626; }
 
-.icon-small { width: 16px; height: 16px; }
+.icon-small { font-size: 16px; }
 
 /* Card */
 .card {
@@ -357,8 +356,7 @@
 /* Empty State */
 .empty-state { text-align: center; padding: 3rem; }
 .empty-icon {
-    width: 64px;
-    height: 64px;
+    font-size: 64px;
     color: #cbd5e0;
     margin-bottom: 1rem;
 }
@@ -403,7 +401,7 @@
     animation: slideUp 0.3s, fadeOut 0.3s 2.7s;
 }
 .toast-content { display: flex; align-items: center; gap: 0.75rem; }
-.toast-icon { width: 24px; height: 24px; flex-shrink: 0; }
+.toast-icon { font-size: 24px; flex-shrink: 0; }
 .toast-icon.success { color: #10b981; }
 .toast-icon.error { color: #dc2626; }
 
@@ -468,6 +466,7 @@
     display: flex;
     gap: 0.25rem;
     flex-wrap: wrap;
+    align-items: center;
     justify-content: center;
 }
 
@@ -475,6 +474,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 0.25rem;
     min-width: 36px;
     height: 36px;
     padding: 0 0.75rem;
@@ -517,6 +517,10 @@
 
 .pagination-link.dots:hover {
     background: transparent;
+}
+
+.pagination-link i {
+    font-size: 12px;
 }
 </style>
 @endpush

@@ -11,7 +11,7 @@
         </div>
         <div class="page-actions">
             <a href="{{ route('secretary.certificates.show', $certificate) }}" class="btn-secondary">
-                <x-heroicon-o-arrow-left class="icon-small" />
+                <i class="fas fa-arrow-left icon-small"></i>
                 Back to Details
             </a>
         </div>
@@ -115,7 +115,7 @@
 
             <div class="form-actions">
                 <button type="submit" class="btn-primary">
-                    <x-heroicon-o-check class="icon-small" />
+                    <i class="fas fa-check icon-small"></i>
                     Update Certificate
                 </button>
                 <a href="{{ route('secretary.certificates.show', $certificate) }}" class="btn-secondary">
@@ -285,8 +285,7 @@ textarea.form-control {
 }
 
 .icon-small {
-    width: 16px;
-    height: 16px;
+    font-size: 16px;
 }
 </style>
 @endpush

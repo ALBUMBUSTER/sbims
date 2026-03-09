@@ -277,32 +277,36 @@
                 </div>
 
                 <!-- PWD Fields (hidden by default) -->
-<div id="pwd_fields_container" @if(old('is_pwd')) style="display: block; margin-top: 1rem;" @else style="display: none; margin-top: 1rem;" @endif>                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="pwd_id">PWD ID Number</label>
-                            <input type="text"
-                                   id="pwd_id"
-                                   name="pwd_id"
-                                   value="{{ old('pwd_id') }}"
-                                   class="form-control @error('pwd_id') is-invalid @enderror">
-                            @error('pwd_id')
-                                <span class="error-message">{{ $message }}</span>
-                            @enderror
-                        </div>
+<div id="pwd_fields_container" @if(old('is_pwd')) style="display: block; margin-top: 1rem;" @else style="display: none; margin-top: 1rem;" @endif>
+    <div class="form-grid">
+        <div class="form-group">
+            <label for="pwd_id">PWD ID Number</label>
+            <div class="id-input-wrapper">
+                <input type="text"
+                       id="pwd_id"
+                       name="pwd_id"
+                       value="{{ old('pwd_id', $generatedPwdId ?? '') }}"
+                       class="form-control @error('pwd_id') is-invalid @enderror"
+                       readonly>
+            </div>
+            @error('pwd_id')
+                <span class="error-message">{{ $message }}</span>
+            @enderror
+        </div>
 
-                        <div class="form-group">
-                            <label for="disability_type">Type of Disability</label>
-                            <input type="text"
-                                   id="disability_type"
-                                   name="disability_type"
-                                   value="{{ old('disability_type') }}"
-                                   class="form-control @error('disability_type') is-invalid @enderror">
-                            @error('disability_type')
-                                <span class="error-message">{{ $message }}</span>
-                            @enderror
-                        </div>
-                    </div>
-                </div>
+        <div class="form-group">
+            <label for="disability_type">Type of Disability</label>
+            <input type="text"
+                   id="disability_type"
+                   name="disability_type"
+                   value="{{ old('disability_type') }}"
+                   class="form-control @error('disability_type') is-invalid @enderror">
+            @error('disability_type')
+                <span class="error-message">{{ $message }}</span>
+            @enderror
+        </div>
+    </div>
+</div>
             </div>
 
             <div class="form-actions">
@@ -747,13 +751,13 @@ function populateReviewData(formData) {
 
     const statusInfo = document.getElementById('statusInfo');
     const statuses = [];
-    if (formData.is_voter) statuses.push('Registered Voter');
-    if (formData.is_senior) statuses.push('Senior Citizen');
-    if (formData.is_pwd) statuses.push('PWD');
-    if (formData.is_4ps) statuses.push('4Ps Member');
+    if (formData.is_voter && formData.is_voter !== '0') statuses.push('Registered Voter');
+    if (formData.is_senior && formData.is_senior !== '0') statuses.push('Senior Citizen');
+    if (formData.is_pwd && formData.is_pwd !== '0') statuses.push('PWD');
+    if (formData.is_4ps && formData.is_4ps !== '0') statuses.push('4Ps Member');
 
     let pwdInfo = '';
-    if (formData.is_pwd) {
+    if (formData.is_pwd && formData.is_pwd !== '0') {
         pwdInfo = `
             <div class="review-item"><div class="review-label">PWD ID</div><div class="review-value">${escapeHtml(formData.pwd_id || 'N/A')}</div></div>
             <div class="review-item"><div class="review-label">Disability Type</div><div class="review-value">${escapeHtml(formData.disability_type || 'N/A')}</div></div>
@@ -787,6 +791,18 @@ function refreshResidentId() {
         .catch(error => console.error('Error:', error));
 }
 
+// Auto-generate PWD ID refresh
+function refreshPwdId() {
+    fetch('{{ route("secretary.residents.generate-pwd-id") }}')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('pwd_id').value = data.id;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Failed to generate PWD ID', 'error');
+        });
+}
 // Form submission with confirmation
 document.addEventListener('DOMContentLoaded', function() {
     const createForm = document.getElementById('createResidentForm');

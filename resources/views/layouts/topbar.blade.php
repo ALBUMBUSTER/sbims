@@ -75,7 +75,7 @@
 
 <style>
 .logo-img {
-    height: 70px;
+    height: 50px;
     width: auto;
     display: block;
 }

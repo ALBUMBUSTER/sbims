@@ -7,7 +7,7 @@
     <main class="content">
         <div class="page-header">
             <div class="page-title">
-                <h1>Captain Dashboard</h1>
+                <h1><i class="fas fa-tachometer-alt"></i> Captain Dashboard</h1>
                 <p class="welcome-text">Welcome back, {{ auth()->user()->full_name ?? auth()->user()->name ?? 'Captain' }}!</p>
             </div>
             <div class="page-actions">
@@ -20,8 +20,10 @@
 
         @if(session('success'))
             <div class="alert alert-success alert-dismissible fade show" role="alert">
-                {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                <i class="fas fa-check-circle"></i> {{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
         @endif
 
@@ -34,7 +36,7 @@
                 <div class="stat-details">
                     <h3>Total Residents</h3>
                     <div class="stat-value">{{ $totalResidents }}</div>
-                    <span class="stat-label">Registered Residents</span>
+                    <span class="stat-label"><i class="fas fa-user-check"></i> Registered Residents</span>
                 </div>
             </div>
 
@@ -45,7 +47,7 @@
                 <div class="stat-details">
                     <h3>Blotter Cases</h3>
                     <div class="stat-value">{{ $totalBlotters }}</div>
-                    <span class="stat-label">Total Cases</span>
+                    <span class="stat-label"><i class="fas fa-folder-open"></i> Total Cases</span>
                 </div>
             </div>
 
@@ -56,7 +58,7 @@
                 <div class="stat-details">
                     <h3>Pending</h3>
                     <div class="stat-value">{{ $pendingBlotters }}</div>
-                    <span class="stat-label">Awaiting Action</span>
+                    <span class="stat-label"><i class="fas fa-hourglass-half"></i> Awaiting Action</span>
                 </div>
             </div>
 
@@ -67,7 +69,7 @@
                 <div class="stat-details">
                     <h3>Settled</h3>
                     <div class="stat-value">{{ $settledBlotters }}</div>
-                    <span class="stat-label">Resolved Cases</span>
+                    <span class="stat-label"><i class="fas fa-check-double"></i> Resolved Cases</span>
                 </div>
             </div>
         </div>
@@ -81,7 +83,7 @@
                 <div class="stat-details">
                     <h3>Certificates</h3>
                     <div class="stat-value">{{ $totalCertificates }}</div>
-                    <span class="stat-label">Total Requests</span>
+                    <span class="stat-label"><i class="fas fa-file-signature"></i> Total Requests</span>
                 </div>
             </div>
 
@@ -92,7 +94,7 @@
                 <div class="stat-details">
                     <h3>Pending Approvals</h3>
                     <div class="stat-value">{{ $pendingCertificates }}</div>
-                    <span class="stat-label">Need Review</span>
+                    <span class="stat-label"><i class="fas fa-clipboard-list"></i> Need Review</span>
                 </div>
             </div>
 
@@ -103,7 +105,7 @@
                 <div class="stat-details">
                     <h3>Active Cases</h3>
                     <div class="stat-value">{{ $activeBlotters }}</div>
-                    <span class="stat-label">Under Investigation</span>
+                    <span class="stat-label"><i class="fas fa-search"></i> Under Investigation</span>
                 </div>
             </div>
 
@@ -114,7 +116,7 @@
                 <div class="stat-details">
                     <h3>Released</h3>
                     <div class="stat-value">{{ $releasedCertificates }}</div>
-                    <span class="stat-label">Completed</span>
+                    <span class="stat-label"><i class="fas fa-flag-checkered"></i> Completed</span>
                 </div>
             </div>
         </div>
@@ -135,7 +137,9 @@
             <div class="approvals-card">
                 <div class="card-header">
                     <h3><i class="fas fa-clock"></i> Pending Approvals</h3>
-                    <a href="{{ route('captain.approvals.index') }}" class="view-link">View All</a>
+                    <a href="{{ route('captain.approvals.index') }}" class="view-link">
+                        View All <i class="fas fa-arrow-right"></i>
+                    </a>
                 </div>
                 <div class="card-body">
                     @if(count($pendingApprovals) > 0)
@@ -147,10 +151,10 @@
                                     <span class="approval-type">{{ $approval->certificate_type }}</span>
                                 </div>
                                 <div class="approval-actions">
-                                    <a href="{{ route('captain.approvals.index') }}" class="btn-approve">
+                                    <a href="{{ route('captain.approvals.index') }}" class="btn-approve" title="Approve">
                                         <i class="fas fa-check"></i>
                                     </a>
-                                    <a href="{{ route('captain.approvals.index') }}" class="btn-reject">
+                                    <a href="{{ route('captain.approvals.index') }}" class="btn-reject" title="Reject">
                                         <i class="fas fa-times"></i>
                                     </a>
                                 </div>
@@ -158,7 +162,10 @@
                             @endforeach
                         </div>
                     @else
-                        <p class="no-data">No pending approvals</p>
+                        <div class="no-data">
+                            <i class="fas fa-inbox fa-2x"></i>
+                            <p>No pending approvals</p>
+                        </div>
                     @endif
                 </div>
             </div>
@@ -168,20 +175,22 @@
         <div class="recent-cases">
             <div class="card-header">
                 <h3><i class="fas fa-gavel"></i> Recent Blotter Cases</h3>
-                <a href="{{ route('captain.blotters.index') }}" class="view-link">View All</a>
+                <a href="{{ route('captain.blotters.index') }}" class="view-link">
+                    View All <i class="fas fa-arrow-right"></i>
+                </a>
             </div>
             <div class="card-body">
                 @if(count($recentBlotters) > 0)
                     <table class="cases-table">
                         <thead>
                             <tr>
-                                <th>Case #</th>
-                                <th>Complainant</th>
-                                <th>Respondent</th>
-                                <th>Incident Type</th>
-                                <th>Date</th>
-                                <th>Status</th>
-                                <th>Action</th>
+                                <th><i class="fas fa-hashtag"></i> Case #</th>
+                                <th><i class="fas fa-user"></i> Complainant</th>
+                                <th><i class="fas fa-user-tie"></i> Respondent</th>
+                                <th><i class="fas fa-tag"></i> Incident Type</th>
+                                <th><i class="fas fa-calendar"></i> Date</th>
+                                <th><i class="fas fa-circle"></i> Status</th>
+                                <th><i class="fas fa-cog"></i> Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -198,7 +207,7 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <a href="{{ route('captain.blotters.show', $case) }}" class="btn-view">
+                                    <a href="{{ route('captain.blotters.show', $case) }}" class="btn-view" title="View Details">
                                         <i class="fas fa-eye"></i>
                                     </a>
                                 </td>
@@ -207,7 +216,10 @@
                         </tbody>
                     </table>
                 @else
-                    <p class="no-data">No blotter cases found</p>
+                    <div class="no-data">
+                        <i class="fas fa-folder-open fa-2x"></i>
+                        <p>No blotter cases found</p>
+                    </div>
                 @endif
             </div>
         </div>
@@ -247,6 +259,11 @@
     font-weight: 700;
 }
 
+.page-title h1 i {
+    color: #4361ee;
+    margin-right: 0.5rem;
+}
+
 .page-title .welcome-text {
     color: #666;
     font-size: 1rem;
@@ -282,15 +299,25 @@
     background: #d4edda;
     color: #155724;
     border: 1px solid #c3e6cb;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.alert-success i {
+    color: #28a745;
 }
 
 .btn-close {
-    float: right;
     background: none;
     border: none;
-    font-size: 1.5rem;
     cursor: pointer;
     opacity: 0.5;
+    margin-left: auto;
+}
+
+.btn-close i {
+    font-size: 1rem;
 }
 
 .btn-close:hover {
@@ -378,6 +405,13 @@
 .stat-label {
     font-size: 0.8rem;
     color: #999;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.stat-label i {
+    font-size: 0.7rem;
 }
 
 /* Dashboard Grid */
@@ -435,10 +469,17 @@
     text-decoration: none;
     font-size: 0.9rem;
     font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
 }
 
 .view-link:hover {
     text-decoration: underline;
+}
+
+.view-link i {
+    font-size: 0.8rem;
 }
 
 .approvals-list {
@@ -491,6 +532,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    text-decoration: none;
 }
 
 .btn-approve {
@@ -500,6 +542,7 @@
 
 .btn-approve:hover {
     background: #c3e6cb;
+    transform: translateY(-1px);
 }
 
 .btn-reject {
@@ -509,6 +552,7 @@
 
 .btn-reject:hover {
     background: #fecaca;
+    transform: translateY(-1px);
 }
 
 /* Recent Cases */
@@ -533,6 +577,12 @@
     font-weight: 600;
     font-size: 0.9rem;
     border-bottom: 1px solid #e2e8f0;
+}
+
+.cases-table th i {
+    margin-right: 0.3rem;
+    color: #4361ee;
+    font-size: 0.8rem;
 }
 
 .cases-table td {
@@ -591,16 +641,27 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    text-decoration: none;
 }
 
 .btn-view:hover {
     background: #dee2e6;
+    transform: translateY(-1px);
 }
 
 .no-data {
     color: #999;
     text-align: center;
     padding: 2rem;
+    margin: 0;
+}
+
+.no-data i {
+    color: #e2e8f0;
+    margin-bottom: 0.5rem;
+}
+
+.no-data p {
     margin: 0;
 }
 
@@ -630,15 +691,19 @@
 @endpush
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{{-- Load Chart.js locally via Vite --}}
+@vite(['resources/js/chart-config.js'])
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Monthly Statistics Chart
-    const ctx = document.getElementById('monthlyChart').getContext('2d');
+    const ctx = document.getElementById('monthlyChart')?.getContext('2d');
+    if (!ctx) return;
 
     // Get the data from PHP - using json_encode directly
     const monthlyStats = <?php echo json_encode($monthlyStats); ?>;
 
+    // Initialize the chart
     new Chart(ctx, {
         type: 'line',
         data: {

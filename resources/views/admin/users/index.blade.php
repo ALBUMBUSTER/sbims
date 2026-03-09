@@ -162,8 +162,6 @@
     .three-dots-btn {
         background: none;
         border: none;
-        font-size: 1.5rem;
-        line-height: 1;
         cursor: pointer;
         padding: 0.5rem;
         border-radius: 50%;
@@ -173,6 +171,11 @@
         align-items: center;
         justify-content: center;
         transition: background-color 0.3s;
+    }
+
+    .three-dots-btn i {
+        font-size: 1.2rem;
+        color: #667eea;
     }
 
     .three-dots-btn:hover {
@@ -215,6 +218,11 @@
     .action-dropdown-item i {
         width: 16px;
         font-size: 0.9rem;
+        color: #667eea;
+    }
+
+    .action-dropdown-item.danger i {
+        color: #dc2626;
     }
 
     .action-dropdown-item:hover {
@@ -240,6 +248,13 @@
         font-style: italic;
         padding: 0.5rem 1rem;
         display: block;
+    }
+
+    /* Table header icons */
+    th i {
+        margin-right: 0.5rem;
+        color: #667eea;
+        font-size: 0.9rem;
     }
 
     /* Responsive breakpoints */
@@ -292,6 +307,14 @@
         color: #333;
         font-size: 1.2rem;
         font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .table-header h3 i {
+        color: #667eea;
+        font-size: 1.2rem;
     }
 
     table {
@@ -350,6 +373,13 @@
         display: flex;
         gap: 0.75rem;
     }
+
+    /* No data message icon */
+    .no-data-message i {
+        color: #e9ecef;
+        margin-bottom: 1rem;
+        font-size: 3rem;
+    }
 </style>
 @endpush
 
@@ -392,7 +422,7 @@
         <!-- Users Table -->
         <div class="data-table">
             <div class="table-header">
-                <h3><i class="fas fa-users" style="margin-right: 0.5rem; color: #667eea;"></i> System Users</h3>
+                <h3><i class="fas fa-users"></i> System Users</h3>
                 <div>
                     <input type="text" class="search-box" placeholder="Search users..." id="userSearch">
                 </div>
@@ -532,7 +562,7 @@
             </table>
             @else
             <div class="no-data-message">
-                <i class="fas fa-database fa-3x" style="color: #e9ecef; margin-bottom: 1rem;"></i>
+                <i class="fas fa-database"></i>
                 <p>No users found in the system.</p>
             </div>
             @endif

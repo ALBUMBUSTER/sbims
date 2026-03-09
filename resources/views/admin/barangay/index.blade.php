@@ -3,8 +3,7 @@
 @section('title', 'Barangay Information')
 
 @push('styles')
-<!-- Add Font Awesome and Chart.js CDN -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Remove Font Awesome CDN since it's already in layouts.app -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <style>

@@ -15,14 +15,16 @@
                 Back to Reports
             </a>
             <form action="{{ route('secretary.reports.export') }}" method="POST" style="display: inline;">
-                @csrf
-                <input type="hidden" name="type" value="summary">
-                <input type="hidden" name="format" value="pdf">
-                <button type="submit" class="btn-primary">
-                    <x-heroicon-o-document-arrow-down class="icon-small" />
-                    Export
-                </button>
-            </form>
+    @csrf
+    <input type="hidden" name="type" value="summary">
+    <input type="hidden" name="format" value="excel">
+    <input type="hidden" name="year" value="{{ request('year', date('Y')) }}">
+
+    <button type="submit" class="btn-primary">
+        <i class="fas fa-file-excel icon-small"></i>
+        Export to Excel
+    </button>
+</form>
         </div>
     </div>
 

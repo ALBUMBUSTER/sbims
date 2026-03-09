@@ -15,14 +15,25 @@
                 Back to Reports
             </a>
             <form action="{{ route('secretary.reports.export') }}" method="POST" style="display: inline;">
-                @csrf
-                <input type="hidden" name="type" value="certificates">
-                <input type="hidden" name="format" value="pdf">
-                <button type="submit" class="btn-primary">
-                    <x-heroicon-o-document-arrow-down class="icon-small" />
-                    Export
-                </button>
-            </form>
+    @csrf
+    <input type="hidden" name="type" value="certificates">
+    <input type="hidden" name="format" value="excel">
+
+    @if(request('date_from'))
+        <input type="hidden" name="date_from" value="{{ request('date_from') }}">
+    @endif
+    @if(request('date_to'))
+        <input type="hidden" name="date_to" value="{{ request('date_to') }}">
+    @endif
+    @if(request('status'))
+        <input type="hidden" name="status" value="{{ request('status') }}">
+    @endif
+
+    <button type="submit" class="btn-primary">
+        <i class="fas fa-file-excel icon-small"></i>
+        Export to Excel
+    </button>
+</form>
         </div>
     </div>
 

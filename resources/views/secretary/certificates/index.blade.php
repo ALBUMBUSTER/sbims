@@ -64,7 +64,7 @@
                 <i class="fas fa-search search-icon"></i>
                 <input type="text"
                        name="search"
-                       placeholder="Search by certificate #, name, purpose, OR #..."
+                       placeholder="Search by certificate #, name, purpose..."
                        value="{{ request('search') }}"
                        class="search-input">
             </div>
@@ -115,7 +115,6 @@
                             <th>Type</th>
                             <th>Purpose</th>
                             <th>Request Date</th>
-                            <th>OR #</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -136,7 +135,6 @@
         </td>
         <td>{{ Str::limit($certificate->purpose, 30) }}</td>
         <td>{{ $certificate->created_at ? $certificate->created_at->format('M d, Y') : 'N/A' }}</td>
-        <td>N/A</td>  <!-- OR Number not available -->
         <td>
             <span class="status-badge status-{{ strtolower($certificate->status) }}">
                 {{ $certificate->status }}
@@ -170,7 +168,7 @@
     </tr>
     @empty
     <tr>
-        <td colspan="8" class="text-center">
+        <td colspan="7" class="text-center">
             <div class="empty-state">
                 <i class="fas fa-file-alt empty-icon"></i>
                 <h3>No certificates found</h3>

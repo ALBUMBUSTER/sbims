@@ -6,6 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Resident;
 use App\Models\Blotter;
 use App\Models\Certificate;
+use App\Exports\BlotterReportExport;
+use App\Exports\ResidentsReportExport;
+use App\Exports\CertificatesReportExport;
+use App\Exports\SummaryReportExport;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -42,7 +47,7 @@ class ReportController extends Controller
         }
 
         // Get residents with pagination
-        $residents = $query->latest()->paginate(50);
+        $residents = $query->latest()->paginate(50)->withQueryString();
 
         // Calculate statistics
         $statistics = [
@@ -85,7 +90,12 @@ class ReportController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        $certificates = $query->latest()->paginate(50);
+        // Apply status filter
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $certificates = $query->latest()->paginate(50)->withQueryString();
 
         $statistics = [
             'total' => Certificate::count(),
@@ -113,13 +123,18 @@ class ReportController extends Controller
 
         // Apply date filters if provided
         if ($request->filled('date_from')) {
-            $query->whereDate('created_at', '>=', $request->date_from);
+            $query->whereDate('incident_date', '>=', $request->date_from);
         }
         if ($request->filled('date_to')) {
-            $query->whereDate('created_at', '<=', $request->date_to);
+            $query->whereDate('incident_date', '<=', $request->date_to);
         }
 
-        $blotters = $query->latest()->paginate(50);
+        // Apply status filter
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $blotters = $query->latest()->paginate(50)->withQueryString();
 
         $statistics = [
             'total' => Blotter::count(),
@@ -235,19 +250,242 @@ class ReportController extends Controller
     }
 
     /**
-     * Export report to PDF/Excel.
+     * Export report to Excel.
      */
     public function export(Request $request)
     {
         $validated = $request->validate([
             'type' => 'required|in:residents,certificates,blotter,summary',
-            'format' => 'required|in:pdf,excel',
+            'format' => 'required|in:excel,pdf',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date',
+            'status' => 'nullable|string',
+            'year' => 'nullable|integer'
         ]);
 
-        // This would handle export to PDF/Excel
-        // For now, return with info message
-        return redirect()->back()
-            ->with('info', 'Export feature coming soon!');
+        $type = $validated['type'];
+        $filters = $request->only(['date_from', 'date_to', 'status', 'year']);
+
+        try {
+            switch ($type) {
+                case 'blotter':
+                    return $this->exportBlotter($filters);
+                case 'residents':
+                    return $this->exportResidents($filters);
+                case 'certificates':
+                    return $this->exportCertificates($filters);
+                case 'summary':
+                    return $this->exportSummary($filters);
+                default:
+                    return redirect()->back()
+                        ->with('error', 'Invalid export type');
+            }
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Error exporting report: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Export blotter report to Excel
+     */
+    protected function exportBlotter($filters)
+    {
+        // Get statistics for the report
+        $statistics = $this->getBlotterStatisticsForExport($filters);
+
+        // Generate filename
+        $filename = 'blotter_report_' . date('Y-m-d_His') . '.xlsx';
+
+        // Create export with filters and statistics
+        return Excel::download(
+            new BlotterReportExport($filters, $statistics),
+            $filename
+        );
+    }
+
+    /**
+     * Export residents report to Excel
+     */
+    protected function exportResidents($filters)
+    {
+        // Get statistics for the report
+        $statistics = $this->getResidentsStatisticsForExport($filters);
+
+        // Generate filename
+        $filename = 'residents_report_' . date('Y-m-d_His') . '.xlsx';
+
+        // Create export with filters and statistics
+        return Excel::download(
+            new ResidentsReportExport($filters, $statistics),
+            $filename
+        );
+    }
+
+    /**
+     * Export certificates report to Excel
+     */
+    protected function exportCertificates($filters)
+    {
+        // Get statistics for the report
+        $statistics = $this->getCertificatesStatisticsForExport($filters);
+
+        // Generate filename
+        $filename = 'certificates_report_' . date('Y-m-d_His') . '.xlsx';
+
+        // Create export with filters and statistics
+        return Excel::download(
+            new CertificatesReportExport($filters, $statistics),
+            $filename
+        );
+    }
+
+    /**
+     * Export summary report to Excel
+     */
+    protected function exportSummary($filters)
+    {
+        $year = $filters['year'] ?? date('Y');
+
+        $statistics = [
+            'year' => $year,
+            'residents' => [
+                'total' => Resident::count(),
+                'new_this_year' => Resident::whereYear('created_at', $year)->count(),
+                'by_gender' => [
+                    'male' => Resident::where('gender', 'Male')->count(),
+                    'female' => Resident::where('gender', 'Female')->count(),
+                ],
+                'monthly' => $this->getResidentsMonthlyTrend($year),
+            ],
+            'certificates' => [
+                'total' => Certificate::count(),
+                'issued_this_year' => Certificate::whereYear('created_at', $year)->count(),
+                'by_status' => [
+                    'pending' => Certificate::where('status', 'Pending')->count(),
+                    'released' => Certificate::where('status', 'Released')->count(),
+                ],
+                'monthly' => $this->getCertificatesMonthlyTrend($year),
+            ],
+            'blotters' => [
+                'total' => Blotter::count(),
+                'filed_this_year' => Blotter::whereYear('created_at', $year)->count(),
+                'by_status' => [
+                    'active' => Blotter::whereIn('status', ['Pending', 'Investigating', 'Hearings'])->count(),
+                    'settled' => Blotter::where('status', 'Settled')->count(),
+                ],
+                'monthly' => $this->getBlottersMonthlyTrend($year),
+            ],
+        ];
+
+        $filename = 'summary_report_' . $year . '_' . date('Y-m-d_His') . '.xlsx';
+
+        return Excel::download(
+            new SummaryReportExport($statistics),
+            $filename
+        );
+    }
+
+    /**
+     * Get blotter statistics for export
+     */
+    protected function getBlotterStatisticsForExport($filters)
+    {
+        $query = Blotter::query();
+
+        // Apply filters
+        if (!empty($filters['date_from'])) {
+            $query->whereDate('incident_date', '>=', $filters['date_from']);
+        }
+        if (!empty($filters['date_to'])) {
+            $query->whereDate('incident_date', '<=', $filters['date_to']);
+        }
+        if (!empty($filters['status']) && $filters['status'] !== '') {
+            $query->where('status', $filters['status']);
+        }
+
+        $total = $query->count();
+
+        // Get counts by status
+        $byStatus = [
+            'pending' => (clone $query)->where('status', 'Pending')->count(),
+            'ongoing' => (clone $query)->whereIn('status', ['Investigating', 'Hearings'])->count(),
+            'settled' => (clone $query)->where('status', 'Settled')->count(),
+            'referred' => (clone $query)->where('status', 'Referred')->count(),
+        ];
+
+        // Calculate resolution rate
+        $resolved = $byStatus['settled'];
+        $resolutionRate = $total > 0 ? round(($resolved / $total) * 100, 1) : 0;
+
+        return [
+            'total' => $total,
+            'by_status' => $byStatus,
+            'resolution_rate' => $resolutionRate,
+        ];
+    }
+
+    /**
+     * Get residents statistics for export
+     */
+    protected function getResidentsStatisticsForExport($filters)
+    {
+        $query = Resident::query();
+
+        // Apply filters
+        if (!empty($filters['date_from'])) {
+            $query->whereDate('created_at', '>=', $filters['date_from']);
+        }
+        if (!empty($filters['date_to'])) {
+            $query->whereDate('created_at', '<=', $filters['date_to']);
+        }
+
+        $total = $query->count();
+
+        return [
+            'total' => $total,
+            'by_gender' => [
+                'male' => (clone $query)->where('gender', 'Male')->count(),
+                'female' => (clone $query)->where('gender', 'Female')->count(),
+            ],
+            'by_status' => [
+                'voters' => (clone $query)->where('is_voter', true)->count(),
+                'seniors' => (clone $query)->where('is_senior', true)->count(),
+                'pwd' => (clone $query)->where('is_pwd', true)->count(),
+                '4ps' => (clone $query)->where('is_4ps', true)->count(),
+            ],
+        ];
+    }
+
+    /**
+     * Get certificates statistics for export
+     */
+    protected function getCertificatesStatisticsForExport($filters)
+    {
+        $query = Certificate::query();
+
+        // Apply filters
+        if (!empty($filters['date_from'])) {
+            $query->whereDate('created_at', '>=', $filters['date_from']);
+        }
+        if (!empty($filters['date_to'])) {
+            $query->whereDate('created_at', '<=', $filters['date_to']);
+        }
+        if (!empty($filters['status']) && $filters['status'] !== '') {
+            $query->where('status', $filters['status']);
+        }
+
+        $total = $query->count();
+
+        return [
+            'total' => $total,
+            'by_status' => [
+                'pending' => (clone $query)->where('status', 'Pending')->count(),
+                'approved' => (clone $query)->where('status', 'Approved')->count(),
+                'released' => (clone $query)->where('status', 'Released')->count(),
+                'rejected' => (clone $query)->where('status', 'Rejected')->count(),
+            ],
+        ];
     }
 
     /**
@@ -374,5 +612,4 @@ class ReportController extends Controller
         }
         return $months;
     }
-    
 }

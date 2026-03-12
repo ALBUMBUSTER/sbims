@@ -60,23 +60,23 @@
             </div>
 
             <!-- Quick Actions -->
-            <div class="quick-actions">
-                <h2>Quick Actions</h2>
-                <div class="actions-grid">
-                    <a href="{{ route('clerk.certificates.create') }}" class="action-card">
-                        <i class="fas fa-file-medical"></i>
-                        <span>Issue Certificate</span>
-                    </a>
-                    <a href="{{ route('clerk.residents.index') }}" class="action-card">
-                        <i class="fas fa-search"></i>
-                        <span>Look Up Resident</span>
-                    </a>
-                    <a href="{{ route('clerk.reports.summary') }}" class="action-card">
-                        <i class="fas fa-chart-bar"></i>
-                        <span>View Reports</span>
-                    </a>
-                </div>
-            </div>
+<div class="quick-actions">
+    <h2>Quick Actions</h2>
+    <div class="actions-grid">
+        <a href="{{ route('clerk.certificates.create') }}" class="action-card" target="_blank">
+            <i class="fas fa-file-medical"></i>
+            <span>Issue Certificate</span>
+        </a>
+        <a href="{{ route('clerk.residents.index') }}" class="action-card" target="_blank">
+            <i class="fas fa-search"></i>
+            <span>Look Up Resident</span>
+        </a>
+        <a href="{{ route('clerk.reports.summary') }}" class="action-card" target="_blank">
+            <i class="fas fa-chart-bar"></i>
+            <span>View Reports</span>
+        </a>
+    </div>
+</div>
 
             <!-- Recent Activity -->
             <div class="recent-activity-grid">

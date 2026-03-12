@@ -13,6 +13,8 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class CertificatesReportExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithTitle, ShouldAutoSize
@@ -20,11 +22,72 @@ class CertificatesReportExport implements FromCollection, WithHeadings, WithMapp
     protected $filters;
     protected $statistics;
     protected $totalRecords;
+    protected $summaryData;
 
     public function __construct($filters = [], $statistics = [])
     {
         $this->filters = $filters;
         $this->statistics = $statistics;
+        $this->summaryData = $this->getSummaryData();
+    }
+
+    /**
+     * Get summary data for the tables
+     */
+    protected function getSummaryData()
+    {
+        $query = Certificate::with('resident');
+
+        if (!empty($this->filters['date_from'])) {
+            $query->whereDate('created_at', '>=', $this->filters['date_from']);
+        }
+        if (!empty($this->filters['date_to'])) {
+            $query->whereDate('created_at', '<=', $this->filters['date_to']);
+        }
+        if (!empty($this->filters['status']) && $this->filters['status'] !== '') {
+            $query->where('status', $this->filters['status']);
+        }
+
+        $total = $query->count() ?: 1;
+
+        // Status Distribution
+        $byStatus = [
+            'Pending' => (clone $query)->where('status', 'Pending')->count(),
+            'Approved' => (clone $query)->where('status', 'Approved')->count(),
+            'Released' => (clone $query)->where('status', 'Released')->count(),
+            'Rejected' => (clone $query)->where('status', 'Rejected')->count(),
+        ];
+
+        $statusData = [];
+        foreach ($byStatus as $status => $count) {
+            if ($count > 0) {
+                $statusData[] = [
+                    $status,
+                    $count,
+                    round(($count / $total) * 100, 1) . '%',
+                ];
+            }
+        }
+
+        // Certificate Type Distribution
+        $byType = (clone $query)
+            ->select('certificate_type', DB::raw('count(*) as count'))
+            ->groupBy('certificate_type')
+            ->orderBy('count', 'desc')
+            ->get()
+            ->map(function($item) use ($total) {
+                return [
+                    $item->certificate_type ?? 'Not Specified',
+                    $item->count,
+                    round(($item->count / $total) * 100, 1) . '%',
+                ];
+            })->toArray();
+
+        return [
+            'byStatus' => $statusData,
+            'byType' => $byType,
+            'total' => $total,
+        ];
     }
 
     /**
@@ -60,24 +123,51 @@ class CertificatesReportExport implements FromCollection, WithHeadings, WithMapp
     */
     public function headings(): array
     {
-        return [
+        $headings = [
             ['CERTIFICATES REPORT'],
             ['Generated on: ' . Carbon::now()->format('F d, Y h:i A')],
             ['Filters: ' . $this->getFilterDescription()],
-            [], // Empty row for spacing
-            [
-                'Certificate #',
-                'Resident Name',
-                'Certificate Type',
-                'Purpose',
-                'Status',
-                'Request Date',
-                'Release Date',
-                'OR Number',
-                'Amount',
-                'Remarks'
-            ]
+            [],
         ];
+
+        // Status Distribution Table
+        $headings[] = ['STATUS DISTRIBUTION'];
+        $headings[] = ['Status', 'Count', 'Percentage'];
+        foreach ($this->summaryData['byStatus'] as $row) {
+            $headings[] = $row;
+        }
+        $headings[] = [];
+
+        // Certificate Type Distribution Table
+        $headings[] = ['CERTIFICATE TYPE DISTRIBUTION'];
+        $headings[] = ['Certificate Type', 'Count', 'Percentage'];
+        foreach ($this->summaryData['byType'] as $row) {
+            $headings[] = $row;
+        }
+        $headings[] = [];
+
+        // Summary Statistics
+        $headings[] = ['SUMMARY STATISTICS'];
+        $headings[] = ['Total Certificates', $this->summaryData['total']];
+        $headings[] = [];
+        $headings[] = [];
+
+        // Certificates List Header
+        $headings[] = ['CERTIFICATES LIST'];
+        $headings[] = [
+            'Certificate #',
+            'Resident Name',
+            'Certificate Type',
+            'Purpose',
+            'Status',
+            'Request Date',
+            'Release Date',
+            'OR Number',
+            'Amount',
+            'Remarks'
+        ];
+
+        return $headings;
     }
 
     /**
@@ -113,40 +203,46 @@ class CertificatesReportExport implements FromCollection, WithHeadings, WithMapp
     */
     public function styles(Worksheet $sheet)
     {
-        // Style for the main title
+        $lastRow = $sheet->getHighestRow();
+
+        // Style for the main title (row 1)
         $sheet->mergeCells('A1:J1');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(16);
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        // Style for generation date
+        // Style for generation date (row 2)
         $sheet->mergeCells('A2:J2');
         $sheet->getStyle('A2')->getFont()->setItalic(true);
         $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        // Style for filters
+        // Style for filters (row 3)
         $sheet->mergeCells('A3:J3');
         $sheet->getStyle('A3')->getFont()->setItalic(true);
         $sheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        // Style for headers (row 5)
-        $sheet->getStyle('A5:J5')->getFont()->setBold(true);
-        $sheet->getStyle('A5:J5')->getFill()
-            ->setFillType(Fill::FILL_SOLID)
-            ->getStartColor()->setARGB('FF667EEA');
-        $sheet->getStyle('A5:J5')->getFont()->getColor()->setARGB(Color::COLOR_WHITE);
-        $sheet->getStyle('A5:J5')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        // Calculate positions
+        $statusCount = count($this->summaryData['byStatus']);
+        $typeCount = count($this->summaryData['byType']);
 
-        // Style for all data cells
-        $lastRow = $sheet->getHighestRow();
-        $sheet->getStyle('A6:J' . $lastRow)->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+        // Style for Status Distribution table headers (row 5)
+        $this->styleTableHeader($sheet, 5, 'A', 'C');
 
-        // Add borders to all cells
-        $sheet->getStyle('A5:J' . $lastRow)->getBorders()->getAllBorders()
-            ->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+        // Style for Certificate Type Distribution table headers
+        $typeHeaderRow = 5 + $statusCount + 3;
+        $this->styleTableHeader($sheet, $typeHeaderRow, 'A', 'C');
+
+        // Style for Certificates List header
+        $listHeaderRow = $typeHeaderRow + $typeCount + 8;
+        $this->styleTableHeader($sheet, $listHeaderRow, 'A', 'J');
+
+        // Add borders to all data cells
+        $sheet->getStyle('A1:J' . $lastRow)
+            ->getBorders()->getAllBorders()
+            ->setBorderStyle(Border::BORDER_THIN);
 
         // Style for status column based on status
         $statusColumn = 'E'; // Status is in column E
-        for ($row = 6; $row <= $lastRow; $row++) {
+        for ($row = $listHeaderRow + 1; $row <= $lastRow; $row++) {
             $status = $sheet->getCell($statusColumn . $row)->getValue();
             $color = $this->getStatusColor($status);
             if ($color) {
@@ -179,6 +275,20 @@ class CertificatesReportExport implements FromCollection, WithHeadings, WithMapp
             $sheet->setCellValue('B' . ($statStartRow + $index), $stat[1]);
             $sheet->getStyle('A' . ($statStartRow + $index))->getFont()->setBold(true);
         }
+    }
+
+    /**
+     * Style table headers with orange background
+     */
+    private function styleTableHeader($sheet, $row, $startColumn, $endColumn)
+    {
+        $range = $startColumn . $row . ':' . $endColumn . $row;
+        $sheet->getStyle($range)->getFont()->setBold(true);
+        $sheet->getStyle($range)->getFill()
+            ->setFillType(Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('FFF97316'); // Orange color
+        $sheet->getStyle($range)->getFont()->getColor()->setARGB(Color::COLOR_WHITE);
+        $sheet->getStyle($range)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
     }
 
     private function getFilterDescription()

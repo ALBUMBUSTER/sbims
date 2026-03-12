@@ -11,6 +11,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
 use Carbon\Carbon;
 
 class SummaryReportExport implements FromArray, WithHeadings, WithStyles, WithTitle, ShouldAutoSize
@@ -41,8 +42,8 @@ class SummaryReportExport implements FromArray, WithHeadings, WithStyles, WithTi
         $data[] = ['Female', $this->statistics['residents']['by_gender']['female'] ?? 0];
         $data[] = [];
 
-        // Residents Monthly Trend
-        $data[] = ['Residents Monthly Trend'];
+        // Residents Monthly Trend - as a table
+        $data[] = ['RESIDENTS MONTHLY TREND'];
         $data[] = ['Month', 'Count'];
         foreach ($this->statistics['residents']['monthly'] as $month => $count) {
             $data[] = [$month, $count];
@@ -57,8 +58,8 @@ class SummaryReportExport implements FromArray, WithHeadings, WithStyles, WithTi
         $data[] = ['Released', $this->statistics['certificates']['by_status']['released'] ?? 0];
         $data[] = [];
 
-        // Certificates Monthly Trend
-        $data[] = ['Certificates Monthly Trend'];
+        // Certificates Monthly Trend - as a table
+        $data[] = ['CERTIFICATES MONTHLY TREND'];
         $data[] = ['Month', 'Count'];
         foreach ($this->statistics['certificates']['monthly'] as $month => $count) {
             $data[] = [$month, $count];
@@ -73,8 +74,8 @@ class SummaryReportExport implements FromArray, WithHeadings, WithStyles, WithTi
         $data[] = ['Settled Cases', $this->statistics['blotters']['by_status']['settled'] ?? 0];
         $data[] = [];
 
-        // Blotters Monthly Trend
-        $data[] = ['Blotter Cases Monthly Trend'];
+        // Blotters Monthly Trend - as a table
+        $data[] = ['BLOTTER CASES MONTHLY TREND'];
         $data[] = ['Month', 'Count'];
         foreach ($this->statistics['blotters']['monthly'] as $month => $count) {
             $data[] = [$month, $count];
@@ -95,33 +96,75 @@ class SummaryReportExport implements FromArray, WithHeadings, WithStyles, WithTi
 
     public function styles(Worksheet $sheet)
     {
+        $lastRow = $sheet->getHighestRow();
+
+        // Remove any default coloring from all cells
+        $sheet->getStyle('A1:B' . $lastRow)
+            ->getFill()
+            ->setFillType(Fill::FILL_NONE);
+
         $row = 1;
 
-        // Style for main title
+        // Style for main title (row 1)
         $sheet->mergeCells('A' . $row . ':B' . $row);
         $sheet->getStyle('A' . $row)->getFont()->setBold(true)->setSize(16);
         $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $row += 2;
+        $row++;
 
-        // Style for section headers
-        while ($row <= $sheet->getHighestRow()) {
+        // Style for generation date (row 2)
+        $sheet->mergeCells('A' . $row . ':B' . $row);
+        $sheet->getStyle('A' . $row)->getFont()->setItalic(true);
+        $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $row++;
+
+        // Process remaining rows
+        while ($row <= $lastRow) {
             $cellValue = $sheet->getCell('A' . $row)->getValue();
 
-            if (str_contains($cellValue, 'SUMMARY') || str_contains($cellValue, 'Monthly Trend')) {
-                // Section header styling
+            if (empty($cellValue)) {
+                $row++;
+                continue;
+            }
+
+            // Check if this is a section header (SUMMARY or TREND)
+            if (str_contains($cellValue, 'SUMMARY') || str_contains($cellValue, 'TREND')) {
+                // Section header styling - light gray background
                 $sheet->getStyle('A' . $row . ':B' . $row)->getFont()->setBold(true)->setSize(12);
                 $sheet->getStyle('A' . $row . ':B' . $row)->getFill()
                     ->setFillType(Fill::FILL_SOLID)
-                    ->getStartColor()->setARGB('FF667EEA');
-                $sheet->getStyle('A' . $row . ':B' . $row)->getFont()->getColor()->setARGB(Color::COLOR_WHITE);
+                    ->getStartColor()->setARGB('FFE0E0E0'); // Light gray
+                $sheet->getStyle('A' . $row . ':B' . $row)->getFont()->getColor()->setARGB(Color::COLOR_BLACK);
+                $sheet->mergeCells('A' . $row . ':B' . $row);
+            }
+            // Check if this is a table header (Month, Count)
+            elseif ($cellValue === 'Month' || $cellValue === 'Count') {
+                // Table header styling - light gray background
+                $sheet->getStyle('A' . $row . ':B' . $row)->getFont()->setBold(true);
+                $sheet->getStyle('A' . $row . ':B' . $row)->getFill()
+                    ->setFillType(Fill::FILL_SOLID)
+                    ->getStartColor()->setARGB('FFE0E0E0'); // Light gray
+                $sheet->getStyle('A' . $row . ':B' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                $sheet->getStyle('A' . $row . ':B' . $row)->getBorders()->getAllBorders()
+                    ->setBorderStyle(Border::BORDER_THIN);
+            }
+            // Regular data rows
+            else {
+                // Add borders to data cells
+                $sheet->getStyle('A' . $row . ':B' . $row)->getBorders()->getAllBorders()
+                    ->setBorderStyle(Border::BORDER_THIN);
+
+                // Make category labels bold (like "Total Residents", "Male", etc.)
+                if (!is_numeric($cellValue) && !str_contains($cellValue, 'SUMMARY') && !str_contains($cellValue, 'TREND') && $cellValue !== 'Month' && $cellValue !== 'Count') {
+                    $sheet->getStyle('A' . $row)->getFont()->setBold(true);
+                }
             }
 
             $row++;
         }
 
-        // Add borders to all cells
-        $sheet->getStyle('A1:B' . $sheet->getHighestRow())
-            ->getBorders()->getAllBorders()
-            ->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+        // Auto-size columns A and B
+        foreach (range('A', 'B') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
     }
 }

@@ -139,7 +139,7 @@
             <div class="logo">
                 <img src="assets/img/logo..png" alt="BL Logo" class="logo-img">
             </div>
-            <h1>SBIMS-PRO</h1>
+            <h1>SBIMS</h1>
             <p>Brgy. Libertad, Isabel, Leyte</p>
         </div>
 

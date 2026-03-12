@@ -10,29 +10,25 @@ class Blotter extends Model
     use HasFactory;
 
     protected $fillable = [
-        'blotter_number',
+        'case_id',
         'complainant_id',
-        'complainant_name',
-        'complainant_address',
-        'complainant_contact',
         'respondent_name',
         'respondent_address',
         'incident_type',
         'incident_date',
         'incident_location',
-        'complaint_details',
-        'witnesses',
-        'evidence',
+        'description',
         'status',
         'resolution',
-        'settlement_date',
-        'settled_by',
-        'remarks',
+        'resolved_date',
+        'handled_by',
     ];
 
     protected $casts = [
-        'incident_date' => 'date',
-        'settlement_date' => 'date',
+        'incident_date' => 'datetime',
+        'resolved_date' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     /**
@@ -44,19 +40,27 @@ class Blotter extends Model
     }
 
     /**
-     * Get the user who settled the case
+     * Get the user who handled the case
      */
-    public function settledBy()
+    public function handledBy()
     {
-        return $this->belongsTo(User::class, 'settled_by');
+        return $this->belongsTo(User::class, 'handled_by');
     }
 
     /**
-     * Get the complainant name attribute
+     * Get the complainant name via relationship
      */
     public function getComplainantNameAttribute()
     {
-        return $this->complainant ? $this->complainant->full_name : $this->attributes['complainant_name'] ?? 'N/A';
+        return $this->complainant ? $this->complainant->first_name . ' ' . $this->complainant->last_name : 'N/A';
+    }
+
+    /**
+     * Get the complainant address via relationship
+     */
+    public function getComplainantAddressAttribute()
+    {
+        return $this->complainant ? $this->complainant->address . ', Purok ' . $this->complainant->purok : 'N/A';
     }
 
     /**
@@ -72,7 +76,7 @@ class Blotter extends Model
      */
     public function scopeActive($query)
     {
-        return $query->whereIn('status', ['Pending', 'Investigating', 'Hearings']);
+        return $query->whereIn('status', ['Pending', 'Ongoing']);
     }
 
     /**

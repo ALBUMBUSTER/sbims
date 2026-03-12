@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
 
 class Resident extends Model
 {
     use HasFactory;
-
+    use SoftDeletes; // Add this trait
     protected $fillable = [
         'resident_id',
         'first_name',
@@ -34,14 +35,17 @@ class Resident extends Model
         'emergency_contact_name',
         'emergency_contact_number',
         'profile_photo',
+        'archived_at',
+         // Add this
     ];
-
+    protected $dates = ['deleted_at']; // Add this if using older Laravel versions
     protected $casts = [
         'birthdate' => 'date',
         'is_voter' => 'boolean',
         'is_senior' => 'boolean',
         'is_pwd' => 'boolean',
         'is_4ps' => 'boolean',
+        'archived_at' => 'datetime', // Add this
     ];
 
     /**
@@ -99,4 +103,23 @@ class Resident extends Model
               ->orWhere('address', 'like', "%{$search}%");
         });
     }
+
+    /* ==================== ARCHIVE SCOPES ==================== */
+
+    /**
+     * Scope to get only active (non-archived) residents
+     */
+    public function scopeActive($query)
+    {
+        return $query->whereNull('archived_at');
+    }
+
+    /**
+     * Scope to get only archived residents
+     */
+    public function scopeArchived($query)
+    {
+        return $query->whereNotNull('archived_at');
+    }
+
 }

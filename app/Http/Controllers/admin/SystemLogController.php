@@ -63,6 +63,7 @@ class SystemLogController extends Controller
 
         // Get most active user
         $mostActiveUser = ActivityLog::select('user_id', DB::raw('COUNT(*) as count'))
+            ->with('user')
             ->groupBy('user_id')
             ->orderBy('count', 'desc')
             ->first();
@@ -137,5 +138,89 @@ class SystemLogController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Delete a single log entry via AJAX
+     */
+    public function destroy(ActivityLog $log)
+    {
+        try {
+            $log->delete();
+
+            if (request()->wantsJson() || request()->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Log entry deleted successfully.',
+                    'id' => $log->id
+                ]);
+            }
+
+            return redirect()->back()->with('success', 'Log entry deleted successfully.');
+        } catch (\Exception $e) {
+            if (request()->wantsJson() || request()->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to delete log entry: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()->with('error', 'Failed to delete log entry.');
+        }
+    }
+
+    /**
+     * Bulk delete log entries via AJAX
+     */
+    public function bulkDestroy(Request $request)
+{
+    $request->validate([
+        'log_ids' => 'required|array',
+        'log_ids.*' => 'exists:activity_logs,id'
+    ]);
+
+    try {
+        $deleted = ActivityLog::whereIn('id', $request->log_ids)->delete();
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $deleted . ' log entr' . ($deleted === 1 ? 'y' : 'ies') . ' deleted successfully.',
+                'count' => $deleted,
+                'ids' => $request->log_ids
+            ]);
+        }
+
+        return redirect()->back()->with('success', $deleted . ' log entr' . ($deleted === 1 ? 'y' : 'ies') . ' deleted successfully.');
+    } catch (\Exception $e) {
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete selected log entries: ' . $e->getMessage()
+            ], 500);
+        }
+
+        return redirect()->back()->with('error', 'Failed to delete selected log entries.');
+    }
+}
+
+    /**
+     * Refresh statistics after deletion (AJAX endpoint)
+     */
+    public function refreshStats(Request $request)
+    {
+        $filters = [
+            'user_id' => $request->get('user_id', 'all'),
+            'action' => $request->get('action', 'all'),
+            'from_date' => $request->get('from_date'),
+            'to_date' => $request->get('to_date'),
+        ];
+
+        $stats = $this->getStatistics($filters);
+
+        return response()->json([
+            'success' => true,
+            'stats' => $stats
+        ]);
     }
 }

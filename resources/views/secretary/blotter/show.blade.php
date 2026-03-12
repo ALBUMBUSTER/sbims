@@ -4,6 +4,14 @@
 
 @section('content')
 <div class="container-fluid">
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <div class="toast-content">
+            <x-heroicon-o-check-circle class="toast-icon success" />
+            <span id="toastMessage">Status updated successfully!</span>
+        </div>
+    </div>
+
     <div class="page-header">
         <div class="page-title">
             <h1>Blotter Case Details</h1>
@@ -34,32 +42,58 @@
                 <form action="{{ route('secretary.blotter.status', $blotter) }}" method="POST" class="status-form">
                     @csrf
                     @method('PATCH')
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="status">Update Status</label>
-                            <select name="status" id="status" class="form-control" onchange="toggleResolution(this.value)">
-                                <option value="Pending" {{ $blotter->status == 'Pending' ? 'selected' : '' }}>Pending</option>
-                                <option value="Ongoing" {{ $blotter->status == 'Ongoing' ? 'selected' : '' }}>Ongoing</option>
-                                <option value="Settled" {{ $blotter->status == 'Settled' ? 'selected' : '' }}>Settled</option>
-                                <option value="Referred" {{ $blotter->status == 'Referred' ? 'selected' : '' }}>Referred</option>
-                            </select>
+
+                    <div class="status-update-container">
+                        <div class="radio-group">
+                            <label class="radio-option">
+                                <input type="radio" name="status" value="Pending"
+                                       {{ $blotter->status == 'Pending' ? 'checked' : '' }}
+                                       onchange="toggleResolution(this.value)">
+                                <span class="radio-label status-pending-radio">Pending</span>
+                            </label>
+
+                            <label class="radio-option">
+                                <input type="radio" name="status" value="Ongoing"
+                                       {{ $blotter->status == 'Ongoing' ? 'checked' : '' }}
+                                       onchange="toggleResolution(this.value)">
+                                <span class="radio-label status-ongoing-radio">Ongoing</span>
+                            </label>
+
+                            <label class="radio-option">
+                                <input type="radio" name="status" value="Settled"
+                                       {{ $blotter->status == 'Settled' ? 'checked' : '' }}
+                                       onchange="toggleResolution(this.value)">
+                                <span class="radio-label status-settled-radio">Settled</span>
+                            </label>
+
+                            <label class="radio-option">
+                                <input type="radio" name="status" value="Referred"
+                                       {{ $blotter->status == 'Referred' ? 'checked' : '' }}
+                                       onchange="toggleResolution(this.value)">
+                                <span class="radio-label status-referred-radio">Referred</span>
+                            </label>
                         </div>
-                        <div id="resolution-field"
-                             data-show="{{ $blotter->status === 'Settled' ? 'true' : 'false' }}"
-                                <div @class(['hidden' => $blotter->status !== 'Settled'])>
-                                <div class="form-group">
+
+                        <button type="submit" class="btn-update-status">
+                            <x-heroicon-o-check-circle class="icon-small" />
+                            Update Status
+                        </button>
+                    </div>
+
+                    <div id="resolution-field" class="resolution-container {{ $blotter->status == 'Settled' ? '' : 'hidden' }}">
+                        <div class="resolution-grid">
+                            <div class="form-group">
                                 <label for="resolution">Resolution <span class="required">*</span></label>
-                                <textarea name="resolution" id="resolution" class="form-control" rows="2">{{ $blotter->resolution }}</textarea>
+                                <textarea name="resolution" id="resolution" class="form-control" rows="3"
+                                    {{ $blotter->status == 'Settled' ? '' : 'disabled' }}>{{ $blotter->resolution }}</textarea>
                             </div>
                             <div class="form-group">
                                 <label for="resolved_date">Resolution Date</label>
                                 <input type="date" name="resolved_date" id="resolved_date" class="form-control"
-                                       value="{{ $blotter->resolved_date ? $blotter->resolved_date->format('Y-m-d') : '' }}">
+                                       value="{{ $blotter->resolved_date ? $blotter->resolved_date->format('Y-m-d') : '' }}"
+                                       {{ $blotter->status == 'Settled' ? '' : 'disabled' }}>
                             </div>
                         </div>
-                        <button type="submit" class="btn-update-status">
-                            Update Status
-                        </button>
                     </div>
                 </form>
             </div>
@@ -211,13 +245,50 @@
 
 @push('scripts')
 <script>
+// Toast notification function
+function showToast(message, type = 'success') {
+    let toast = document.getElementById('toast');
+    let toastMessage = document.getElementById('toastMessage');
+    let toastIcon = document.querySelector('.toast-icon');
+
+    if (!toast || !toastMessage) return;
+
+    toastMessage.textContent = message;
+
+    if (type === 'success') {
+        toast.style.borderLeftColor = '#10b981';
+        if (toastIcon) {
+            toastIcon.classList.remove('error');
+            toastIcon.classList.add('success');
+        }
+    } else if (type === 'error') {
+        toast.style.borderLeftColor = '#dc2626';
+        if (toastIcon) {
+            toastIcon.classList.remove('success');
+            toastIcon.classList.add('error');
+        }
+    }
+
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const resolutionField = document.getElementById('resolution-field');
-    const statusSelect = document.getElementById('status');
+    const radioButtons = document.querySelectorAll('input[name="status"]');
 
-    if (resolutionField && statusSelect) {
-        toggleResolution(statusSelect.value);
+    // Set initial state
+    const selectedStatus = document.querySelector('input[name="status"]:checked');
+    if (selectedStatus) {
+        toggleResolution(selectedStatus.value);
     }
+
+    // Add change event to all radio buttons
+    radioButtons.forEach(radio => {
+        radio.addEventListener('change', function() {
+            toggleResolution(this.value);
+        });
+    });
 });
 
 function toggleResolution(status) {
@@ -227,17 +298,46 @@ function toggleResolution(status) {
 
     if (resolutionField) {
         if (status === 'Settled') {
-            resolutionField.style.display = 'block';
-            if (resolution) resolution.required = true;
-            if (resolvedDate) resolvedDate.required = true;
+            resolutionField.classList.remove('hidden');
+            if (resolution) {
+                resolution.disabled = false;
+                resolution.required = true;
+            }
+            if (resolvedDate) {
+                resolvedDate.disabled = false;
+                resolvedDate.required = false;
+            }
         } else {
-            resolutionField.style.display = 'none';
-            if (resolution) resolution.required = false;
-            if (resolvedDate) resolvedDate.required = false;
+            resolutionField.classList.add('hidden');
+            if (resolution) {
+                resolution.disabled = true;
+                resolution.required = false;
+            }
+            if (resolvedDate) {
+                resolvedDate.disabled = true;
+                resolvedDate.required = false;
+            }
         }
     }
 }
 </script>
+
+{{-- Session messages - separated from main script to avoid Blade/JS conflicts --}}
+@if(session('success'))
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        showToast("{{ session('success') }}", 'success');
+    });
+</script>
+@endif
+
+@if(session('error'))
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        showToast("{{ session('error') }}", 'error');
+    });
+</script>
+@endif
 @endpush
 
 @push('styles')
@@ -327,53 +427,94 @@ function toggleResolution(status) {
     padding: 1.5rem;
 }
 
-.status-form {
+/* Status Update Container */
+.status-update-container {
     display: flex;
-    gap: 1rem;
-    align-items: flex-end;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
     flex-wrap: wrap;
 }
 
-.form-row {
+/* Radio Button Group */
+.radio-group {
     display: flex;
-    gap: 1rem;
     flex-wrap: wrap;
-    align-items: flex-end;
-    width: 100%;
-}
-
-.form-group {
+    gap: 1rem;
     flex: 1;
-    min-width: 200px;
+    min-width: 300px;
 }
 
-.form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    color: #555;
-    font-size: 0.9rem;
-}
-
-.form-control {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #e2e8f0;
+.radio-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.5rem 0.75rem;
     border-radius: 5px;
+    transition: all 0.2s;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
 }
 
+.radio-option:hover {
+    background: #eef2ff;
+    border-color: #667eea;
+}
+
+.radio-option input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #667eea;
+}
+
+.radio-label {
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+/* Radio Label Colors */
+.status-pending-radio {
+    color: #856404;
+}
+
+.status-ongoing-radio {
+    color: #004085;
+}
+
+.status-settled-radio {
+    color: #155724;
+}
+
+.status-referred-radio {
+    color: #553c9a;
+}
+
+/* Update Status Button */
 .btn-update-status {
-    padding: 0.5rem 1.5rem;
+    padding: 0.6rem 1.8rem;
     background: #667eea;
     color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
     transition: background 0.3s;
-    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    white-space: nowrap;
+    height: 42px;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
 }
 
 .btn-update-status:hover {
     background: #5a67d8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(102, 126, 234, 0.4);
 }
 
 /* Status Badge */
@@ -405,11 +546,142 @@ function toggleResolution(status) {
     color: #553c9a;
 }
 
+/* Resolution Container */
+.resolution-container {
+    margin: 1rem 0;
+    padding: 1.5rem;
+    background: #f0fdf4;
+    border-radius: 8px;
+    border-left: 4px solid #10b981;
+    transition: all 0.3s;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.resolution-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1rem;
+}
+
+.form-group {
+    flex: 1;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #555;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 5px;
+    font-size: 0.95rem;
+    transition: border-color 0.3s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-control:disabled {
+    background: #f1f5f9;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Required field */
+.required {
+    color: #dc2626;
+}
+
+.icon-small {
+    width: 16px;
+    height: 16px;
+}
+
+/* Toast Notification */
+.toast {
+    visibility: hidden;
+    min-width: 300px;
+    background-color: white;
+    color: #333;
+    text-align: center;
+    border-radius: 8px;
+    padding: 1rem;
+    position: fixed;
+    z-index: 1001;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-left: 4px solid #10b981;
+    animation: slideUp 0.3s;
+}
+
+.toast.show {
+    visibility: visible;
+    animation: slideUp 0.3s, fadeOut 0.3s 2.7s;
+}
+
+.toast-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    justify-content: center;
+}
+
+.toast-icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.toast-icon.success {
+    color: #10b981;
+}
+
+.toast-icon.error {
+    color: #dc2626;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translate(-50%, 20px);
+        opacity: 0;
+    }
+    to {
+        transform: translate(-50%, 0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+    to {
+        opacity: 0;
+        transform: translate(-50%, -10px);
+    }
+}
+
 /* Details Grid */
 .details-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
     gap: 1.5rem;
+    margin-top: 2rem;
 }
 
 .detail-card {
@@ -530,14 +802,44 @@ function toggleResolution(status) {
     color: #667eea;
 }
 
-/* Required field */
-.required {
-    color: #dc2626;
-}
+/* Responsive */
+@media (max-width: 768px) {
+    .status-update-container {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
 
-.icon-small {
-    width: 16px;
-    height: 16px;
+    .radio-group {
+        flex-direction: column;
+        min-width: 100%;
+    }
+
+    .radio-option {
+        width: 100%;
+    }
+
+    .btn-update-status {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .resolution-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .details-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .detail-row {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .detail-label {
+        width: 100%;
+    }
 }
 </style>
 @endpush

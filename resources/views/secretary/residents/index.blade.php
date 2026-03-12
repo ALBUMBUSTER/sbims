@@ -37,7 +37,7 @@
                 <input type="text" name="search" placeholder="Search by name, ID, address, or contact..." value="{{ request('search') }}" class="search-input">
             </div>
             <button type="submit" class="btn-search">Search</button>
-            @if(request('search'))
+            @if(request('search') || request('filter'))
                 <a href="{{ route('secretary.residents.index') }}" class="btn-clear">
                     <i class="fas fa-times icon-small"></i>
                     Clear
@@ -45,6 +45,53 @@
             @endif
         </form>
     </div>
+<!-- Filter Section with Status Buttons and Civil Status Dropdown -->
+<div class="filter-section">
+    <div class="filter-left">
+        <div class="filter-label">Filter by Status:</div>
+        <div class="filter-buttons">
+            <a href="{{ route('secretary.residents.index', array_merge(request()->except('filter'), ['filter' => 'all'])) }}"
+               class="filter-btn {{ request('filter') == 'all' || !request('filter') ? 'active' : '' }}">
+                <span class="filter-dot all"></span>
+                All
+            </a>
+            <a href="{{ route('secretary.residents.index', array_merge(request()->except('filter'), ['filter' => 'voter'])) }}"
+               class="filter-btn {{ request('filter') == 'voter' ? 'active' : '' }}">
+                <span class="filter-dot voter"></span>
+                Voters
+            </a>
+            <a href="{{ route('secretary.residents.index', array_merge(request()->except('filter'), ['filter' => 'senior'])) }}"
+               class="filter-btn {{ request('filter') == 'senior' ? 'active' : '' }}">
+                <span class="filter-dot senior"></span>
+                Senior Citizens
+            </a>
+            <a href="{{ route('secretary.residents.index', array_merge(request()->except('filter'), ['filter' => 'pwd'])) }}"
+               class="filter-btn {{ request('filter') == 'pwd' ? 'active' : '' }}">
+                <span class="filter-dot pwd"></span>
+                PWD
+            </a>
+            <a href="{{ route('secretary.residents.index', array_merge(request()->except('filter'), ['filter' => '4ps'])) }}"
+               class="filter-btn {{ request('filter') == '4ps' ? 'active' : '' }}">
+                <span class="filter-dot fourps"></span>
+                4Ps Members
+            </a>
+        </div>
+    </div>
+
+    <div class="filter-right">
+        <div class="filter-label">Civil Status:</div>
+        <div class="dropdown-wrapper">
+            <select name="civil_filter" id="civilFilter" class="civil-dropdown" onchange="applyCivilFilter(this.value)">
+                <option value="all" {{ request('civil_filter') == 'all' || !request('civil_filter') ? 'selected' : '' }}>All Civil Status</option>
+                <option value="single" {{ request('civil_filter') == 'single' ? 'selected' : '' }}>Single</option>
+                <option value="married" {{ request('civil_filter') == 'married' ? 'selected' : '' }}>Married</option>
+                <option value="widowed" {{ request('civil_filter') == 'widowed' ? 'selected' : '' }}>Widowed</option>
+                <option value="divorced" {{ request('civil_filter') == 'divorced' ? 'selected' : '' }}>Divorced</option>
+            </select>
+            <i class="fas fa-chevron-down dropdown-icon"></i>
+        </div>
+    </div>
+</div>
 
     <div class="card">
         <div class="card-body">
@@ -79,29 +126,47 @@
                             <td>Purok {{ $resident->purok }}</td>
                             <td>{{ $resident->contact_number ?? 'N/A' }}</td>
                             <td>
-                                <div class="status-badges">
-                                    @if($resident->is_voter) <span class="badge badge-voter" title="Registered Voter">V</span> @endif
-                                    @if($resident->is_senior) <span class="badge badge-senior" title="Senior Citizen">S</span> @endif
-                                    @if($resident->is_pwd) <span class="badge badge-pwd" title="PWD">P</span> @endif
-                                    @if($resident->is_4ps) <span class="badge badge-4ps" title="4Ps Member">4Ps</span> @endif
-                                </div>
-                            </td>
+    <div class="status-badges">
+        @if(request('filter') == 'all' || !request('filter'))
+            {{-- Show all status badges when filter is 'all' or no filter --}}
+            @if($resident->is_voter) <span class="badge badge-voter" title="Registered Voter">V</span> @endif
+            @if($resident->is_senior) <span class="badge badge-senior" title="Senior Citizen">S</span> @endif
+            @if($resident->is_pwd) <span class="badge badge-pwd" title="PWD">P</span> @endif
+            @if($resident->is_4ps) <span class="badge badge-4ps" title="4Ps Member">4Ps</span> @endif
+        @else
+            {{-- Show only the filtered status badge --}}
+            @if(request('filter') == 'voter' && $resident->is_voter)
+                <span class="badge badge-voter" title="Registered Voter">V</span>
+            @endif
+            @if(request('filter') == 'senior' && $resident->is_senior)
+                <span class="badge badge-senior" title="Senior Citizen">S</span>
+            @endif
+            @if(request('filter') == 'pwd' && $resident->is_pwd)
+                <span class="badge badge-pwd" title="PWD">P</span>
+            @endif
+            @if(request('filter') == '4ps' && $resident->is_4ps)
+                <span class="badge badge-4ps" title="4Ps Member">4Ps</span>
+            @endif
+        @endif
+    </div>
+</td>
                             <td>
-                                <div class="action-buttons">
-                                    <a href="{{ route('secretary.residents.show', $resident) }}" class="btn-icon" title="View">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    <a href="{{ route('secretary.residents.edit', $resident) }}" class="btn-icon" title="Edit">
-                                        <i class="fas fa-pencil-alt"></i>
-                                    </a>
-                                    <button type="button" class="btn-icon delete-btn" title="Delete" onclick="confirmDelete('{{ $resident->id }}')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                    <form id="delete-form-{{ $resident->id }}" action="{{ route('secretary.residents.destroy', $resident) }}" method="POST" style="display: none;">
-                                        @csrf @method('DELETE')
-                                    </form>
-                                </div>
-                            </td>
+    <div class="action-buttons">
+        <a href="{{ route('secretary.residents.show', $resident) }}" class="btn-icon" title="View">
+            <i class="fas fa-eye"></i>
+        </a>
+        <a href="{{ route('secretary.residents.edit', $resident) }}" class="btn-icon" title="Edit">
+            <i class="fas fa-pencil-alt"></i>
+        </a>
+        <button type="button" class="btn-icon archive-btn" title="Archive" onclick="confirmArchive('{{ $resident->id }}')">
+            <i class="fas fa-archive"></i>
+        </button>
+        <form id="archive-form-{{ $resident->id }}" action="{{ route('secretary.residents.archive', $resident) }}" method="POST" style="display: none;">
+            @csrf
+        </form>
+    </div>
+</td>
+
                         </tr>
                         @empty
                         <tr>
@@ -129,61 +194,68 @@
             </div>
 
             @if($residents->hasPages())
-<div class="pagination-container">
-    <div class="pagination-info">
-        Showing <span>{{ $residents->firstItem() }}</span> to <span>{{ $residents->lastItem() }}</span> of <span>{{ $residents->total() }}</span> results
-    </div>
+            <div class="pagination-container">
+                <div class="pagination-info">
+                    Showing <span>{{ $residents->firstItem() }}</span> to <span>{{ $residents->lastItem() }}</span> of <span>{{ $residents->total() }}</span> results
+                </div>
 
-    <div class="pagination-links">
-        {{-- Previous Page Link --}}
-        @if($residents->onFirstPage())
-            <span class="pagination-link disabled"><i class="fas fa-chevron-left"></i> Previous</span>
-        @else
-            <a href="{{ $residents->previousPageUrl() }}" class="pagination-link"><i class="fas fa-chevron-left"></i> Previous</a>
-        @endif
-
-        {{-- Pagination Elements --}}
-        @foreach($residents->links()->elements as $element)
-            {{-- "Three Dots" Separator --}}
-            @if(is_string($element))
-                <span class="pagination-link dots">{{ $element }}</span>
-            @endif
-
-            {{-- Array Of Links --}}
-            @if(is_array($element))
-                @foreach($element as $page => $url)
-                    @if($page == $residents->currentPage())
-                        <span class="pagination-link active">{{ $page }}</span>
+                <div class="pagination-links">
+                    {{-- Previous Page Link --}}
+                    @if($residents->onFirstPage())
+                        <span class="pagination-link disabled"><i class="fas fa-chevron-left"></i> Previous</span>
                     @else
-                        <a href="{{ $url }}" class="pagination-link">{{ $page }}</a>
+                        <a href="{{ $residents->previousPageUrl() }}" class="pagination-link"><i class="fas fa-chevron-left"></i> Previous</a>
                     @endif
-                @endforeach
-            @endif
-        @endforeach
 
-        {{-- Next Page Link --}}
-        @if($residents->hasMorePages())
-            <a href="{{ $residents->nextPageUrl() }}" class="pagination-link">Next <i class="fas fa-chevron-right"></i></a>
-        @else
-            <span class="pagination-link disabled">Next <i class="fas fa-chevron-right"></i></span>
-        @endif
-    </div>
-</div>
-@endif
+                    {{-- Pagination Elements --}}
+                    @foreach($residents->links()->elements as $element)
+                        {{-- "Three Dots" Separator --}}
+                        @if(is_string($element))
+                            <span class="pagination-link dots">{{ $element }}</span>
+                        @endif
+
+                        {{-- Array Of Links --}}
+                        @if(is_array($element))
+                            @foreach($element as $page => $url)
+                                @if($page == $residents->currentPage())
+                                    <span class="pagination-link active">{{ $page }}</span>
+                                @else
+                                    <a href="{{ $url }}" class="pagination-link">{{ $page }}</a>
+                                @endif
+                            @endforeach
+                        @endif
+                    @endforeach
+
+                    {{-- Next Page Link --}}
+                    @if($residents->hasMorePages())
+                        <a href="{{ $residents->nextPageUrl() }}" class="pagination-link">Next <i class="fas fa-chevron-right"></i></a>
+                    @else
+                        <span class="pagination-link disabled">Next <i class="fas fa-chevron-right"></i></span>
+                    @endif
+                </div>
+            </div>
+            @endif
         </div>
     </div>
+</div>
+<!-- Archive Access Button -->
+<div class="archive-access">
+    <a href="{{ route('secretary.residents.archived') }}" class="btn-archive">
+        <i class="fas fa-archive"></i>
+        View Archive ({{ \App\Models\Resident::onlyTrashed()->count() }})
+    </a>
 </div>
 @endsection
 
 @push('styles')
 <style>
-/* Shared styles (same as create.blade.php but without form-specific styles) */
+/* Shared styles */
 .container-fluid { padding: 1.5rem; }
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
 .page-title h1 { color: #333; margin-bottom: 0.5rem; font-size: 1.8rem; }
 .page-title p { color: #666; font-size: 1rem; }
 
-/* Page Actions - New button styles */
+/* Page Actions */
 .page-actions {
     display: flex;
     gap: 0.75rem;
@@ -217,9 +289,9 @@
 .btn-secondary:hover { background: #eef2ff; }
 
 /* Search Section */
-.search-section { margin-bottom: 1.5rem; }
-.search-form { display: flex; gap: 1rem; max-width: 600px; }
-.search-wrapper { flex: 1; position: relative; }
+.search-section { margin-bottom: 1rem; }
+.search-form { display: flex; gap: 1rem; max-width: 600px; flex-wrap: wrap; }
+.search-wrapper { flex: 1; position: relative; min-width: 250px; }
 .search-icon {
     position: absolute;
     left: 1rem;
@@ -266,6 +338,89 @@
 .btn-clear:hover {
     background: #e2e8f0;
     color: #333;
+}
+
+/* Filter Section - NEW */
+.filter-section {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.filter-label {
+    font-weight: 600;
+    color: #333;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: none;
+    color: #4b5563;
+    background: white;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s;
+}
+
+.filter-btn:hover {
+    background: #f8fafc;
+    border-color: #667eea;
+}
+
+.filter-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: transparent;
+}
+
+.filter-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.filter-dot.all {
+    background: #64748b;
+}
+
+.filter-dot.voter {
+    background: #155724;
+}
+
+.filter-dot.senior {
+    background: #004085;
+}
+
+.filter-dot.pwd {
+    background: #856404;
+}
+
+.filter-dot.fourps {
+    background: #553c9a;
+}
+
+.filter-btn.active .filter-dot {
+    background: white;
 }
 
 /* Buttons (shared) */
@@ -375,68 +530,6 @@
 }
 
 /* Pagination */
-.pagination-wrapper { margin-top: 1.5rem; }
-.text-center { text-align: center; }
-
-/* Toast Notification (shared) */
-.toast {
-    visibility: hidden;
-    min-width: 300px;
-    background-color: white;
-    color: #333;
-    text-align: center;
-    border-radius: 8px;
-    padding: 1rem;
-    position: fixed;
-    z-index: 1001;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    border-left: 4px solid #10b981;
-    animation: slideUp 0.3s;
-}
-.toast.show {
-    visibility: visible;
-    animation: slideUp 0.3s, fadeOut 0.3s 2.7s;
-}
-.toast-content { display: flex; align-items: center; gap: 0.75rem; }
-.toast-icon { font-size: 24px; flex-shrink: 0; }
-.toast-icon.success { color: #10b981; }
-.toast-icon.error { color: #dc2626; }
-
-/* Responsive */
-@media (max-width: 768px) {
-    .page-actions {
-        width: 100%;
-        justify-content: stretch;
-    }
-
-    .btn-primary, .btn-secondary {
-        flex: 1;
-        justify-content: center;
-    }
-
-    .search-form {
-        flex-wrap: wrap;
-    }
-
-    .empty-actions {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-}
-
-/* Animations */
-@keyframes slideUp {
-    from { transform: translate(-50%, 20px); opacity: 0; }
-    to { transform: translate(-50%, 0); opacity: 1; }
-}
-@keyframes fadeOut {
-    from { opacity: 1; transform: translate(-50%, 0); }
-    to { opacity: 0; transform: translate(-50%, -10px); }
-}
-/* Pagination Styles */
 .pagination-container {
     margin-top: 2rem;
     display: flex;
@@ -522,6 +615,308 @@
 .pagination-link i {
     font-size: 12px;
 }
+
+/* Toast Notification */
+.toast {
+    visibility: hidden;
+    min-width: 300px;
+    background-color: white;
+    color: #333;
+    text-align: center;
+    border-radius: 8px;
+    padding: 1rem;
+    position: fixed;
+    z-index: 1001;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-left: 4px solid #10b981;
+    animation: slideUp 0.3s;
+}
+.toast.show {
+    visibility: visible;
+    animation: slideUp 0.3s, fadeOut 0.3s 2.7s;
+}
+.toast-content { display: flex; align-items: center; gap: 0.75rem; }
+.toast-icon { font-size: 24px; flex-shrink: 0; }
+.toast-icon.success { color: #10b981; }
+.toast-icon.error { color: #dc2626; }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .page-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .btn-primary, .btn-secondary {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .search-form {
+        flex-wrap: wrap;
+    }
+
+    .btn-search, .btn-clear {
+        width: 100%;
+    }
+
+    .filter-section {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .filter-buttons {
+        width: 100%;
+    }
+
+    .filter-btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .empty-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+
+/* Animations */
+@keyframes slideUp {
+    from { transform: translate(-50%, 20px); opacity: 0; }
+    to { transform: translate(-50%, 0); opacity: 1; }
+}
+@keyframes fadeOut {
+    from { opacity: 1; transform: translate(-50%, 0); }
+    to { opacity: 0; transform: translate(-50%, -10px); }
+}
+/* Civil Status Filter Section */
+.filter-section.civil-status {
+    margin-top: 0.5rem;
+    border-top: 1px dashed #e2e8f0;
+    padding-top: 1rem;
+}
+
+/* Civil Status Filter Dots */
+.filter-dot.single {
+    background: #3b82f6; /* Blue */
+}
+
+.filter-dot.married {
+    background: #10b981; /* Green */
+}
+
+.filter-dot.widowed {
+    background: #8b5cf6; /* Purple */
+}
+
+.filter-dot.divorced {
+    background: #f59e0b; /* Orange */
+}
+/* Filter Section Layout */
+.filter-section {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.filter-left {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    flex: 1;
+}
+
+.filter-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 250px;
+}
+
+.filter-label {
+    font-weight: 600;
+    color: #333;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: none;
+    color: #4b5563;
+    background: white;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s;
+}
+
+.filter-btn:hover {
+    background: #f8fafc;
+    border-color: #667eea;
+}
+
+.filter-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: transparent;
+}
+
+.filter-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.filter-dot.all {
+    background: #64748b;
+}
+
+.filter-dot.voter {
+    background: #155724;
+}
+
+.filter-dot.senior {
+    background: #004085;
+}
+
+.filter-dot.pwd {
+    background: #856404;
+}
+
+.filter-dot.fourps {
+    background: #553c9a;
+}
+
+.filter-btn.active .filter-dot {
+    background: white;
+}
+
+/* Dropdown Styles */
+.dropdown-wrapper {
+    position: relative;
+    width: 180px;
+}
+
+.civil-dropdown {
+    width: 100%;
+    padding: 0.6rem 2rem 0.6rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #333;
+    background: white;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    transition: all 0.2s;
+}
+
+.civil-dropdown:hover {
+    border-color: #667eea;
+}
+
+.civil-dropdown:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.dropdown-icon {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #667eea;
+    font-size: 12px;
+    pointer-events: none;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .filter-section {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-left {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .filter-buttons {
+        width: 100%;
+    }
+
+    .filter-btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .filter-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .dropdown-wrapper {
+        flex: 1;
+    }
+    /* Archive Button */
+.archive-btn {
+    color: #8b5cf6;
+}
+.archive-btn:hover {
+    background: #ede9fe;
+    color: #6d28d9;
+}
+
+/* Archive Access Button */
+.archive-access {
+    margin-top: 2rem;
+    text-align: right;
+}
+
+.btn-archive {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: #f8fafc;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: all 0.3s;
+}
+
+.btn-archive:hover {
+    background: #e2e8f0;
+    color: #475569;
+}
+}
 </style>
 @endpush
 
@@ -555,11 +950,29 @@ function showToast(message, type = 'success') {
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-// Delete confirmation function
-function confirmDelete(residentId) {
-    if (confirm('Are you sure you want to delete this resident? This action cannot be undone.')) {
-        document.getElementById('delete-form-' + residentId).submit();
+// Archive confirmation function (replace confirmDelete)
+function confirmArchive(residentId) {
+    if (confirm('Are you sure you want to archive this resident? They will be moved to the archive.')) {
+        document.getElementById('archive-form-' + residentId).submit();
     }
+}
+// Civil status filter function
+function applyCivilFilter(value) {
+    const url = new URL(window.location.href);
+    const params = new URLSearchParams(url.search);
+
+    if (value === 'all') {
+        params.delete('civil_filter');
+    } else {
+        params.set('civil_filter', value);
+    }
+
+    // Preserve existing search and filter parameters
+    if (params.has('search') && params.get('search') === '') {
+        params.delete('search');
+    }
+
+    window.location.href = url.pathname + '?' + params.toString();
 }
 </script>
 

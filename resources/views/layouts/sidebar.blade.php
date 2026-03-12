@@ -181,24 +181,17 @@
                 </ul>
             </div>
         @endif
+    </div>
 
-        <!-- Logout Button as Last Menu Item -->
-        <div class="nav-section logout-section">
-            <ul class="nav-menu">
-                <li class="nav-item logout-item">
-                    <form action="{{ route('logout') }}" method="POST">
-                        @csrf
-                        <button type="submit">
-                            <span class="nav-icon"><x-heroicon-o-arrow-left-on-rectangle /></span>
-                            <span class="nav-text">Logout</span>
-                        </button>
-                    </form>
-                </li>
-            </ul>
-        </div>
-
-        <!-- Small spacer at the bottom -->
-        <div class="bottom-spacer"></div>
+    <!-- Fixed Logout Section at Bottom -->
+    <div class="logout-fixed-container">
+        <form action="{{ route('logout') }}" method="POST">
+            @csrf
+            <button type="submit" class="logout-button">
+                <span class="nav-icon"><x-heroicon-o-arrow-left-on-rectangle /></span>
+                <span class="nav-text">Logout</span>
+            </button>
+        </form>
     </div>
 </nav>
 
@@ -214,6 +207,7 @@
     border-right: 1px solid #e2e8f0;
     box-shadow: 2px 0 8px rgba(0,0,0,0.02);
     overflow: hidden;
+    position: relative;
 }
 
 /* Sidebar Header */
@@ -243,8 +237,7 @@
     overflow-y: auto;
     overflow-x: hidden;
     padding: 0 12px;
-    display: flex;
-    flex-direction: column;
+    margin-bottom: 0;
 
     /* Custom Scrollbar */
     scrollbar-width: thin;
@@ -270,20 +263,16 @@
     background: #a0aec0;
 }
 
-/* Bottom Spacer */
-.bottom-spacer {
-    height: 16px;
+/* Fixed Logout Container */
+.logout-fixed-container {
     flex-shrink: 0;
-}
-
-/* Logout Section */
-.logout-section {
-    margin-top: 16px;
+    padding: 12px 30px;
     border-top: 1px solid #edf2f7;
-    padding-top: 8px;
+    background: white;
+    width: 100%;
 }
 
-.logout-item button {
+.logout-button {
     display: flex;
     align-items: center;
     width: 100%;
@@ -298,13 +287,13 @@
     transition: all 0.2s;
 }
 
-.logout-item button:hover {
+.logout-button:hover {
     background: #fff5f5;
     color: #c53030;
     transform: translateY(-1px);
 }
 
-.logout-item button:active {
+.logout-button:active {
     transform: translateY(0);
 }
 
@@ -411,7 +400,7 @@
     padding: 2px 0;
 }
 
-.nav-item a, .nav-item button {
+.nav-item a {
     display: flex;
     align-items: center;
     padding: 10px 12px;
@@ -420,9 +409,6 @@
     border-radius: 10px;
     transition: all 0.2s;
     width: 100%;
-    border: none;
-    background: none;
-    cursor: pointer;
     font-size: 14px;
     font-weight: 500;
 }
@@ -466,7 +452,7 @@
         padding: 0 8px;
     }
 
-    .nav-item a, .nav-item button {
+    .nav-item a, .logout-button {
         padding: 8px 10px;
     }
 }

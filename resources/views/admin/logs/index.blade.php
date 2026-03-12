@@ -103,7 +103,6 @@
         border-top: 1px solid #e2e8f0;
     }
 
-    /* Fixed Button Styles */
     .filter-actions button {
         padding: 0.7rem 1.5rem;
         border-radius: 8px;
@@ -152,7 +151,7 @@
     }
 
     .log-row {
-        transition: background-color 0.2s;
+        transition: background-color 0.2s, opacity 0.3s;
     }
 
     .log-row:hover {
@@ -208,7 +207,6 @@
     .action-delete { background: #fee2e2; color: #dc2626; }
     .action-other { background: #f1f5f9; color: #64748b; }
 
-    /* Pagination Styles */
     .pagination-container {
         padding: 1.5rem;
         border-top: 1px solid #e2e8f0;
@@ -224,7 +222,6 @@
         text-align: center;
     }
 
-    /* Override Laravel pagination styles */
     .pagination {
         display: flex;
         align-items: center;
@@ -278,12 +275,6 @@
         cursor: not-allowed;
     }
 
-    /* Hide the default Laravel pagination info text */
-    .pagination .text-sm {
-        display: none;
-    }
-
-    /* Previous and Next buttons styling */
     .pagination li:first-child a,
     .pagination li:first-child span,
     .pagination li:last-child a,
@@ -291,25 +282,11 @@
         padding: 0 1.2rem;
     }
 
-    .logs-summary {
-        font-size: 0.9rem;
-        color: #666;
-        margin-bottom: 1rem;
-        padding: 0.5rem 0;
-    }
-
     .no-logs {
         text-align: center;
         padding: 3rem;
         color: #666;
         font-style: italic;
-    }
-
-    .table-actions-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
     }
 
     .export-btn {
@@ -343,7 +320,6 @@
         font-size: 1rem;
     }
 
-    /* Table Styles */
     .data-table {
         background: white;
         border-radius: 10px;
@@ -363,6 +339,57 @@
         margin: 0;
         color: #333;
         font-size: 1.1rem;
+    }
+
+    .table-header-actions {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .delete-btn {
+        background: #ef4444;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+    }
+
+    .delete-btn:hover:not(:disabled) {
+        background: #dc2626;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);
+    }
+
+    .delete-btn:active:not(:disabled) {
+        transform: translateY(0);
+        box-shadow: none;
+    }
+
+    .delete-btn:disabled {
+        background: #fca5a5;
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+    .checkbox-column {
+        width: 40px;
+        text-align: center;
+    }
+
+    .select-all-checkbox,
+    .log-checkbox {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        accent-color: #667eea;
     }
 
     table {
@@ -385,44 +412,263 @@
         border-bottom: 1px solid #e2e8f0;
         color: #333;
     }
+
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .modal.show {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 10px;
+        padding: 2rem;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        color: #333;
+        font-size: 1.25rem;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #666;
+    }
+
+    .modal-body {
+        margin-bottom: 2rem;
+        color: #666;
+    }
+
+    .modal-footer {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+    }
+
+    .modal-footer button {
+        padding: 0.7rem 1.5rem;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .modal-footer .cancel-btn {
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+    }
+
+    .modal-footer .cancel-btn:hover {
+        background: #e2e8f0;
+    }
+
+    .modal-footer .confirm-btn {
+        background: #ef4444;
+        border: none;
+        color: white;
+    }
+
+    .modal-footer .confirm-btn:hover {
+        background: #dc2626;
+    }
+
+    /* Toast Notification Styles */
+    .toast-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+    }
+
+    .toast {
+        background: white;
+        border-radius: 8px;
+        padding: 1rem 1.5rem;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 300px;
+        max-width: 400px;
+        transform: translateX(120%);
+        transition: transform 0.3s ease;
+        border-left: 4px solid;
+    }
+
+    .toast.show {
+        transform: translateX(0);
+    }
+
+    .toast.success {
+        border-left-color: #10b981;
+    }
+
+    .toast.success .toast-icon {
+        color: #10b981;
+    }
+
+    .toast.error {
+        border-left-color: #ef4444;
+    }
+
+    .toast.error .toast-icon {
+        color: #ef4444;
+    }
+
+    .toast.warning {
+        border-left-color: #f59e0b;
+    }
+
+    .toast.warning .toast-icon {
+        color: #f59e0b;
+    }
+
+    .toast.info {
+        border-left-color: #3b82f6;
+    }
+
+    .toast.info .toast-icon {
+        color: #3b82f6;
+    }
+
+    .toast-icon {
+        font-size: 1.5rem;
+    }
+
+    .toast-content {
+        flex: 1;
+    }
+
+    .toast-title {
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 4px;
+    }
+
+    .toast-message {
+        color: #64748b;
+        font-size: 0.9rem;
+    }
+
+    .toast-close {
+        color: #94a3b8;
+        cursor: pointer;
+        font-size: 1.2rem;
+        padding: 4px;
+        transition: color 0.2s;
+    }
+
+    .toast-close:hover {
+        color: #475569;
+    }
+
+    /* Loading overlay */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+    }
+
+    .loading-overlay.show {
+        display: flex;
+    }
+
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
 </style>
 @endpush
 
 @section('content')
 <div class="main-container">
     <main class="content">
+        <!-- Toast Container -->
+        <div class="toast-container" id="toastContainer"></div>
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="spinner"></div>
+        </div>
+
         <div class="page-header">
             <div class="page-title">
                 <h1>System Activity Logs</h1>
                 <p>Monitor all user activities and system events</p>
             </div>
             <div class="page-actions">
-                <a href="{{ route('admin.logs.export', $filters) }}" class="export-btn">
+                <a href="{{ route('admin.logs.export', request()->query()) }}" class="export-btn">
                     <i class="fas fa-download"></i> Export Logs
                 </a>
             </div>
         </div>
 
         <!-- Statistics -->
-        <div class="logs-stats-grid">
+        <div class="logs-stats-grid" id="statsContainer">
             <div class="log-stat-card">
                 <h4>Total Logs</h4>
-                <div class="log-stat-value">{{ $stats['total_logs'] }}</div>
+                <div class="log-stat-value" id="totalLogs">{{ $stats['total_logs'] }}</div>
                 <div class="log-stat-label">All Activities</div>
             </div>
             <div class="log-stat-card">
                 <h4>Logs Today</h4>
-                <div class="log-stat-value">{{ $stats['logs_today'] }}</div>
+                <div class="log-stat-value" id="logsToday">{{ $stats['logs_today'] }}</div>
                 <div class="log-stat-label">Today's Activities</div>
             </div>
             <div class="log-stat-card">
                 <h4>Unique Users</h4>
-                <div class="log-stat-value">{{ $stats['unique_users'] }}</div>
+                <div class="log-stat-value" id="uniqueUsers">{{ $stats['unique_users'] }}</div>
                 <div class="log-stat-label">Active Users</div>
             </div>
             <div class="log-stat-card">
                 <h4>Most Active User</h4>
-                <div class="log-stat-value" style="font-size: 1.5rem;">{{ $stats['most_active_user'] }}</div>
+                <div class="log-stat-value" style="font-size: 1.5rem;" id="mostActiveUser">{{ $stats['most_active_user'] }}</div>
                 <div class="log-stat-label">Highest Activity</div>
             </div>
         </div>
@@ -433,14 +679,14 @@
                 <i class="fas fa-filter"></i> Filter Logs
             </div>
 
-            <form method="GET" action="{{ route('admin.logs.index') }}">
+            <form method="GET" action="{{ route('admin.logs.index') }}" id="filterForm">
                 <div class="filter-grid">
                     <div class="filter-group">
                         <label for="user_id">User</label>
                         <select id="user_id" name="user_id">
                             <option value="all">All Users</option>
                             @foreach($users as $user)
-                                <option value="{{ $user->id }}" {{ $filters['user_id'] == $user->id ? 'selected' : '' }}>
+                                <option value="{{ $user->id }}" {{ ($filters['user_id'] ?? 'all') == $user->id ? 'selected' : '' }}>
                                     {{ $user->username }} ({{ $user->role }})
                                 </option>
                             @endforeach
@@ -452,7 +698,7 @@
                         <select id="action" name="action">
                             <option value="all">All Actions</option>
                             @foreach($actions as $action)
-                                <option value="{{ $action }}" {{ $filters['action'] == $action ? 'selected' : '' }}>
+                                <option value="{{ $action }}" {{ ($filters['action'] ?? 'all') == $action ? 'selected' : '' }}>
                                     {{ ucfirst($action) }}
                                 </option>
                             @endforeach
@@ -464,7 +710,7 @@
                         <input type="date"
                                id="from_date"
                                name="from_date"
-                               value="{{ $filters['from_date'] }}"
+                               value="{{ $filters['from_date'] ?? '' }}"
                                placeholder="dd/mm/yyyy">
                     </div>
 
@@ -473,7 +719,7 @@
                         <input type="date"
                                id="to_date"
                                name="to_date"
-                               value="{{ $filters['to_date'] }}"
+                               value="{{ $filters['to_date'] ?? '' }}"
                                placeholder="dd/mm/yyyy">
                     </div>
                 </div>
@@ -493,76 +739,89 @@
         <div class="data-table">
             <div class="table-header">
                 <h3>Activity Logs</h3>
+                <div class="table-header-actions">
+                    <button type="button" class="delete-btn" id="bulkDeleteBtn" disabled onclick="openBulkDeleteModal()">
+                        <i class="fas fa-trash-alt"></i> Delete Selected (<span id="selectedCount">0</span>)
+                    </button>
+                </div>
             </div>
 
             @if($logs->count() > 0)
-            <table>
-                <thead>
-                    <tr>
-                        <th>Timestamp</th>
-                        <th>User</th>
-                        <th>Role</th>
-                        <th>Action</th>
-                        <th>Description</th>
-                        <th>IP Address</th>
-                        <th>User Agent</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($logs as $log)
-                    <tr class="log-row">
-                        <td>{{ $log->created_at->format('M j, Y g:i A') }}</td>
-                        <td>
-                            <div class="user-info">
-                                <div class="user-avatar">
-                                    {{ substr($log->user->username ?? 'S', 0, 1) }}
+            <div id="logsTableContainer">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="checkbox-column">
+                                <input type="checkbox" class="select-all-checkbox" id="selectAll" onclick="toggleSelectAll(this)">
+                            </th>
+                            <th>Timestamp</th>
+                            <th>User</th>
+                            <th>Role</th>
+                            <th>Action</th>
+                            <th>Description</th>
+                            <th>IP Address</th>
+                            <th>User Agent</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTableBody">
+                        @foreach($logs as $log)
+                        <tr class="log-row" id="log-row-{{ $log->id }}">
+                            <td class="checkbox-column">
+                                <input type="checkbox" value="{{ $log->id }}" class="log-checkbox" onclick="updateBulkDeleteButton()">
+                            </td>
+                            <td>{{ $log->created_at->format('M j, Y g:i A') }}</td>
+                            <td>
+                                <div class="user-info">
+                                    <div class="user-avatar">
+                                        {{ substr($log->user->username ?? 'S', 0, 1) }}
+                                    </div>
+                                    <div class="user-details">
+                                        <div class="user-name">{{ $log->user->full_name ?? ($log->user->username ?? 'System') }}</div>
+                                        @if($log->user)
+                                            <div class="user-role">{{ $log->user->username }}</div>
+                                        @endif
+                                    </div>
                                 </div>
-                                <div class="user-details">
-                                    <div class="user-name">{{ $log->user->full_name ?? ($log->user->username ?? 'System') }}</div>
-                                    @if($log->user)
-                                        <div class="user-role">{{ $log->user->username }}</div>
-                                    @endif
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            @if($log->user)
-                                <span class="action-badge action-other">
-                                    {{ ucfirst($log->user->role) }}
+                            </td>
+                            <td>
+                                @if($log->user)
+                                    <span class="action-badge action-other">
+                                        {{ ucfirst($log->user->role) }}
+                                    </span>
+                                @else
+                                    <span class="action-badge action-other">System</span>
+                                @endif
+                            </td>
+                            <td>
+                                @php
+                                    $actionClass = 'action-other';
+                                    if (str_contains(strtolower($log->action), 'login')) $actionClass = 'action-login';
+                                    elseif (str_contains(strtolower($log->action), 'logout')) $actionClass = 'action-logout';
+                                    elseif (str_contains(strtolower($log->action), 'create')) $actionClass = 'action-create';
+                                    elseif (str_contains(strtolower($log->action), 'update')) $actionClass = 'action-update';
+                                    elseif (str_contains(strtolower($log->action), 'delete')) $actionClass = 'action-delete';
+                                @endphp
+                                <span class="action-badge {{ $actionClass }}">
+                                    {{ ucfirst($log->action) }}
                                 </span>
-                            @else
-                                <span class="action-badge action-other">System</span>
-                            @endif
-                        </td>
-                        <td>
-                            @php
-                                $actionClass = 'action-other';
-                                if (str_contains(strtolower($log->action), 'login')) $actionClass = 'action-login';
-                                elseif (str_contains(strtolower($log->action), 'logout')) $actionClass = 'action-logout';
-                                elseif (str_contains(strtolower($log->action), 'create')) $actionClass = 'action-create';
-                                elseif (str_contains(strtolower($log->action), 'update')) $actionClass = 'action-update';
-                                elseif (str_contains(strtolower($log->action), 'delete')) $actionClass = 'action-delete';
-                            @endphp
-                            <span class="action-badge {{ $actionClass }}">
-                                {{ ucfirst($log->action) }}
-                            </span>
-                        </td>
-                        <td>{{ $log->description }}</td>
-                        <td>{{ $log->ip_address ?? 'N/A' }}</td>
-                        <td title="{{ $log->user_agent }}">
-                            {{ $log->short_user_agent }}
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
+                            </td>
+                            <td>{{ $log->description }}</td>
+                            <td>{{ $log->ip_address ?? 'N/A' }}</td>
+                            <td title="{{ $log->user_agent }}">
+                                {{ $log->short_user_agent }}
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
 
             <!-- Pagination -->
-            <div class="pagination-container">
+            <div class="pagination-container" id="paginationContainer">
                 <div class="pagination-info">
                     Showing {{ $logs->firstItem() }} to {{ $logs->lastItem() }} of {{ $logs->total() }} results
                 </div>
-                {{ $logs->links('pagination::simple-bootstrap-4') }}
+                {{ $logs->appends(request()->query())->links('pagination::simple-bootstrap-4') }}
             </div>
             @else
             <div class="no-logs">
@@ -573,49 +832,260 @@
     </main>
 </div>
 
+<!-- Bulk Delete Modal -->
+<div class="modal" id="bulkDeleteModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Delete Multiple Logs</h3>
+            <button class="modal-close" onclick="closeBulkDeleteModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to delete <span id="bulkDeleteCount"></span> selected log entries? This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+            <button class="cancel-btn" onclick="closeBulkDeleteModal()">Cancel</button>
+            <button class="confirm-btn" onclick="confirmBulkDelete()">Delete All</button>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
+    // Global variables
+    const bulkDeleteModal = document.getElementById('bulkDeleteModal');
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    const selectedCount = document.getElementById('selectedCount');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+
+    // Toast Notification System
+    function showToast(title, message, type = 'success', duration = 5000) {
+        const toastContainer = document.getElementById('toastContainer');
+        const toastId = 'toast-' + Date.now();
+
+        const icons = {
+            success: '✅',
+            error: '❌',
+            warning: '⚠️',
+            info: 'ℹ️'
+        };
+
+        const toastHtml = `
+            <div id="${toastId}" class="toast ${type}">
+                <div class="toast-icon">${icons[type]}</div>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+                <div class="toast-close" onclick="closeToast('${toastId}')">✕</div>
+            </div>
+        `;
+
+        toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+
+        setTimeout(() => {
+            const toast = document.getElementById(toastId);
+            if (toast) toast.classList.add('show');
+        }, 10);
+
+        setTimeout(() => closeToast(toastId), duration);
+    }
+
+    function closeToast(toastId) {
+        const toast = document.getElementById(toastId);
+        if (toast) {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }
+    }
+
     // Reset filters
     function resetFilters() {
         document.getElementById('user_id').value = 'all';
         document.getElementById('action').value = 'all';
         document.getElementById('from_date').value = '';
         document.getElementById('to_date').value = '';
-
-        // Submit the form to reset
-        document.querySelector('form').submit();
+        document.getElementById('filterForm').submit();
     }
 
     // Date validation
-    document.querySelector('form').addEventListener('submit', function(e) {
+    document.getElementById('filterForm')?.addEventListener('submit', function(e) {
         const fromDate = document.getElementById('from_date').value;
         const toDate = document.getElementById('to_date').value;
-
         if (fromDate && toDate && new Date(fromDate) > new Date(toDate)) {
-            alert('From date cannot be later than To date');
             e.preventDefault();
+            showToast('Invalid Date Range', 'From date cannot be later than To date', 'error');
         }
     });
 
-    // Auto-set date format placeholder
+    // Auto-set dates
     document.addEventListener('DOMContentLoaded', function() {
         const today = new Date().toISOString().split('T')[0];
         const monthAgo = new Date();
         monthAgo.setMonth(monthAgo.getMonth() - 1);
         const monthAgoStr = monthAgo.toISOString().split('T')[0];
 
-        // Set default "from date" to one month ago if empty
         const fromDateInput = document.getElementById('from_date');
-        if (!fromDateInput.value) {
-            fromDateInput.value = monthAgoStr;
+        if (!fromDateInput.value) fromDateInput.value = monthAgoStr;
+
+        const toDateInput = document.getElementById('to_date');
+        if (!toDateInput.value) toDateInput.value = today;
+    });
+
+    // Modal functions
+    function openBulkDeleteModal() {
+        const checkboxes = document.querySelectorAll('.log-checkbox:checked');
+        if (checkboxes.length > 0) {
+            document.getElementById('bulkDeleteCount').textContent = checkboxes.length;
+            bulkDeleteModal.classList.add('show');
+        }
+    }
+
+    function closeBulkDeleteModal() {
+        bulkDeleteModal.classList.remove('show');
+    }
+
+    function confirmBulkDelete() {
+        const checkboxes = document.querySelectorAll('.log-checkbox:checked');
+        if (checkboxes.length === 0) {
+            closeBulkDeleteModal();
+            return;
         }
 
-        // Set default "to date" to today if empty
-        const toDateInput = document.getElementById('to_date');
-        if (!toDateInput.value) {
-            toDateInput.value = today;
+        const logIds = Array.from(checkboxes).map(cb => cb.value);
+
+        closeBulkDeleteModal();
+        showLoading();
+
+        // Get the current URL parameters for filters
+        const params = new URLSearchParams(window.location.search);
+        const url = '{{ route("admin.logs.bulk-delete") }}?' + params.toString();
+
+        fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ log_ids: logIds })
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw err; });
+            }
+            return response.json();
+        })
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                // Remove all selected rows with fade effect
+                let deletedCount = 0;
+                logIds.forEach((id, index) => {
+                    const row = document.getElementById(`log-row-${id}`);
+                    if (row) {
+                        row.style.transition = 'opacity 0.3s';
+                        row.style.opacity = '0';
+                        setTimeout(() => {
+                            row.remove();
+                            deletedCount++;
+
+                            // After last row is removed
+                            if (deletedCount === logIds.length) {
+                                showToast('Success', data.message, 'success');
+
+                                // Update bulk delete button
+                                if (selectAllCheckbox) selectAllCheckbox.checked = false;
+                                updateBulkDeleteButton();
+
+                                // Refresh statistics
+                                refreshStatistics();
+
+                                // Check if table is empty
+                                if (document.querySelectorAll('.log-row').length === 0) {
+                                    setTimeout(() => location.reload(), 300);
+                                }
+                            }
+                        }, index * 50);
+                    }
+                });
+            } else {
+                showToast('Error', data.message || 'Failed to delete log entries', 'error');
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            console.error('Error:', error);
+            showToast('Error', error.message || 'Failed to delete log entries. Please try again.', 'error');
+        });
+    }
+
+    // Refresh statistics via AJAX
+    function refreshStatistics() {
+        const params = new URLSearchParams(window.location.search);
+
+        fetch(`/admin/logs/refresh-stats?${params.toString()}`, {
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('totalLogs').textContent = data.stats.total_logs;
+                document.getElementById('logsToday').textContent = data.stats.logs_today;
+                document.getElementById('uniqueUsers').textContent = data.stats.unique_users;
+                document.getElementById('mostActiveUser').textContent = data.stats.most_active_user;
+            }
+        })
+        .catch(error => console.error('Error refreshing stats:', error));
+    }
+
+    // Loading overlay
+    function showLoading() {
+        loadingOverlay.classList.add('show');
+    }
+
+    function hideLoading() {
+        loadingOverlay.classList.remove('show');
+    }
+
+    // Bulk delete functions
+    function toggleSelectAll(selectAllCheckbox) {
+        const checkboxes = document.querySelectorAll('.log-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = selectAllCheckbox.checked;
+        });
+        updateBulkDeleteButton();
+    }
+
+    function updateBulkDeleteButton() {
+        const checkboxes = document.querySelectorAll('.log-checkbox:checked');
+        const count = checkboxes.length;
+
+        if (selectedCount) selectedCount.textContent = count;
+        if (bulkDeleteBtn) bulkDeleteBtn.disabled = count === 0;
+
+        // Update select all checkbox
+        if (selectAllCheckbox) {
+            const allCheckboxes = document.querySelectorAll('.log-checkbox');
+            if (allCheckboxes.length > 0) {
+                selectAllCheckbox.checked = Array.from(allCheckboxes).every(cb => cb.checked);
+                selectAllCheckbox.indeterminate = count > 0 && count < allCheckboxes.length;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            }
         }
-    });
+    }
+
+    // Close modals when clicking outside
+    window.onclick = function(event) {
+        if (event.target === bulkDeleteModal) closeBulkDeleteModal();
+    }
+
+    // Initialize
+    updateBulkDeleteButton();
 </script>
 @endpush
 @endsection

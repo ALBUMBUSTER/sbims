@@ -158,50 +158,49 @@ class BackupController extends Controller
         }
     }
 
-    /**
-     * Update backup schedule settings
-     */
-    public function updateSchedule(Request $request)
-    {
-        $request->validate([
-            'schedule_type' => 'required|in:daily,weekly,monthly',
-            'backup_time' => 'required',
-            'retention_days' => 'required|integer|min:1|max:365'
+   /**
+ * Update backup schedule settings
+ */
+public function updateSchedule(Request $request)
+{
+    $request->validate([
+        'schedule_type' => 'required|in:daily,weekly,monthly',
+        'backup_time' => 'required',
+        'retention_days' => 'required|integer|min:1|max:365',
+        'backup_enabled' => 'sometimes|boolean'
+    ]);
+
+    try {
+        // Save schedule settings to database
+        \App\Models\BackupSetting::set('schedule_type', $request->schedule_type);
+        \App\Models\BackupSetting::set('backup_time', $request->backup_time);
+        \App\Models\BackupSetting::set('retention_days', $request->retention_days);
+        \App\Models\BackupSetting::set('backup_enabled', $request->has('backup_enabled') ? '1' : '0');
+
+        // Update next backup time
+        $this->backupService->updateNextBackupTime();
+
+        // Clean up old backups based on new retention period
+        $cleaned = $this->backupService->cleanupOldBackups($request->retention_days);
+
+        Log::info('Backup schedule updated', [
+            'schedule' => $request->schedule_type,
+            'time' => $request->backup_time,
+            'retention' => $request->retention_days,
+            'enabled' => $request->has('backup_enabled'),
+            'user_id' => Auth::id()
         ]);
 
-        try {
-            // Save schedule settings to a config file or database
-            $scheduleData = [
-                'type' => $request->schedule_type,
-                'time' => $request->backup_time,
-                'retention_days' => $request->retention_days,
-                'updated_by' => Auth::id(),
-                'updated_at' => now()
-            ];
+        return redirect()->route('admin.backups.index')
+            ->with('success', "Backup schedule updated successfully. Cleaned up {$cleaned} old backups.");
 
-            // You might want to save this to a settings table
-            // For now, we'll save to a JSON file
-            $settingsPath = storage_path('app/backups/schedule.json');
-            if (!file_exists(dirname($settingsPath))) {
-                mkdir(dirname($settingsPath), 0755, true);
-            }
-            file_put_contents($settingsPath, json_encode($scheduleData, JSON_PRETTY_PRINT));
+    } catch (\Exception $e) {
+        Log::error('Schedule update failed', [
+            'error' => $e->getMessage()
+        ]);
 
-            // Clean up old backups based on new retention period
-            $cleaned = $this->backupService->cleanupOldBackups($request->retention_days);
-
-            Log::info('Backup schedule updated', $scheduleData);
-
-            return redirect()->route('admin.backups.index')
-                ->with('success', "Backup schedule updated successfully. Cleaned up {$cleaned} old backups.");
-
-        } catch (\Exception $e) {
-            Log::error('Schedule update failed', [
-                'error' => $e->getMessage()
-            ]);
-
-            return redirect()->route('admin.backups.index')
-                ->with('error', 'Schedule update failed: ' . $e->getMessage());
-        }
+        return redirect()->route('admin.backups.index')
+            ->with('error', 'Schedule update failed: ' . $e->getMessage());
     }
+}
 }

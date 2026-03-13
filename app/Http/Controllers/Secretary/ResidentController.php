@@ -18,7 +18,22 @@ class ResidentController extends Controller
     }
 
     /* ==================== HELPER METHODS ==================== */
+    /**
+ * Check if current user is a clerk (role_id = 4)
+ */
+private function isClerk()
+{
+    return Auth::user()->role_id == 4;
+}
 
+/**
+ * Check if current user is a secretary or admin (allowed full access)
+ */
+private function isSecretaryOrAdmin()
+{
+    $role = Auth::user()->role_id;
+    return $role == 1 || $role == 3; // 1 = Admin, 3 = Secretary
+}
     /**
      * Generate a unique resident ID
      * Format: RES-YYYYMM-XXXX (e.g., RES-202502-0001)
@@ -187,15 +202,14 @@ class ResidentController extends Controller
     /**
      * Show the form for creating a new resident.
      */
-    public function create()
-    {
-        $generatedId = $this->generateResidentId();
-        $pwdResponse = $this->generatePwdId();
-        $generatedPwdId = $pwdResponse->getData()->id;
+public function create()
+{
+    $generatedId = $this->generateResidentId();
+    $pwdResponse = $this->generatePwdId();
+    $generatedPwdId = $pwdResponse->getData()->id;
 
-        return view('secretary.residents.create', compact('generatedId', 'generatedPwdId'));
-    }
-
+    return view('secretary.residents.create', compact('generatedId', 'generatedPwdId'));
+}
     /**
      * Generate ID for AJAX request (used in create form)
      */
@@ -294,6 +308,12 @@ class ResidentController extends Controller
      */
     public function update(Request $request, Resident $resident)
     {
+         // Clerks cannot update residents
+    if ($this->isClerk()) {
+        return redirect()->route('secretary.residents.show', $resident)
+            ->with('error', 'You do not have permission to update residents.');
+    }
+
         try {
             $validated = $request->validate([
                 'resident_id' => 'required|string|max:20|unique:residents,resident_id,' . $resident->id,
@@ -398,6 +418,11 @@ class ResidentController extends Controller
      */
     public function destroy(Request $request, Resident $resident)
     {
+        // Clerks cannot delete residents
+    if ($this->isClerk()) {
+        return redirect()->route('secretary.residents.index')
+            ->with('error', 'You do not have permission to delete residents.');
+    }
         try {
             $residentName = $resident->first_name . ' ' . $resident->last_name;
             $residentId = $resident->resident_id;
@@ -612,6 +637,11 @@ class ResidentController extends Controller
  */
 public function archive(Request $request, Resident $resident)
 {
+    // Clerks cannot archive residents
+    if ($this->isClerk()) {
+        return redirect()->route('secretary.residents.index')
+            ->with('error', 'You do not have permission to archive residents.');
+    }
     try {
         $residentName = $resident->first_name . ' ' . $resident->last_name;
         $residentId = $resident->resident_id;
@@ -641,6 +671,11 @@ public function archive(Request $request, Resident $resident)
  */
 public function restore(Request $request, $id)
 {
+    // Clerks cannot restore residents
+    if ($this->isClerk()) {
+        return redirect()->route('secretary.residents.archived')
+            ->with('error', 'You do not have permission to restore residents.');
+    }
     try {
         $resident = Resident::withTrashed()->findOrFail($id);
         $residentName = $resident->first_name . ' ' . $resident->last_name;
@@ -669,6 +704,11 @@ public function restore(Request $request, $id)
  */
 public function forceDelete(Request $request, $id)
 {
+    // Clerks cannot permanently delete residents
+    if ($this->isClerk()) {
+        return redirect()->route('secretary.residents.archived')
+            ->with('error', 'You do not have permission to permanently delete residents.');
+    }
     try {
         $resident = Resident::withTrashed()->findOrFail($id);
         $residentName = $resident->first_name . ' ' . $resident->last_name;
@@ -698,6 +738,12 @@ public function forceDelete(Request $request, $id)
  */
 public function archived(Request $request)
 {
+
+ // Clerks cannot view archived residents
+    if ($this->isClerk()) {
+        return redirect()->route('secretary.residents.index')
+            ->with('error', 'You do not have permission to view archived residents.');
+    }
     $query = Resident::onlyTrashed(); // Use onlyTrashed() instead of archived() scope
 
     // Search functionality

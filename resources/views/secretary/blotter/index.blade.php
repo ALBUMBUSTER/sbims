@@ -139,6 +139,9 @@
                                     <a href="{{ route('secretary.blotter.edit', $blotter) }}" class="btn-icon" title="Edit">
                                         <i class="fas fa-pencil-alt"></i>
                                     </a>
+
+                                    {{-- Delete Button - Hidden for Clerk --}}
+                                    @if(auth()->user()->role_id != 4) {{-- Not a clerk --}}
                                     <button type="button" class="btn-icon delete-btn" title="Delete"
                                         onclick="confirmDelete('{{ $blotter->id }}')">
                                         <i class="fas fa-trash"></i>
@@ -149,6 +152,7 @@
                                         @csrf
                                         @method('DELETE')
                                     </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

@@ -226,6 +226,24 @@ Route::middleware(['auth'])->group(function () {
         return 'Test notification created with ID: ' . $notification->id . ' for admin: ' . $admin->email;
     })->middleware('auth');
 });
+// Password Recovery Routes (public)
+Route::prefix('password')->name('password.')->group(function () {
+    Route::get('/forgot', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'showForm'])->name('request');
+    Route::post('/recover/step1', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'step1'])->name('recover.step1');
+    Route::get('/recover/step2', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'showStep2'])->name('recover.step2');
+    Route::post('/recover/step2', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'step2'])->name('recover.step2');
+    Route::get('/reset', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'showResetForm'])->name('reset.form');
+    Route::post('/reset', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'reset'])->name('reset');
+    Route::get('/cancel', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'cancel'])->name('cancel');
+});
+// Username Recovery Routes
+Route::prefix('username')->name('username.')->group(function () {
+    Route::get('/recover', [App\Http\Controllers\Auth\UsernameRecoveryController::class, 'showRecoveryForm'])->name('recover');
+    Route::post('/recover/find', [App\Http\Controllers\Auth\UsernameRecoveryController::class, 'findUser'])->name('recover.find');
+    Route::get('/recover/question', [App\Http\Controllers\Auth\UsernameRecoveryController::class, 'showQuestion'])->name('recover.question');
+    Route::post('/recover/verify', [App\Http\Controllers\Auth\UsernameRecoveryController::class, 'verifyAnswer'])->name('recover.verify');
+    Route::get('/recover/cancel', [App\Http\Controllers\Auth\UsernameRecoveryController::class, 'cancel'])->name('recover.cancel');
+});
 
 // ========== GLOBAL NOTIFICATION ROUTES (accessible by all authenticated users) ==========
 Route::middleware(['auth'])->group(function () {

@@ -7,7 +7,7 @@
     <div class="page-header">
         <div class="page-title">
             <h1>Edit Blotter Case</h1>
-            <p>Case #: {{ $blotter->blotter_number }}</p>
+            <p>Case #: {{ $blotter->case_id }}</p>
         </div>
         <div class="page-actions">
             <a href="{{ route('secretary.blotter.show', $blotter) }}" class="btn-secondary">
@@ -28,7 +28,7 @@
                 <div class="form-grid">
                     <div class="form-group full-width">
                         <label for="complainant_id">Select Complainant <span class="required">*</span></label>
-                        <select name="complainant_id" id="complainant_id" class="form-control @error('complainant_id') is-invalid @enderror" required>
+                        <select name="complainant_id" id="complainant_id" required>
                             <option value="">Select Resident</option>
                             @foreach($residents as $resident)
                                 <option value="{{ $resident->id }}" {{ old('complainant_id', $blotter->complainant_id) == $resident->id ? 'selected' : '' }}>
@@ -123,25 +123,13 @@
                     </div>
 
                     <div class="form-group full-width">
-                        <label for="complaint_details">Complaint Details <span class="required">*</span></label>
-                        <textarea id="complaint_details"
-                                  name="complaint_details"
-                                  class="form-control @error('complaint_details') is-invalid @enderror"
+                        <label for="description">Description <span class="required">*</span></label>
+                        <textarea id="description"
+                                  name="description"
+                                  class="form-control @error('description') is-invalid @enderror"
                                   rows="4"
-                                  required>{{ old('complaint_details', $blotter->complaint_details) }}</textarea>
-                        @error('complaint_details')
-                            <span class="error-message">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    <div class="form-group full-width">
-                        <label for="witnesses">Witnesses</label>
-                        <textarea id="witnesses"
-                                  name="witnesses"
-                                  class="form-control @error('witnesses') is-invalid @enderror"
-                                  rows="2"
-                                  placeholder="Enter names of witnesses (if any)">{{ old('witnesses', $blotter->witnesses) }}</textarea>
-                        @error('witnesses')
+                                  required>{{ old('description', $blotter->description) }}</textarea>
+                        @error('description')
                             <span class="error-message">{{ $message }}</span>
                         @enderror
                     </div>
@@ -152,41 +140,71 @@
             <div class="form-section">
                 <h2>Case Status</h2>
                 <div class="form-grid">
+                    <!-- Status Field -->
                     <div class="form-group">
                         <label for="status">Status <span class="required">*</span></label>
-                        <select name="status" id="status" class="form-control @error('status') is-invalid @enderror" required onchange="toggleResolutionFields()">
-                            <option value="Pending" {{ old('status', $blotter->status) == 'Pending' ? 'selected' : '' }}>Pending</option>
-                            <option value="Investigating" {{ old('status', $blotter->status) == 'Investigating' ? 'selected' : '' }}>Investigating</option>
-                            <option value="Hearings" {{ old('status', $blotter->status) == 'Hearings' ? 'selected' : '' }}>Hearings</option>
-                            <option value="Settled" {{ old('status', $blotter->status) == 'Settled' ? 'selected' : '' }}>Settled</option>
-                            <option value="Unsolved" {{ old('status', $blotter->status) == 'Unsolved' ? 'selected' : '' }}>Unsolved</option>
-                            <option value="Dismissed" {{ old('status', $blotter->status) == 'Dismissed' ? 'selected' : '' }}>Dismissed</option>
-                        </select>
+
+                        @php
+                            $isClerk = auth()->user()->role_id == 4;
+                            $currentStatus = old('status', $blotter->status);
+                        @endphp
+
+                        @if($isClerk)
+                            {{-- Clerk sees read-only status --}}
+                            <input type="text"
+                                   id="status"
+                                   value="{{ $currentStatus }}"
+                                   class="form-control"
+                                   readonly>
+                            <input type="hidden" name="status" value="{{ $currentStatus }}">
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle"></i> Status cannot be changed by clerk. Please contact secretary for status updates.
+                            </small>
+                        @else
+                            {{-- Secretary/Admin sees full dropdown --}}
+                            <select name="status" id="status" class="form-control @error('status') is-invalid @enderror" required onchange="toggleResolutionFields()">
+                                <option value="Pending" {{ $currentStatus == 'Pending' ? 'selected' : '' }}>Pending</option>
+                                <option value="Investigating" {{ $currentStatus == 'Investigating' ? 'selected' : '' }}>Investigating</option>
+                                <option value="Hearings" {{ $currentStatus == 'Hearings' ? 'selected' : '' }}>Hearings</option>
+                                <option value="Settled" {{ $currentStatus == 'Settled' ? 'selected' : '' }}>Settled</option>
+                                <option value="Unsolved" {{ $currentStatus == 'Unsolved' ? 'selected' : '' }}>Unsolved</option>
+                                <option value="Dismissed" {{ $currentStatus == 'Dismissed' ? 'selected' : '' }}>Dismissed</option>
+                            </select>
+                        @endif
+
                         @error('status')
                             <span class="error-message">{{ $message }}</span>
                         @enderror
                     </div>
 
-<div id="resolutionFields" data-show="{{ old('status', $blotter->status) == 'Settled' ? 'true' : 'false' }}" style="grid-column: 1 / -1;">                        <div class="form-grid">
+                    <!-- Resolution Fields - Hidden for Clerk -->
+                    @php
+                        $showResolution = !$isClerk && old('status', $blotter->status) == 'Settled';
+                    @endphp
+
+                    <div id="resolutionFields" class="full-width" @if($showResolution) style="display: block;" @else style="display: none;" @endif>
+                        <div class="form-grid">
                             <div class="form-group full-width">
                                 <label for="resolution">Resolution <span class="required">*</span></label>
                                 <textarea id="resolution"
                                           name="resolution"
                                           class="form-control @error('resolution') is-invalid @enderror"
-                                          rows="3">{{ old('resolution', $blotter->resolution) }}</textarea>
+                                          rows="3"
+                                          {{ $isClerk ? 'readonly' : '' }}>{{ old('resolution', $blotter->resolution) }}</textarea>
                                 @error('resolution')
                                     <span class="error-message">{{ $message }}</span>
                                 @enderror
                             </div>
 
                             <div class="form-group">
-                                <label for="settlement_date">Settlement Date</label>
+                                <label for="resolved_date">Resolution Date</label>
                                 <input type="date"
-                                       id="settlement_date"
-                                       name="settlement_date"
-                                       value="{{ old('settlement_date', $blotter->settlement_date ? $blotter->settlement_date->format('Y-m-d') : '') }}"
-                                       class="form-control @error('settlement_date') is-invalid @enderror">
-                                @error('settlement_date')
+                                       id="resolved_date"
+                                       name="resolved_date"
+                                       value="{{ old('resolved_date', $blotter->resolved_date ? $blotter->resolved_date->format('Y-m-d') : '') }}"
+                                       class="form-control @error('resolved_date') is-invalid @enderror"
+                                       {{ $isClerk ? 'readonly' : '' }}>
+                                @error('resolved_date')
                                     <span class="error-message">{{ $message }}</span>
                                 @enderror
                             </div>
@@ -211,7 +229,6 @@
 
 @push('styles')
 <style>
-/* Same styles as create view */
 .container-fluid {
     padding: 1.5rem;
 }
@@ -333,6 +350,11 @@
     border-color: #dc2626;
 }
 
+.form-control:read-only {
+    background-color: #f8f9fa;
+    cursor: not-allowed;
+}
+
 textarea.form-control {
     resize: vertical;
     min-height: 80px;
@@ -357,56 +379,52 @@ textarea.form-control {
     width: 16px;
     height: 16px;
 }
+
+/* Helper text */
+.text-muted {
+    color: #6c757d;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    display: block;
+}
+
+.text-muted i {
+    margin-right: 0.25rem;
+}
 </style>
 @endpush
 
 @push('scripts')
 <script>
 function toggleResolutionFields() {
-    const status = document.getElementById('status').value;
+    const status = document.getElementById('status');
     const resolutionFields = document.getElementById('resolutionFields');
     const resolution = document.getElementById('resolution');
-    const settlementDate = document.getElementById('settlement_date');
+    const resolvedDate = document.getElementById('resolved_date');
 
-    if (status === 'Settled') {
-        resolutionFields.style.display = 'block';
-        resolution.required = true;
-        settlementDate.required = true;
-    } else {
-        resolutionFields.style.display = 'none';
-        resolution.required = false;
-        settlementDate.required = false;
-    }
-}
-</script>
-@endpush
-@push('scripts')
-<script>
-// Initialize resolution fields visibility
-document.addEventListener('DOMContentLoaded', function() {
-    const resolutionFields = document.getElementById('resolutionFields');
-    if (resolutionFields.dataset.show === 'true') {
-        resolutionFields.style.display = 'block';
-    } else {
-        resolutionFields.style.display = 'none';
-    }
-});
+    // Only run for non-clerk users (status select exists)
+    if (!status || !resolutionFields) return;
 
-function toggleResolutionFields() {
-    const status = document.getElementById('status').value;
-    const resolutionFields = document.getElementById('resolutionFields');
-    const resolution = document.getElementById('resolution');
-    const settlementDate = document.getElementById('settlement_date');
-
-    if (status === 'Settled') {
+    if (status.value === 'Settled') {
         resolutionFields.style.display = 'block';
         if (resolution) resolution.required = true;
-        if (settlementDate) settlementDate.required = true;
+        if (resolvedDate) resolvedDate.required = false; // Make date optional if needed
     } else {
         resolutionFields.style.display = 'none';
         if (resolution) resolution.required = false;
-        if (settlementDate) settlementDate.required = false;
+        if (resolvedDate) resolvedDate.required = false;
     }
 }
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if we need to show resolution fields initially
+    const status = document.getElementById('status');
+    const resolutionFields = document.getElementById('resolutionFields');
+
+    if (status && resolutionFields && status.value === 'Settled') {
+        resolutionFields.style.display = 'block';
+    }
+});
 </script>
 @endpush

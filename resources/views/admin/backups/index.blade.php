@@ -4,6 +4,77 @@
 
 @push('styles')
 <style>
+    /* Toast Notification */
+    .toast {
+        visibility: hidden;
+        min-width: 300px;
+        background-color: white;
+        color: #333;
+        text-align: center;
+        border-radius: 8px;
+        padding: 1rem;
+        position: fixed;
+        z-index: 1001;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        border-left: 4px solid #10b981;
+        animation: slideUp 0.3s;
+    }
+
+    .toast.show {
+        visibility: visible;
+        animation: slideUp 0.3s, fadeOut 0.3s 2.7s;
+    }
+
+    .toast-content {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        justify-content: center;
+    }
+
+    .toast-icon {
+        width: 24px;
+        height: 24px;
+        flex-shrink: 0;
+    }
+
+    .toast-icon.success {
+        color: #10b981;
+    }
+
+    .toast-icon.error {
+        color: #dc2626;
+    }
+
+    .toast-icon.info {
+        color: #3b82f6;
+    }
+
+    @keyframes slideUp {
+        from {
+            transform: translate(-50%, 20px);
+            opacity: 0;
+        }
+        to {
+            transform: translate(-50%, 0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes fadeOut {
+        from {
+            opacity: 1;
+            transform: translate(-50%, 0);
+        }
+        to {
+            opacity: 0;
+            transform: translate(-50%, -10px);
+        }
+    }
+
     .backup-stats-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -369,6 +440,24 @@
         font-size: 0.85rem;
     }
 
+    /* Retention Info Box */
+    .retention-info {
+        background: #e8f5e9;
+        border-left: 4px solid #10b981;
+        padding: 0.8rem 1rem;
+        border-radius: 4px;
+        margin: 0.5rem 0 1rem 0;
+        font-size: 0.85rem;
+        color: #065f46;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .retention-info i {
+        color: #10b981;
+    }
+
     /* Modal Styles */
     .modal {
         display: none;
@@ -457,6 +546,14 @@
 @endpush
 
 @section('content')
+<!-- Toast Notification -->
+<div id="toast" class="toast">
+    <div class="toast-content">
+        <i class="fas fa-check-circle toast-icon success"></i>
+        <span id="toastMessage">Operation completed successfully!</span>
+    </div>
+</div>
+
 <div class="main-container">
     <main class="content">
         <div class="page-header">
@@ -495,6 +592,14 @@
             </div>
         </div>
 
+        <!-- Success/Error Messages from Session -->
+        @if(session('success'))
+            <script>document.addEventListener('DOMContentLoaded', () => showToast("{{ session('success') }}", 'success'));</script>
+        @endif
+        @if(session('error'))
+            <script>document.addEventListener('DOMContentLoaded', () => showToast("{{ session('error') }}", 'error'));</script>
+        @endif
+
         <!-- Create New Backup Section -->
         <div class="backup-creation-card">
             <h3><i class="fas fa-database"></i> Create New Backup</h3>
@@ -516,11 +621,77 @@
                         <i class="fas fa-save"></i> Create Backup Now
                     </button>
                 </form>
-
-                <button type="button" class="btn-backup btn-backup-secondary" onclick="showScheduleModal()">
-                    <i class="fas fa-clock"></i> Schedule Backup
-                </button>
             </div>
+        </div>
+
+        <!-- Backup Schedule Settings -->
+        <div class="schedule-card">
+            <h3><i class="fas fa-clock"></i> Backup Schedule Settings</h3>
+
+            @php
+                $settings = app(\App\Services\BackupService::class)->getScheduleSettings();
+            @endphp
+
+            <form action="{{ route('admin.backups.schedule') }}" method="POST" id="scheduleForm">
+                @csrf
+                @method('PUT')
+
+                <div class="schedule-form">
+                    <div class="form-group">
+                        <label for="schedule_type"><i class="fas fa-calendar"></i> Schedule Type</label>
+                        <select id="schedule_type" name="schedule_type">
+                            <option value="daily" {{ $settings['schedule_type'] == 'daily' ? 'selected' : '' }}>Daily</option>
+                            <option value="weekly" {{ $settings['schedule_type'] == 'weekly' ? 'selected' : '' }}>Weekly</option>
+                            <option value="monthly" {{ $settings['schedule_type'] == 'monthly' ? 'selected' : '' }}>Monthly</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="backup_time"><i class="fas fa-hourglass"></i> Backup Time</label>
+                        <input type="time"
+                               id="backup_time"
+                               name="backup_time"
+                               value="{{ $settings['backup_time'] }}"
+                               required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="retention_days"><i class="fas fa-calendar-day"></i> Retention Period (Days)</label>
+                        <input type="number"
+                               id="retention_days"
+                               name="retention_days"
+                               value="{{ $settings['retention_days'] }}"
+                               min="1" max="365"
+                               required>
+                    </div>
+
+                    <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                        <label for="backup_enabled" style="margin-bottom: 0;">
+                            <i class="fas fa-power-off"></i> Enable Scheduled Backups
+                        </label>
+                        <input type="checkbox"
+                               id="backup_enabled"
+                               name="backup_enabled"
+                               value="1"
+                               {{ $settings['backup_enabled'] ? 'checked' : '' }}
+                               style="width: auto;">
+                    </div>
+                </div>
+                <div class="schedule-info" style="background: #f0f9ff; padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
+                    @if($settings['next_backup_run'])
+                        <p><i class="fas fa-clock"></i> <strong>Next scheduled backup:</strong> {{ \Carbon\Carbon::parse($settings['next_backup_run'])->format('M d, Y h:i A') }}</p>
+                    @endif
+                    @if($settings['last_backup_run'])
+                        <p><i class="fas fa-history"></i> <strong>Last backup:</strong> {{ \Carbon\Carbon::parse($settings['last_backup_run'])->format('M d, Y h:i A') }}</p>
+                    @endif
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-backup btn-backup-primary">
+                        <i class="fas fa-save"></i> Save Schedule
+                    </button>
+                </div>
+            </form>
         </div>
 
         <!-- Available Backups -->
@@ -548,38 +719,30 @@
                                 <div class="backup-filename">
                                     <i class="fas fa-database"></i> {{ $backup->filename ?? 'Unknown' }}
                                 </div>
-                                <div class="backup-path">{{ $backup->path ?? 'Unknown' }}</div>
                             </div>
                         </td>
                         <td class="file-size">{{ $backup->formatted_size ?? '0 KB' }}</td>
                         <td class="file-date">{{ $backup->created_at->format('M d, Y h:i A') ?? 'Unknown' }}</td>
                        <td>
-    <div class="backup-actions-cell">
-        @php
-            // Safely get the backup ID
-            $backupId = $backup->id ?? null;
-        @endphp
+                            <div class="backup-actions-cell">
+                                @if($backup->id)
+                                <button type="button" class="btn-action btn-restore"
+                                        onclick="confirmRestore('{{ $backup->id }}')">
+                                    <i class="fas fa-undo-alt"></i> Restore
+                                </button>
 
-        @if($backupId)
-        <button type="button" class="btn-action btn-restore"
-                onclick="confirmRestore('{{ $backupId }}')">
-            <i class="fas fa-undo-alt"></i> Restore
-        </button>
+                                <a href="{{ route('admin.backups.download', $backup->id) }}"
+                                   class="btn-action btn-download">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
 
-        <a href="{{ route('admin.backups.download', $backupId) }}"
-           class="btn-action btn-download">
-            <i class="fas fa-download"></i> Download
-        </a>
-
-        <button type="button" class="btn-action btn-delete"
-                onclick="confirmDelete('{{ $backupId }}')">
-            <i class="fas fa-trash-alt"></i> Delete
-        </button>
-        @else
-        <span class="text-muted"><i class="fas fa-ban"></i> No actions available</span>
-        @endif
-    </div>
-</td>
+                                <button type="button" class="btn-action btn-delete"
+                                        onclick="confirmDelete('{{ $backup->id }}')">
+                                    <i class="fas fa-trash-alt"></i> Delete
+                                </button>
+                                @endif
+                            </div>
+                        </td>
                     </tr>
                     @endforeach
                 </tbody>
@@ -591,61 +754,6 @@
             </div>
             @endif
         </div>
-
-        <!-- Backup Schedule Settings -->
-        <div class="schedule-card">
-            <h3><i class="fas fa-clock"></i> Backup Schedule Settings</h3>
-
-            <form action="{{ route('admin.backups.schedule') }}" method="POST">
-                @csrf
-                @method('PUT')
-
-                <div class="schedule-form">
-                    <div class="form-group">
-                        <label for="schedule_type"><i class="fas fa-calendar"></i> Schedule Type</label>
-                        <select id="schedule_type" name="schedule_type">
-                            <option value="daily">Daily</option>
-                            <option value="weekly">Weekly</option>
-                            <option value="monthly">Monthly</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="backup_time"><i class="fas fa-hourglass"></i> Backup Time (Daily)</label>
-                        <input type="time"
-                               id="backup_time"
-                               name="backup_time"
-                               value="02:00"
-                               required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="retention_days"><i class="fas fa-calendar-day"></i> Retention Period</label>
-                        <input type="number"
-                               id="retention_days"
-                               name="retention_days"
-                               value="30"
-                               min="1" max="365"
-                               required>
-                        <small style="color: #666; font-size: 0.8rem;">days</small>
-                    </div>
-                </div>
-
-                <div class="form-actions">
-                    <button type="submit" class="btn-backup btn-backup-primary">
-                        <i class="fas fa-save"></i> Save Schedule
-                    </button>
-                </div>
-            </form>
-        </div>
-
-        <!-- Last Backup Info -->
-        @if(isset($stats['last_backup']))
-        <div style="text-align: center; color: #666; font-size: 0.9rem; margin-top: 2rem; padding: 1rem; border-top: 1px solid #e2e8f0;">
-            <i class="fas fa-info-circle"></i> <strong>Database Information:</strong>
-            Last backup: {{ $stats['last_backup']->format('M d, Y h:i A') }}
-        </div>
-        @endif
     </main>
 </div>
 
@@ -664,7 +772,7 @@
             <form id="restoreForm" method="POST" style="display: inline;">
                 @csrf
                 @method('POST')
-                <button type="submit" class="btn-confirm">
+                <button type="submit" class="btn-confirm" style="background: #059669;">
                     <i class="fas fa-check"></i> Yes, Restore Backup
                 </button>
             </form>
@@ -696,6 +804,40 @@
 
 @push('scripts')
 <script>
+    // Toast notification function
+    function showToast(message, type = 'success') {
+        let toast = document.getElementById('toast');
+        let toastMessage = document.getElementById('toastMessage');
+        let toastIcon = document.querySelector('.toast-icon');
+
+        if (!toast || !toastMessage) return;
+
+        toastMessage.textContent = message;
+
+        if (type === 'success') {
+            toast.style.borderLeftColor = '#10b981';
+            if (toastIcon) {
+                toastIcon.classList.remove('error', 'info');
+                toastIcon.classList.add('success');
+            }
+        } else if (type === 'error') {
+            toast.style.borderLeftColor = '#dc2626';
+            if (toastIcon) {
+                toastIcon.classList.remove('success', 'info');
+                toastIcon.classList.add('error');
+            }
+        } else {
+            toast.style.borderLeftColor = '#3b82f6';
+            if (toastIcon) {
+                toastIcon.classList.remove('success', 'error');
+                toastIcon.classList.add('info');
+            }
+        }
+
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
     let currentBackupId = null;
 
     function confirmRestore(backupId) {
@@ -720,10 +862,6 @@
         currentBackupId = null;
     }
 
-    function showScheduleModal() {
-        alert('Schedule backup functionality would be implemented here.\nFor now, use the schedule settings below.');
-    }
-
     // Close modals when clicking outside
     document.addEventListener('click', function(event) {
         if (event.target.id === 'restoreModal') {
@@ -734,10 +872,6 @@
         }
     });
 
-    // Set default time to 02:00 AM
-    document.addEventListener('DOMContentLoaded', function() {
-        document.getElementById('backup_time').value = '02:00';
-    });
 </script>
 @endpush
 @endsection

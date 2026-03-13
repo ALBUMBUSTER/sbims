@@ -3,124 +3,100 @@
 namespace App\Services;
 
 use App\Models\Backup;
+use App\Models\BackupSetting;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class BackupService
 {
+    protected $backupPath;
+
+    public function __construct()
+    {
+        $this->backupPath = storage_path('app/backups');
+        if (!File::exists($this->backupPath)) {
+            File::makeDirectory($this->backupPath, 0755, true);
+        }
+    }
+
     /**
      * Create a database backup
      */
     public function createDatabaseBackup($userId = null)
     {
         try {
-            // Get all tables
+            $filename = 'backup_' . date('Y-m-d_His') . '.sql';
+            $filepath = $this->backupPath . '/' . $filename;
+
+            // Get database configuration
+            $dbHost = env('DB_HOST', '127.0.0.1');
+            $dbPort = env('DB_PORT', '3306');
+            $dbName = env('DB_DATABASE', 'sbims_pro');
+            $dbUser = env('DB_USERNAME', 'root');
+            $dbPass = env('DB_PASSWORD', '');
+
+            // Build mysqldump command
+            $command = sprintf(
+                'mysqldump --host=%s --port=%s --user=%s %s > %s',
+                escapeshellarg($dbHost),
+                escapeshellarg($dbPort),
+                escapeshellarg($dbUser),
+                escapeshellarg($dbName),
+                escapeshellarg($filepath)
+            );
+
+            if (!empty($dbPass)) {
+                $command = sprintf(
+                    'mysqldump --host=%s --port=%s --user=%s --password=%s %s > %s',
+                    escapeshellarg($dbHost),
+                    escapeshellarg($dbPort),
+                    escapeshellarg($dbUser),
+                    escapeshellarg($dbPass),
+                    escapeshellarg($dbName),
+                    escapeshellarg($filepath)
+                );
+            }
+
+            // Execute command
+            exec($command, $output, $returnCode);
+
+            if ($returnCode !== 0) {
+                throw new \Exception('mysqldump failed with code: ' . $returnCode);
+            }
+
+            // Get list of tables backed up
             $tables = DB::select('SHOW TABLES');
-            $databaseName = env('DB_DATABASE');
-            $tableKey = "Tables_in_{$databaseName}";
-
-            $backupData = [];
-            $tablesList = [];
-
-            foreach ($tables as $table) {
-                $tableName = $table->$tableKey;
-                $tablesList[] = $tableName;
-
-                // Get table data
-                $rows = DB::table($tableName)->get();
-
-                // Convert each row to array and handle special data types
-                $backupData[$tableName] = [];
-                foreach ($rows as $row) {
-                    $rowArray = (array) $row;
-
-                    // Handle JSON columns
-                    foreach ($rowArray as $key => $value) {
-                        if ($this->isJsonColumn($value)) {
-                            $rowArray[$key] = json_decode($value, true);
-                        }
-                    }
-
-                    $backupData[$tableName][] = $rowArray;
-                }
-            }
-
-            // Create backup filename
-            $filename = 'backup_' . date('Y-m-d_His') . '.json';
-            $path = 'backups/' . $filename;
-
-            // Create backups directory if it doesn't exist
-            if (!Storage::disk('local')->exists('backups')) {
-                Storage::disk('local')->makeDirectory('backups');
-            }
-
-            // Prepare backup data with metadata
-            $backupContent = [
-                'metadata' => [
-                    'tables' => $tablesList,
-                    'timestamp' => now()->toDateTimeString(),
-                    'type' => 'database',
-                    'version' => '1.0',
-                    'database' => $databaseName,
-                    'created_by' => $userId
-                ],
-                'data' => $backupData
-            ];
-
-            // Save backup data
-            $jsonContent = json_encode($backupContent, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-
-            if ($jsonContent === false) {
-                throw new \Exception('Failed to encode backup data to JSON');
-            }
-
-            Storage::disk('local')->put($path, $jsonContent);
-
-            // Verify file was created and has content
-            if (!Storage::disk('local')->exists($path)) {
-                throw new \Exception('Backup file was not created');
-            }
-
-            $size = Storage::disk('local')->size($path);
-
-            if ($size === 0) {
-                throw new \Exception('Backup file is empty');
-            }
-
-            // Log backup content preview for debugging
-            Log::info('Backup created', [
-                'filename' => $filename,
-                'size' => $size,
-                'tables_count' => count($tablesList),
-                'preview' => substr($jsonContent, 0, 500) . '...'
-            ]);
+            $tablesBackedUp = array_map('current', $tables);
 
             // Create backup record
             $backup = Backup::create([
                 'filename' => $filename,
-                'path' => $path,
-                'size' => $size,
+                'path' => 'backups/' . $filename,
+                'size' => filesize($filepath),
                 'type' => 'database',
-                'tables_backed_up' => json_encode($tablesList),
-                'created_by' => $userId,
+                'tables_backed_up' => $tablesBackedUp,
                 'created_at' => now()
             ]);
 
-            Log::info('Database backup created successfully', [
+            // Update last backup time in settings
+            BackupSetting::set('last_backup_run', now()->toDateTimeString());
+            $this->updateNextBackupTime();
+
+            Log::info('Database backup created', [
                 'backup_id' => $backup->id,
                 'filename' => $filename,
-                'tables' => count($tablesList),
-                'size' => $this->formatBytes($size)
+                'size' => $backup->size
             ]);
 
             return $backup;
 
         } catch (\Exception $e) {
-            Log::error('Failed to create database backup: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
+            Log::error('Database backup failed', [
+                'error' => $e->getMessage()
             ]);
             throw $e;
         }
@@ -135,206 +111,183 @@ class BackupService
             // First create database backup
             $dbBackup = $this->createDatabaseBackup($userId);
 
-            // Get database backup path
-            $dbPath = Storage::disk('local')->path($dbBackup->path);
+            // Create zip archive with database and uploaded files
+            $zipFilename = 'full_backup_' . date('Y-m-d_His') . '.zip';
+            $zipPath = $this->backupPath . '/' . $zipFilename;
 
-            // Create a zip file for full backup
-            $filename = 'full_backup_' . date('Y-m-d_His') . '.zip';
-            $path = 'backups/' . $filename;
-            $fullPath = Storage::disk('local')->path($path);
-
-            // Create zip archive
             $zip = new \ZipArchive();
-            if ($zip->open($fullPath, \ZipArchive::CREATE) !== true) {
-                throw new \Exception('Failed to create zip archive');
+            if ($zip->open($zipPath, \ZipArchive::CREATE) !== true) {
+                throw new \Exception('Could not create zip archive');
             }
 
             // Add database backup to zip
-            $zip->addFile($dbPath, 'database/' . $dbBackup->filename);
+            $zip->addFile($this->backupPath . '/' . $dbBackup->filename, 'database/' . $dbBackup->filename);
 
-            // Add storage files if they exist
-            $storagePaths = [
-                'public' => storage_path('app/public'),
-                'uploads' => storage_path('app/uploads'),
-                'media' => storage_path('app/media')
-            ];
+            // Add uploaded files to zip
+            $uploadPath = storage_path('app/public');
+            if (File::exists($uploadPath)) {
+                $this->addFolderToZip($uploadPath, $zip, 'uploads');
+            }
 
-            foreach ($storagePaths as $key => $dir) {
-                if (is_dir($dir)) {
-                    $this->addDirectoryToZip($zip, $dir, $key);
-                }
+            // Add template files to zip
+            $templatePath = storage_path('app/templates');
+            if (File::exists($templatePath)) {
+                $this->addFolderToZip($templatePath, $zip, 'templates');
             }
 
             $zip->close();
 
-            // Delete the temporary database backup file
-            if (file_exists($dbPath)) {
-                unlink($dbPath);
-            }
+            // Delete the temporary database backup
+            File::delete($this->backupPath . '/' . $dbBackup->filename);
+            $dbBackup->delete();
 
-            // Get zip file size
-            $size = filesize($fullPath);
-
-            // Create backup record for full backup
+            // Create full backup record
             $backup = Backup::create([
-                'filename' => $filename,
-                'path' => $path,
-                'size' => $size,
+                'filename' => $zipFilename,
+                'path' => 'backups/' . $zipFilename,
+                'size' => filesize($zipPath),
                 'type' => 'full',
                 'tables_backed_up' => $dbBackup->tables_backed_up,
-                'created_by' => $userId,
                 'created_at' => now()
             ]);
 
-            Log::info('Full backup created successfully', [
+            Log::info('Full backup created', [
                 'backup_id' => $backup->id,
-                'size' => $this->formatBytes($size)
+                'filename' => $zipFilename,
+                'size' => $backup->size
             ]);
 
             return $backup;
 
         } catch (\Exception $e) {
-            Log::error('Failed to create full backup: ' . $e->getMessage());
+            Log::error('Full backup failed', [
+                'error' => $e->getMessage()
+            ]);
             throw $e;
         }
     }
 
     /**
-     * Add directory to zip recursively
+     * Add folder contents to zip archive
      */
-    private function addDirectoryToZip($zip, $dir, $zipDir)
+    protected function addFolderToZip($folderPath, $zip, $zipFolder)
     {
-        $files = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($dir),
-            \RecursiveIteratorIterator::LEAVES_ONLY
-        );
-
+        $files = File::allFiles($folderPath);
         foreach ($files as $file) {
-            if (!$file->isDir()) {
-                $filePath = $file->getRealPath();
-                $relativePath = $zipDir . '/' . substr($filePath, strlen($dir) + 1);
-                $zip->addFile($filePath, $relativePath);
-            }
+            $relativePath = $zipFolder . '/' . $file->getRelativePathname();
+            $zip->addFile($file->getPathname(), $relativePath);
         }
     }
 
     /**
-     * Restore from a backup
+     * Restore from backup
      */
     public function restoreBackup(Backup $backup)
     {
         try {
-            // Read backup file
-            $content = Storage::disk('local')->get($backup->path);
+            $filepath = $this->backupPath . '/' . $backup->filename;
 
-            if (empty($content)) {
-                throw new \Exception('Backup file is empty');
+            if (!File::exists($filepath)) {
+                throw new \Exception('Backup file not found');
             }
 
-            $backupData = json_decode($content, true);
-
-            if (!$backupData) {
-                throw new \Exception('Invalid backup file format: ' . json_last_error_msg());
-            }
-
-            // Check if it's the new format with metadata
-            if (isset($backupData['metadata']) && isset($backupData['data'])) {
-                $tables = $backupData['metadata']['tables'];
-                $data = $backupData['data'];
+            if ($backup->type === 'database') {
+                // Restore database from SQL file
+                $this->restoreDatabase($filepath);
             } else {
-                // Old format
-                $tables = array_keys($backupData);
-                $data = $backupData;
+                // Restore full backup
+                $this->restoreFullBackup($filepath);
             }
 
-            // Disable foreign key checks
-            DB::statement('SET FOREIGN_KEY_CHECKS=0');
-
-            // Truncate existing tables
-            foreach ($tables as $table) {
-                if (Schema::hasTable($table)) {
-                    DB::table($table)->truncate();
-                    Log::info('Truncated table', ['table' => $table]);
-                }
-            }
-
-            // Restore data
-            foreach ($data as $table => $rows) {
-                if (Schema::hasTable($table) && !empty($rows)) {
-                    foreach ($rows as $row) {
-                        try {
-                            DB::table($table)->insert($row);
-                        } catch (\Exception $e) {
-                            Log::warning('Failed to insert row', [
-                                'table' => $table,
-                                'error' => $e->getMessage(),
-                                'row' => json_encode($row)
-                            ]);
-                        }
-                    }
-                    Log::info('Restored table', [
-                        'table' => $table,
-                        'rows' => count($rows)
-                    ]);
-                }
-            }
-
-            // Re-enable foreign key checks
-            DB::statement('SET FOREIGN_KEY_CHECKS=1');
-
-            Log::info('Backup restored successfully', [
+            Log::info('Backup restored', [
                 'backup_id' => $backup->id,
-                'tables' => count($tables)
+                'type' => $backup->type
             ]);
 
             return true;
 
         } catch (\Exception $e) {
-            // Re-enable foreign key checks even if there's an error
-            DB::statement('SET FOREIGN_KEY_CHECKS=1');
-
-            Log::error('Failed to restore backup: ' . $e->getMessage(), [
+            Log::error('Restore failed', [
                 'backup_id' => $backup->id,
-                'trace' => $e->getTraceAsString()
+                'error' => $e->getMessage()
             ]);
             throw $e;
         }
     }
 
     /**
-     * Clean up old backups based on retention days
+     * Restore database from SQL file
      */
-    public function cleanupOldBackups($retentionDays)
+    protected function restoreDatabase($filepath)
     {
-        try {
-            $cutoffDate = now()->subDays($retentionDays);
+        $dbHost = env('DB_HOST', '127.0.0.1');
+        $dbPort = env('DB_PORT', '3306');
+        $dbName = env('DB_DATABASE', 'sbims_pro');
+        $dbUser = env('DB_USERNAME', 'root');
+        $dbPass = env('DB_PASSWORD', '');
 
-            // Get old backups
-            $oldBackups = Backup::where('created_at', '<', $cutoffDate)->get();
-            $count = 0;
+        $command = sprintf(
+            'mysql --host=%s --port=%s --user=%s %s < %s',
+            escapeshellarg($dbHost),
+            escapeshellarg($dbPort),
+            escapeshellarg($dbUser),
+            escapeshellarg($dbName),
+            escapeshellarg($filepath)
+        );
 
-            foreach ($oldBackups as $backup) {
-                // Delete file
-                if (Storage::disk('local')->exists($backup->path)) {
-                    Storage::disk('local')->delete($backup->path);
-                    Log::info('Deleted backup file', ['path' => $backup->path]);
-                }
-                // Delete record
-                $backup->delete();
-                $count++;
-            }
-
-            Log::info('Old backups cleaned up', [
-                'count' => $count,
-                'retention_days' => $retentionDays
-            ]);
-
-            return $count;
-
-        } catch (\Exception $e) {
-            Log::error('Failed to cleanup old backups: ' . $e->getMessage());
-            throw $e;
+        if (!empty($dbPass)) {
+            $command = sprintf(
+                'mysql --host=%s --port=%s --user=%s --password=%s %s < %s',
+                escapeshellarg($dbHost),
+                escapeshellarg($dbPort),
+                escapeshellarg($dbUser),
+                escapeshellarg($dbPass),
+                escapeshellarg($dbName),
+                escapeshellarg($filepath)
+            );
         }
+
+        exec($command, $output, $returnCode);
+
+        if ($returnCode !== 0) {
+            throw new \Exception('Database restore failed');
+        }
+    }
+
+    /**
+     * Restore full backup
+     */
+    protected function restoreFullBackup($filepath)
+    {
+        $zip = new \ZipArchive();
+        if ($zip->open($filepath) !== true) {
+            throw new \Exception('Could not open backup archive');
+        }
+
+        // Extract to temporary directory
+        $tempPath = storage_path('app/temp_restore_' . time());
+        File::makeDirectory($tempPath, 0755, true);
+        $zip->extractTo($tempPath);
+        $zip->close();
+
+        // Restore database
+        $dbFile = $tempPath . '/database/' . basename($filepath, '.zip') . '.sql';
+        if (File::exists($dbFile)) {
+            $this->restoreDatabase($dbFile);
+        }
+
+        // Restore uploads
+        if (File::exists($tempPath . '/uploads')) {
+            File::copyDirectory($tempPath . '/uploads', storage_path('app/public'));
+        }
+
+        // Restore templates
+        if (File::exists($tempPath . '/templates')) {
+            File::copyDirectory($tempPath . '/templates', storage_path('app/templates'));
+        }
+
+        // Clean up
+        File::deleteDirectory($tempPath);
     }
 
     /**
@@ -343,83 +296,148 @@ class BackupService
     public function getDatabaseStats()
     {
         try {
-            // Get database size
-            $databaseName = env('DB_DATABASE');
-            $result = DB::select("
-                SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS size_mb
-                FROM information_schema.tables
-                WHERE table_schema = ?
-            ", [$databaseName]);
-
-            $size = isset($result[0]) ? $result[0]->size_mb * 1048576 : 0;
-
-            // Get table counts
             $stats = [
-                'database_size' => $size,
                 'total_users' => DB::table('users')->count(),
                 'total_residents' => DB::table('residents')->count(),
                 'total_blotters' => DB::table('blotters')->count(),
                 'total_certificates' => DB::table('certificates')->count(),
                 'total_logs' => DB::table('activity_logs')->count(),
+                'total_size' => 0,
+                'last_backup' => Backup::latest()->first()?->created_at
             ];
 
-            // Get last backup
-            $lastBackup = Backup::latest('created_at')->first();
-            if ($lastBackup) {
-                $stats['last_backup'] = $lastBackup->created_at;
+            // Calculate database size
+            $dbName = env('DB_DATABASE', 'sbims_pro');
+            $tables = DB::select('SHOW TABLE STATUS');
+            foreach ($tables as $table) {
+                $stats['total_size'] += $table->Data_length + $table->Index_length;
             }
 
             return $stats;
 
         } catch (\Exception $e) {
-            Log::error('Failed to get database stats: ' . $e->getMessage());
+            Log::error('Failed to get database stats', ['error' => $e->getMessage()]);
             return [
-                'database_size' => 0,
                 'total_users' => 0,
                 'total_residents' => 0,
                 'total_blotters' => 0,
                 'total_certificates' => 0,
                 'total_logs' => 0,
+                'total_size' => 0
             ];
         }
     }
 
     /**
-     * Check if a value is a JSON column
+     * Clean up old backups based on retention period
      */
-    private function isJsonColumn($value)
+    public function cleanupOldBackups($retentionDays)
     {
-        if (!is_string($value)) {
-            return false;
+        $cutoffDate = Carbon::now()->subDays($retentionDays);
+        $oldBackups = Backup::where('created_at', '<', $cutoffDate)->get();
+        $count = 0;
+
+        foreach ($oldBackups as $backup) {
+            if ($backup->fileExists()) {
+                File::delete($backup->getFilePath());
+            }
+            $backup->delete();
+            $count++;
         }
 
-        $trimmed = trim($value);
-        if (empty($trimmed)) {
-            return false;
-        }
-
-        if (($trimmed[0] === '{' && substr($trimmed, -1) === '}') ||
-            ($trimmed[0] === '[' && substr($trimmed, -1) === ']')) {
-            json_decode($trimmed);
-            return json_last_error() === JSON_ERROR_NONE;
-        }
-
-        return false;
+        return $count;
     }
 
     /**
-     * Format bytes to human readable format
+     * Get backup schedule settings
      */
-    private function formatBytes($bytes, $precision = 2)
+    public function getScheduleSettings()
     {
-        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        return [
+            'schedule_type' => BackupSetting::get('schedule_type', 'daily'),
+            'backup_time' => BackupSetting::get('backup_time', '02:00'),
+            'retention_days' => (int)BackupSetting::get('retention_days', '30'),
+            'backup_enabled' => (bool)BackupSetting::get('backup_enabled', '1'),
+            'last_backup_run' => BackupSetting::get('last_backup_run'),
+            'next_backup_run' => BackupSetting::get('next_backup_run')
+        ];
+    }
 
-        $bytes = max($bytes, 0);
-        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
-        $pow = min($pow, count($units) - 1);
+    /**
+     * Update next backup time based on schedule
+     */
+    public function updateNextBackupTime()
+    {
+        $settings = $this->getScheduleSettings();
 
-        $bytes /= pow(1024, $pow);
+        if (!$settings['backup_enabled']) {
+            BackupSetting::set('next_backup_run', null);
+            return;
+        }
 
-        return round($bytes, $precision) . ' ' . $units[$pow];
+        $now = Carbon::now();
+        $time = $settings['backup_time'];
+
+        switch ($settings['schedule_type']) {
+            case 'daily':
+                $next = Carbon::today()->setTimeFromTimeString($time);
+                if ($next <= $now) {
+                    $next->addDay();
+                }
+                break;
+
+            case 'weekly':
+                $next = Carbon::today()->setTimeFromTimeString($time);
+                if ($next <= $now) {
+                    $next->addWeek();
+                }
+                break;
+
+            case 'monthly':
+                $next = Carbon::today()->setTimeFromTimeString($time);
+                if ($next <= $now) {
+                    $next->addMonth();
+                }
+                break;
+
+            default:
+                $next = null;
+        }
+
+        if ($next) {
+            BackupSetting::set('next_backup_run', $next->toDateTimeString());
+        }
+    }
+
+    /**
+     * Check if backup is due and run it
+     */
+    public function runScheduledBackupIfDue()
+    {
+        $settings = $this->getScheduleSettings();
+
+        if (!$settings['backup_enabled']) {
+            return false;
+        }
+
+        $nextRun = $settings['next_backup_run'] ? Carbon::parse($settings['next_backup_run']) : null;
+        $now = Carbon::now();
+
+        if (!$nextRun || $now >= $nextRun) {
+            try {
+                $this->createDatabaseBackup();
+                $this->updateNextBackupTime();
+
+                // Clean up old backups
+                $this->cleanupOldBackups($settings['retention_days']);
+
+                return true;
+            } catch (\Exception $e) {
+                Log::error('Scheduled backup failed', ['error' => $e->getMessage()]);
+                return false;
+            }
+        }
+
+        return false;
     }
 }

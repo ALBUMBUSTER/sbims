@@ -6,7 +6,9 @@
 <div class="container-fluid">
     <div class="page-header">
         <div class="page-title">
-            <h1>Certificate Details</h1>
+            <h1>SBIMS-PRO</h1>
+            <p>Brgy. Libertad, Isabel, Leyte</p>
+            <h2 style="margin-top: 1rem;">Certificate Details</h2>
             <p>{{ $certificate->certificate_type }} - {{ $certificate->certificate_id }}</p>
         </div>
         <div class="page-actions">
@@ -14,11 +16,11 @@
                 <x-heroicon-o-arrow-left class="icon-small" />
                 Back to Certificates
             </a>
-            <!-- @if($certificate->status === 'Released')
-            <a href="{{ route('secretary.certificates.print', $certificate) }}" class="btn-primary" target="_blank">
+            @if($certificate->status === 'Released')
+            <a href="{{ route('secretary.certificates.generate-doc', $certificate) }}" class="btn-primary" target="_blank">
                 <x-heroicon-o-printer class="icon-small" />
                 Print Certificate
-            </a> -->
+            </a>
             @endif
             <a href="{{ route('secretary.certificates.edit', $certificate) }}" class="btn-secondary">
                 <x-heroicon-o-pencil class="icon-small" />
@@ -33,15 +35,15 @@
             <h3>Certificate Information</h3>
             <div class="info-grid">
                 <div class="info-item">
-                    <label>Certificate #</label>
+                    <label>CERTIFICATE #</label>
                     <p>{{ $certificate->certificate_id }}</p>
                 </div>
                 <div class="info-item">
-                    <label>Type</label>
+                    <label>TYPE</label>
                     <p>{{ $certificate->certificate_type }}</p>
                 </div>
                 <div class="info-item">
-                    <label>Status</label>
+                    <label>STATUS</label>
                     <p>
                         <span class="status-badge status-{{ strtolower($certificate->status) }}">
                             {{ $certificate->status }}
@@ -49,11 +51,11 @@
                     </p>
                 </div>
                 <div class="info-item">
-                    <label>Request Date</label>
+                    <label>REQUEST DATE</label>
                     <p>{{ $certificate->created_at->format('F d, Y h:i A') }}</p>
                 </div>
                 <div class="info-item full-width">
-                    <label>Purpose</label>
+                    <label>PURPOSE</label>
                     <p>{{ $certificate->purpose }}</p>
                 </div>
             </div>
@@ -63,24 +65,24 @@
         <div class="info-card">
             <h3>Resident Information</h3>
             <div class="info-grid">
-                <div class="info-item">
-                    <label>Full Name</label>
+                <div class="info-item full-width">
+                    <label>FULL NAME</label>
                     <p>{{ $certificate->resident->first_name }} {{ $certificate->resident->last_name }}</p>
                 </div>
                 <div class="info-item">
-                    <label>Gender</label>
+                    <label>GENDER</label>
                     <p>{{ $certificate->resident->gender }}</p>
                 </div>
                 <div class="info-item">
-                    <label>Civil Status</label>
+                    <label>CIVIL STATUS</label>
                     <p>{{ $certificate->resident->civil_status ?? 'N/A' }}</p>
                 </div>
                 <div class="info-item">
-                    <label>Birthdate</label>
+                    <label>BIRTHDATE</label>
                     <p>{{ $certificate->resident->birthdate ? $certificate->resident->birthdate->format('F d, Y') : 'N/A' }}</p>
                 </div>
                 <div class="info-item full-width">
-                    <label>Address</label>
+                    <label>ADDRESS</label>
                     <p>Purok {{ $certificate->resident->purok }}, {{ $certificate->resident->address }}</p>
                 </div>
             </div>
@@ -128,12 +130,14 @@
 <style>
 .container-fluid {
     padding: 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 .page-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 2rem;
     flex-wrap: wrap;
     gap: 1rem;
@@ -141,18 +145,21 @@
 
 .page-title h1 {
     color: #333;
-    margin-bottom: 0.5rem;
-    font-size: 1.8rem;
+    margin-bottom: 0.25rem;
+    font-size: 2rem;
+    font-weight: 600;
 }
 
 .page-title p {
     color: #666;
     font-size: 1rem;
+    margin: 0.25rem 0;
 }
 
 .page-actions {
     display: flex;
     gap: 0.75rem;
+    flex-wrap: wrap;
 }
 
 .btn-primary, .btn-secondary {
@@ -175,6 +182,7 @@
 
 .btn-primary:hover {
     opacity: 0.9;
+    transform: translateY(-1px);
 }
 
 .btn-secondary {
@@ -185,6 +193,7 @@
 
 .btn-secondary:hover {
     background: #eef2ff;
+    transform: translateY(-1px);
 }
 
 .icon-small {
@@ -203,18 +212,21 @@
     border-radius: 10px;
     padding: 1.5rem;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
 }
 
 .info-card h3 {
     color: #333;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
     border-bottom: 2px solid #667eea;
+    font-size: 1.25rem;
+    font-weight: 600;
 }
 
 .info-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1.5rem;
 }
 
@@ -230,8 +242,8 @@
 
 .info-item label {
     color: #666;
-    font-size: 0.85rem;
-    font-weight: 500;
+    font-size: 0.8rem;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -241,6 +253,7 @@
     font-size: 1rem;
     font-weight: 500;
     margin: 0;
+    line-height: 1.5;
 }
 
 .status-badge {
@@ -257,8 +270,13 @@
 .status-rejected { background: #fee2e2; color: #dc2626; }
 
 @media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+    }
+
     .page-actions {
         width: 100%;
+        flex-direction: column;
     }
 
     .btn-primary, .btn-secondary {

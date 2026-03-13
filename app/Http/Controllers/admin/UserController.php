@@ -49,26 +49,25 @@ public function store(Request $request)
         'full_name' => 'required|max:100',
         'role_id' => 'required|integer|in:1,2,3,4',
         'password' => 'required|min:6|confirmed',
+        'security_question' => 'required|string|max:255',
+        'security_answer' => 'required|string|max:255',
     ]);
 
     $user = User::create([
         'username' => $validated['username'],
         'email' => $validated['email'],
         'full_name' => $validated['full_name'],
-        'name' => $validated['full_name'], // Explicitly set name field
+        'name' => $validated['full_name'],
         'role_id' => $validated['role_id'],
         'password' => Hash::make($validated['password']),
+        'security_question' => $validated['security_question'],
         'is_active' => true,
         'last_login' => null,
     ]);
 
-    // Log to Laravel log file
-    Log::info('User created by admin', [
-        'admin_id' => Auth::id(),
-        'new_user_id' => $user->id,
-        'new_username' => $user->username,
-        'role_id' => $user->role_id
-    ]);
+    // Set security answer separately to trigger mutator
+    $user->security_answer = $validated['security_answer'];
+    $user->save();
 
     // Log to activity_logs table
     ActivityLog::create([
@@ -82,7 +81,6 @@ public function store(Request $request)
     return redirect()->route('admin.users.index')
         ->with('success', 'User created successfully.');
 }
-
     /**
      * Show form to edit user
      */
@@ -91,7 +89,7 @@ public function store(Request $request)
         return view('admin.users.form', compact('user'));
     }
 
-    /**
+   /**
  * Update user
  */
 public function update(Request $request, User $user)
@@ -102,14 +100,17 @@ public function update(Request $request, User $user)
         'full_name' => 'required|max:100',
         'role_id' => 'required|integer|in:1,2,3,4',
         'password' => 'nullable|min:6|confirmed',
+        'security_question' => 'required|string|max:255',
+        'security_answer' => 'nullable|string|max:255',
     ]);
 
     $updateData = [
         'username' => $validated['username'],
         'email' => $validated['email'],
         'full_name' => $validated['full_name'],
-        'name' => $validated['full_name'], // Explicitly set name field
+        'name' => $validated['full_name'],
         'role_id' => $validated['role_id'],
+        'security_question' => $validated['security_question'],
     ];
 
     if ($request->filled('password')) {
@@ -118,14 +119,12 @@ public function update(Request $request, User $user)
 
     $user->update($updateData);
 
-    // Log to Laravel log file
-    Log::info('User updated by admin', [
-        'admin_id' => Auth::id(),
-        'user_id' => $user->id,
-        'changes' => $validated
-    ]);
+    // Update security answer only if provided
+    if ($request->filled('security_answer')) {
+        $user->security_answer = $validated['security_answer'];
+        $user->save();
+    }
 
-    // Log to activity_logs table
     ActivityLog::create([
         'user_id' => Auth::id(),
         'action' => 'update',
@@ -136,7 +135,7 @@ public function update(Request $request, User $user)
 
     return redirect()->route('admin.users.index')
         ->with('success', 'User updated successfully.');
-    }
+}
 
     /**
      * Toggle user active status

@@ -10,34 +10,29 @@
             <p>Case status and incident statistics</p>
         </div>
         <div class="page-actions">
-    <a href="{{ route('secretary.reports.index') }}" class="btn-secondary">
-        <i class="fas fa-arrow-left icon-small"></i>
-        Back to Reports
-    </a>
-
-    <!-- Excel Export Form -->
-    <form action="{{ route('secretary.reports.export') }}" method="POST" style="display: inline;">
-        @csrf
-        <input type="hidden" name="type" value="blotter">
-        <input type="hidden" name="format" value="excel">
-
-        <!-- Pass current filters to export -->
-        @if(request('date_from'))
-            <input type="hidden" name="date_from" value="{{ request('date_from') }}">
-        @endif
-        @if(request('date_to'))
-            <input type="hidden" name="date_to" value="{{ request('date_to') }}">
-        @endif
-        @if(request('status'))
-            <input type="hidden" name="status" value="{{ request('status') }}">
-        @endif
-
-        <button type="submit" class="btn-primary">
-            <i class="fas fa-file-excel icon-small"></i>
-            Export to Excel
-        </button>
-    </form>
-</div>
+            <a href="{{ route('secretary.reports.index') }}" class="btn-secondary">
+                <x-heroicon-o-arrow-left class="icon-small" />
+                Back to Reports
+            </a>
+            <form action="{{ route('secretary.reports.export') }}" method="POST" style="display: inline;">
+                @csrf
+                <input type="hidden" name="type" value="blotter">
+                <input type="hidden" name="format" value="excel">
+                @if(request('date_from'))
+                    <input type="hidden" name="date_from" value="{{ request('date_from') }}">
+                @endif
+                @if(request('date_to'))
+                    <input type="hidden" name="date_to" value="{{ request('date_to') }}">
+                @endif
+                @if(request('status'))
+                    <input type="hidden" name="status" value="{{ request('status') }}">
+                @endif
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-file-excel icon-small"></i>
+                    Export to Excel
+                </button>
+            </form>
+        </div>
     </div>
 
     <!-- Filter Form -->
@@ -132,9 +127,78 @@
         </div>
     </div>
 
-    <!-- Detailed Statistics -->
-    <div class="details-grid">
-        <!-- By Incident Type -->
+    <!-- Charts Grid -->
+    <div class="charts-grid">
+        <!-- Status Distribution Chart -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3><i class="fas fa-chart-pie"></i> Case Status Distribution</h3>
+                <div class="chart-total">Total: {{ $statistics['total'] }} cases</div>
+            </div>
+            <div class="chart-body">
+                <canvas id="statusChart" width="400" height="200"></canvas>
+            </div>
+            <div class="chart-mini-table">
+                <div class="chart-stat-item">
+                    <span class="stat-label"><span class="legend-dot pending"></span> Pending:</span>
+                    <span class="stat-value">{{ $statistics['by_status']['pending'] }} ({{ round(($statistics['by_status']['pending'] / $statistics['total']) * 100, 1) }}%)</span>
+                </div>
+                <div class="chart-stat-item">
+                    <span class="stat-label"><span class="legend-dot ongoing"></span> Ongoing:</span>
+                    <span class="stat-value">{{ $statistics['by_status']['ongoing'] }} ({{ round(($statistics['by_status']['ongoing'] / $statistics['total']) * 100, 1) }}%)</span>
+                </div>
+                <div class="chart-stat-item">
+                    <span class="stat-label"><span class="legend-dot settled"></span> Settled:</span>
+                    <span class="stat-value">{{ $statistics['by_status']['settled'] }} ({{ round(($statistics['by_status']['settled'] / $statistics['total']) * 100, 1) }}%)</span>
+                </div>
+                <div class="chart-stat-item">
+                    <span class="stat-label"><span class="legend-dot referred"></span> Referred:</span>
+                    <span class="stat-value">{{ $statistics['by_status']['referred'] ?? 0 }} ({{ round(($statistics['by_status']['referred'] ?? 0 / $statistics['total']) * 100, 1) }}%)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Incident Type Chart -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3><i class="fas fa-list"></i> Incident Type Distribution</h3>
+            </div>
+            <div class="chart-body">
+                <canvas id="incidentTypeChart" width="400" height="200"></canvas>
+            </div>
+            <div class="chart-mini-table">
+                @foreach($statistics['by_type'] as $type)
+                <div class="chart-stat-item">
+                    <span class="stat-label">{{ $type->incident_type }}:</span>
+                    <span class="stat-value">{{ $type->total }} ({{ round(($type->total / $statistics['total']) * 100, 1) }}%)</span>
+                </div>
+                @endforeach
+            </div>
+        </div>
+
+        <!-- Monthly Trend Chart -->
+        <div class="chart-card full-width">
+            <div class="chart-header">
+                <h3><i class="fas fa-chart-line"></i> Monthly Case Trend (Last 6 Months)</h3>
+            </div>
+            <div class="chart-body">
+                <canvas id="monthlyTrendChart" width="800" height="250"></canvas>
+            </div>
+            <div class="purok-stats" style="padding: 0.5rem 1rem 1rem;">
+                @foreach($statistics['monthly_trend'] as $trend)
+                <div class="purok-stat-item" style="grid-template-columns: 80px 1fr 50px;">
+                    <span class="purok-label">{{ date('M Y', mktime(0, 0, 0, $trend->month, 1, $trend->year)) }}</span>
+                    <span class="purok-value">{{ $trend->total }} cases</span>
+                    <span class="purok-percentage">{{ round(($trend->total / $statistics['monthly_trend']->max('total')) * 100, 1) }}%</span>
+                </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Statistics Tables -->
+    <div class="details-grid" style="margin-top: 1.5rem;">
+        <!-- By Incident Type Table -->
         <div class="detail-card">
             <div class="detail-header">
                 <x-heroicon-o-document-text class="detail-icon" />
@@ -154,13 +218,7 @@
                         <tr>
                             <td>{{ $type->incident_type }}</td>
                             <td>{{ $type->total }}</td>
-                            <td>
-                                <div class="percentage-bar">
-                                    <span class="percentage-value">{{ round(($type->total / $statistics['total']) * 100, 1) }}%</span>
-                                    <div class="progress-bar">
-<div class="progress-fill" style="width: <?php echo round(($type->total / $statistics['total']) * 100, 1); ?>%;"></div>                                    </div>
-                                </div>
-                            </td>
+                            <td>{{ round(($type->total / $statistics['total']) * 100, 1) }}%</td>
                         </tr>
                         @empty
                         <tr>
@@ -172,7 +230,7 @@
             </div>
         </div>
 
-        <!-- Monthly Trend -->
+        <!-- Monthly Trend Table -->
         <div class="detail-card">
             <div class="detail-header">
                 <x-heroicon-o-chart-bar class="detail-icon" />
@@ -192,9 +250,7 @@
                         <tr>
                             <td>{{ date('F', mktime(0, 0, 0, $trend->month, 1)) }}</td>
                             <td>{{ $trend->year }}</td>
-                            <td>
-                                <span class="trend-badge">{{ $trend->total }}</span>
-                            </td>
+                            <td>{{ $trend->total }}</td>
                         </tr>
                         @empty
                         <tr>
@@ -205,10 +261,34 @@
                 </table>
             </div>
         </div>
+
+        <!-- Case Resolution Timeline -->
+        <div class="detail-card">
+            <div class="detail-header">
+                <x-heroicon-o-clock class="detail-icon" />
+                <h3>Case Resolution Timeline</h3>
+            </div>
+            <div class="detail-body">
+                <div class="stats-mini-grid" style="display: grid; gap: 0.5rem;">
+                    <div class="chart-stat-item" style="justify-content: space-between;">
+                        <span class="stat-label">Average Resolution Time:</span>
+                        <span class="stat-value">{{ $statistics['avg_resolution_days'] ?? 0 }} days</span>
+                    </div>
+                    <div class="chart-stat-item" style="justify-content: space-between;">
+                        <span class="stat-label">Fastest Resolution:</span>
+                        <span class="stat-value">{{ $statistics['min_resolution_days'] ?? 0 }} days</span>
+                    </div>
+                    <div class="chart-stat-item" style="justify-content: space-between;">
+                        <span class="stat-label">Slowest Resolution:</span>
+                        <span class="stat-value">{{ $statistics['max_resolution_days'] ?? 0 }} days</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Blotters List -->
-    @if($blotters->count() > 0)
+    {{-- @if($blotters->count() > 0)
     <div class="card">
         <div class="card-header">
             <h3>Blotter Cases List</h3>
@@ -235,27 +315,14 @@
                             <td><span class="case-id">{{ $blotter->case_id }}</span></td>
                             <td>
                                 @if($blotter->complainant)
-                                    <div class="resident-info">
-                                        <span class="resident-name">{{ $blotter->complainant->first_name }} {{ $blotter->complainant->last_name }}</span>
-                                    </div>
+                                    {{ $blotter->complainant->first_name }} {{ $blotter->complainant->last_name }}
                                 @else
                                     <span class="text-muted">N/A</span>
                                 @endif
                             </td>
-                            <td>
-                                <div class="respondent-info">
-                                    <span class="respondent-name">{{ $blotter->respondent_name }}</span>
-                                    @if($blotter->respondent_address)
-                                        <small class="respondent-address">{{ Str::limit($blotter->respondent_address, 30) }}</small>
-                                    @endif
-                                </div>
-                            </td>
-                            <td>
-                                <span class="incident-type">{{ $blotter->incident_type }}</span>
-                            </td>
-                            <td>
-                                <span class="incident-date">{{ $blotter->incident_date ? $blotter->incident_date->format('M d, Y') : 'N/A' }}</span>
-                            </td>
+                            <td>{{ $blotter->respondent_name }}</td>
+                            <td>{{ $blotter->incident_type }}</td>
+                            <td>{{ $blotter->incident_date ? $blotter->incident_date->format('M d, Y') : 'N/A' }}</td>
                             <td>
                                 @php
                                     $statusClass = match(strtolower($blotter->status)) {
@@ -271,9 +338,7 @@
                                     {{ $blotter->status }}
                                 </span>
                             </td>
-                            <td>
-                                <span class="filed-date">{{ $blotter->created_at ? $blotter->created_at->format('M d, Y') : 'N/A' }}</span>
-                            </td>
+                            <td>{{ $blotter->created_at ? $blotter->created_at->format('M d, Y') : 'N/A' }}</td>
                             <td>
                                 <a href="{{ route('secretary.blotter.show', $blotter) }}" class="btn-view" target="_blank">
                                     <x-heroicon-o-eye class="icon-small" />
@@ -291,8 +356,8 @@
                 {{ $blotters->appends(request()->query())->links() }}
             </div>
         </div>
-    </div>
-    @else
+    </div> --}}
+    {{-- @else
     <div class="empty-state">
         <x-heroicon-o-scale class="empty-icon" />
         <h3>No Blotter Cases Found</h3>
@@ -302,45 +367,45 @@
             Create New Case
         </a>
     </div>
-    @endif
+    @endif --}}
 </div>
 @endsection
 
 @push('styles')
 <style>
 .container-fluid {
-    padding: 1.5rem;
+    padding: 1.2rem;
 }
 
 .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: 0.8rem;
 }
 
 .page-title h1 {
     color: #333;
-    margin-bottom: 0.5rem;
-    font-size: 1.8rem;
+    margin-bottom: 0.4rem;
+    font-size: 1.4rem;
 }
 
 .page-title p {
     color: #666;
-    font-size: 1rem;
+    font-size: 0.8rem;
 }
 
 /* Buttons */
 .btn-primary, .btn-secondary, .btn-view {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
+    gap: 0.4rem;
+    padding: 0.6rem 1.2rem;
     border-radius: 5px;
     text-decoration: none;
-    font-size: 0.95rem;
+    font-size: 0.8rem;
     transition: all 0.3s;
     border: none;
     cursor: pointer;
@@ -353,8 +418,6 @@
 
 .btn-primary:hover {
     opacity: 0.9;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 .btn-secondary {
@@ -365,48 +428,45 @@
 
 .btn-secondary:hover {
     background: #eef2ff;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 .btn-view {
-    padding: 0.4rem 0.8rem;
+    padding: 0.3rem 0.6rem;
     background: #f3f4f6;
     color: #4b5563;
-    font-size: 0.85rem;
+    font-size: 0.7rem;
 }
 
 .btn-view:hover {
     background: #e5e7eb;
-    color: #1f2937;
 }
 
 /* Filters Section */
 .filters-section {
     background: white;
     border-radius: 10px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
+    padding: 1.2rem;
+    margin-bottom: 1.5rem;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .filters-form {
     display: flex;
-    gap: 1rem;
+    gap: 0.8rem;
     flex-wrap: wrap;
     align-items: flex-end;
 }
 
 .filter-group {
     flex: 1;
-    min-width: 150px;
+    min-width: 140px;
 }
 
 .filter-group label {
     display: block;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
     color: #555;
-    font-size: 0.9rem;
+    font-size: 0.75rem;
     font-weight: 500;
 }
 
@@ -415,29 +475,23 @@
     padding: 0.5rem;
     border: 1px solid #e2e8f0;
     border-radius: 5px;
-    font-size: 0.95rem;
-}
-
-.filter-input:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    font-size: 0.8rem;
 }
 
 .filter-actions {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.4rem;
     align-items: center;
 }
 
 .btn-filter {
-    padding: 0.5rem 1.5rem;
+    padding: 0.5rem 1.2rem;
     background: #667eea;
     color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 0.95rem;
+    font-size: 0.8rem;
 }
 
 .btn-filter:hover {
@@ -445,12 +499,12 @@
 }
 
 .btn-clear {
-    padding: 0.5rem 1.5rem;
+    padding: 0.5rem 1.2rem;
     background: #e2e8f0;
     color: #4a5568;
     text-decoration: none;
     border-radius: 5px;
-    font-size: 0.95rem;
+    font-size: 0.8rem;
 }
 
 .btn-clear:hover {
@@ -460,24 +514,18 @@
 /* Stats Grid */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
 }
 
 .stat-card {
     background: white;
     border-radius: 10px;
-    padding: 1.5rem;
+    padding: 1rem;
     display: flex;
     align-items: center;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    transition: transform 0.3s, box-shadow 0.3s;
-}
-
-.stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
 .stat-card.total .stat-icon { background: #667eea; }
@@ -488,18 +536,18 @@
 .stat-card.resolution .stat-icon { background: #3b82f6; }
 
 .stat-icon {
-    width: 50px;
-    height: 50px;
-    border-radius: 12px;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 1rem;
+    margin-right: 0.8rem;
 }
 
 .stat-icon svg {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     color: white;
 }
 
@@ -510,23 +558,172 @@
 .stat-label {
     display: block;
     color: #666;
-    font-size: 0.85rem;
-    margin-bottom: 0.25rem;
+    font-size: 0.7rem;
+    margin-bottom: 0.2rem;
 }
 
 .stat-value {
     display: block;
     color: #333;
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     font-weight: bold;
+}
+
+/* Charts Grid */
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.chart-card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.chart-card.full-width {
+    grid-column: span 2;
+}
+
+.chart-header {
+    padding: 0.8rem 1rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.chart-header h3 {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.chart-header h3 i {
+    color: #667eea;
+    font-size: 0.9rem;
+}
+
+.chart-total {
+    font-weight: 600;
+    color: #667eea;
+    background: #eef2ff;
+    padding: 0.2rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+}
+
+.chart-body {
+    padding: 1rem;
+    position: relative;
+    height: 200px;
+}
+
+.chart-mini-table {
+    padding: 0 1rem 1rem 1rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.4rem;
+}
+
+.chart-stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.2rem 0.4rem;
+    background: #f8fafc;
+    border-radius: 5px;
+    font-size: 0.7rem;
+}
+
+.chart-stat-item .stat-label {
+    color: #666;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.chart-stat-item .stat-value {
+    color: #333;
+    font-weight: 600;
+    font-size: 0.7rem;
+}
+
+.legend-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.legend-dot.pending { background: #f59e0b; }
+.legend-dot.ongoing { background: #8b5cf6; }
+.legend-dot.settled { background: #10b981; }
+.legend-dot.referred { background: #ef4444; }
+
+/* Purok Stats (reused for trend) */
+.purok-stats {
+    padding: 0.5rem 1rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.purok-stat-item {
+    display: grid;
+    grid-template-columns: 80px 1fr 50px;
+    align-items: center;
+    gap: 0.8rem;
+    font-size: 0.7rem;
+}
+
+.purok-label {
+    font-weight: 600;
+    color: #333;
+}
+
+.purok-value {
+    color: #667eea;
+    font-weight: 500;
+}
+
+.purok-bar {
+    height: 16px;
+    background: #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.purok-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 8px;
+    transition: width 0.3s;
+}
+
+.purok-percentage {
+    font-weight: 600;
+    color: #333;
+    text-align: right;
+    font-size: 0.7rem;
 }
 
 /* Details Grid */
 .details-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
 }
 
 .detail-card {
@@ -534,37 +731,31 @@
     border-radius: 10px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     overflow: hidden;
-    transition: transform 0.3s, box-shadow 0.3s;
-}
-
-.detail-card:hover {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
 .detail-header {
-    padding: 1rem 1.5rem;
+    padding: 0.7rem;
     background: #f8f9fa;
     border-bottom: 1px solid #e2e8f0;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.4rem;
 }
 
 .detail-icon {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     color: #667eea;
 }
 
 .detail-header h3 {
     color: #333;
-    font-size: 1.1rem;
+    font-size: 0.8rem;
     margin: 0;
-    font-weight: 600;
 }
 
 .detail-body {
-    padding: 1.5rem;
+    padding: 0.7rem;
 }
 
 /* Mini Table */
@@ -575,76 +766,30 @@
 
 .mini-table th {
     text-align: left;
-    padding: 0.75rem 0.5rem;
+    padding: 0.4rem;
     background: #f8f9fa;
     color: #555;
-    font-size: 0.85rem;
+    font-size: 0.65rem;
     font-weight: 600;
-    border-bottom: 2px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
 }
 
 .mini-table td {
-    padding: 0.75rem 0.5rem;
+    padding: 0.4rem;
     border-bottom: 1px solid #e2e8f0;
     color: #333;
-    font-size: 0.95rem;
-}
-
-.mini-table tr:last-child td {
-    border-bottom: none;
-}
-
-.mini-table tr:hover td {
-    background: #f8fafc;
-}
-
-/* Percentage Bar */
-.percentage-bar {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.percentage-value {
-    font-size: 0.85rem;
-    color: #4b5563;
-}
-
-.progress-bar {
-    width: 100%;
-    height: 6px;
-    background: #e2e8f0;
-    border-radius: 3px;
-    overflow: hidden;
-}
-
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #667eea, #764ba2);
-    border-radius: 3px;
-    transition: width 0.3s ease;
-}
-
-/* Trend Badge */
-.trend-badge {
-    display: inline-block;
-    padding: 0.25rem 0.75rem;
-    background: #667eea;
-    color: white;
-    border-radius: 9999px;
-    font-size: 0.85rem;
-    font-weight: 500;
+    font-size: 0.7rem;
 }
 
 /* Status Badges */
 .status-badge {
     display: inline-block;
-    padding: 0.35rem 0.75rem;
+    padding: 0.25rem 0.5rem;
     border-radius: 9999px;
-    font-size: 0.8rem;
+    font-size: 0.65rem;
     font-weight: 600;
+    min-width: 70px;
     text-align: center;
-    min-width: 90px;
 }
 
 .status-pending {
@@ -683,70 +828,57 @@
     border-radius: 10px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     overflow: hidden;
-    margin-top: 2rem;
+    margin-top: 1.5rem;
 }
 
 .card-header {
-    padding: 1.5rem;
+    padding: 1rem;
     background: #f8f9fa;
     border-bottom: 1px solid #e2e8f0;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 1rem;
 }
 
 .card-header h3 {
     color: #333;
-    font-size: 1.2rem;
+    font-size: 0.9rem;
     margin: 0;
-    font-weight: 600;
 }
 
 .record-count {
     color: #666;
-    font-size: 0.95rem;
-    background: white;
-    padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
-    border: 1px solid #e2e8f0;
+    font-size: 0.7rem;
 }
 
 .card-body {
-    padding: 1.5rem;
+    padding: 1rem;
 }
 
 /* Data Table */
 .table-responsive {
     overflow-x: auto;
-    border-radius: 8px;
 }
 
 .data-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.95rem;
+    font-size: 0.75rem;
 }
 
 .data-table th {
     text-align: left;
-    padding: 1rem;
+    padding: 0.7rem;
     background: #f8f9fa;
-    color: #4a5568;
+    color: #555;
     font-weight: 600;
     border-bottom: 2px solid #e2e8f0;
-    white-space: nowrap;
 }
 
 .data-table td {
-    padding: 1rem;
+    padding: 0.7rem;
     border-bottom: 1px solid #e2e8f0;
-    color: #2d3748;
-}
-
-.data-table tr:hover td {
-    background: #f8fafc;
+    color: #333;
 }
 
 /* Case ID */
@@ -755,100 +887,32 @@
     font-weight: 600;
     color: #667eea;
     background: #f0f3ff;
-    padding: 0.25rem 0.5rem;
+    padding: 0.2rem 0.4rem;
     border-radius: 4px;
-    font-size: 0.9rem;
-}
-
-/* Resident and Respondent Info */
-.resident-info, .respondent-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.resident-name, .respondent-name {
-    font-weight: 500;
-    color: #2d3748;
-}
-
-.respondent-address {
-    color: #718096;
-    font-size: 0.85rem;
-}
-
-/* Incident Type */
-.incident-type {
-    display: inline-block;
-    padding: 0.25rem 0.75rem;
-    background: #f3f4f6;
-    color: #4b5563;
-    border-radius: 9999px;
-    font-size: 0.85rem;
-    font-weight: 500;
-}
-
-/* Incident Date */
-.incident-date, .filed-date {
-    color: #4b5563;
-    font-size: 0.9rem;
-    white-space: nowrap;
-}
-
-/* Empty State */
-.empty-state {
-    text-align: center;
-    padding: 4rem 2rem;
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin-top: 2rem;
-}
-
-.empty-icon {
-    width: 64px;
-    height: 64px;
-    color: #a0aec0;
-    margin-bottom: 1rem;
-}
-
-.empty-state h3 {
-    color: #4a5568;
-    font-size: 1.2rem;
-    margin-bottom: 0.5rem;
-}
-
-.empty-state p {
-    color: #718096;
-    margin-bottom: 1.5rem;
+    font-size: 0.7rem;
 }
 
 /* Pagination */
 .pagination-wrapper {
-    margin-top: 2rem;
+    margin-top: 1.5rem;
     display: flex;
     justify-content: center;
 }
 
 .pagination-wrapper .pagination {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.3rem;
     list-style: none;
     padding: 0;
 }
 
 .pagination-wrapper .page-item .page-link {
-    padding: 0.5rem 0.75rem;
+    padding: 0.3rem 0.6rem;
     border: 1px solid #e2e8f0;
     border-radius: 5px;
     color: #667eea;
     text-decoration: none;
-    transition: all 0.3s;
-}
-
-.pagination-wrapper .page-item .page-link:hover {
-    background: #f0f3ff;
-    border-color: #667eea;
+    font-size: 0.7rem;
 }
 
 .pagination-wrapper .page-item.active .page-link {
@@ -857,52 +921,69 @@
     border-color: #667eea;
 }
 
-.pagination-wrapper .page-item.disabled .page-link {
-    color: #cbd5e0;
-    pointer-events: none;
-    background: #f8f9fa;
-}
-
-/* Text utilities */
-.text-center {
+/* Empty State */
+.empty-state {
     text-align: center;
+    padding: 3rem 2rem;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-top: 1.5rem;
 }
 
-.text-muted {
+.empty-icon {
+    width: 48px;
+    height: 48px;
+    color: #a0aec0;
+    margin-bottom: 0.8rem;
+}
+
+.empty-state h3 {
+    color: #4a5568;
+    font-size: 1rem;
+    margin-bottom: 0.4rem;
+}
+
+.empty-state p {
     color: #718096;
+    font-size: 0.8rem;
+    margin-bottom: 1rem;
 }
 
 .icon-small {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .details-grid {
+/* Responsive */
+@media (max-width: 1024px) {
+    .charts-grid {
         grid-template-columns: 1fr;
     }
 
-    .filters-form {
+    .chart-card.full-width {
+        grid-column: span 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .page-actions {
+        width: 100%;
         flex-direction: column;
     }
 
-    .filter-group {
+    .btn-primary, .btn-secondary {
         width: 100%;
+        justify-content: center;
     }
 
-    .filter-actions {
-        width: 100%;
-        justify-content: flex-end;
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
     }
 
-    .card-header {
-        flex-direction: column;
-        align-items: flex-start;
+    .purok-stat-item {
+        grid-template-columns: 80px 1fr 45px;
+        gap: 0.4rem;
     }
 }
 
@@ -911,21 +992,137 @@
         grid-template-columns: 1fr;
     }
 
-    .page-header {
-        flex-direction: column;
-        align-items: flex-start;
+    .purok-stat-item {
+        grid-template-columns: 1fr;
+        gap: 0.2rem;
     }
 
-    .page-actions {
-        width: 100%;
-        display: flex;
-        gap: 0.5rem;
-    }
-
-    .btn-primary, .btn-secondary {
-        flex: 1;
-        justify-content: center;
+    .chart-mini-table {
+        grid-template-columns: 1fr;
     }
 }
 </style>
+@endpush
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Status Distribution Pie Chart
+    new Chart(document.getElementById('statusChart'), {
+        type: 'pie',
+        data: {
+            labels: ['Pending', 'Ongoing', 'Settled', 'Referred'],
+            datasets: [{
+                data: [
+                    {{ $statistics['by_status']['pending'] }},
+                    {{ $statistics['by_status']['ongoing'] }},
+                    {{ $statistics['by_status']['settled'] }},
+                    {{ $statistics['by_status']['referred'] ?? 0 }}
+                ],
+                backgroundColor: ['#f59e0b', '#8b5cf6', '#10b981', '#ef4444'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Incident Type Pie Chart
+    new Chart(document.getElementById('incidentTypeChart'), {
+        type: 'pie',
+        data: {
+            labels: [@foreach($statistics['by_type'] as $type) '{{ $type->incident_type }}', @endforeach],
+            datasets: [{
+                data: [@foreach($statistics['by_type'] as $type) {{ $type->total }}, @endforeach],
+                backgroundColor: ['#667eea', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899', '#3b82f6'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Monthly Trend Line Chart
+    new Chart(document.getElementById('monthlyTrendChart'), {
+        type: 'line',
+        data: {
+            labels: [@foreach($statistics['monthly_trend'] as $trend) '{{ date('M', mktime(0, 0, 0, $trend->month, 1)) }}', @endforeach],
+            datasets: [{
+                label: 'Number of Cases',
+                data: [@foreach($statistics['monthly_trend'] as $trend) {{ $trend->total }}, @endforeach],
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: '#667eea',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `Cases: ${context.raw}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#e2e8f0' },
+                    ticks: {
+                        stepSize: 1,
+                        font: { size: 9 }
+                    }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 9 } }
+                }
+            }
+        }
+    });
+});
+</script>
 @endpush

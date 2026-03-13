@@ -15,22 +15,20 @@
                 Back to Reports
             </a>
             <form action="{{ route('secretary.reports.export') }}" method="POST" style="display: inline;">
-    @csrf
-    <input type="hidden" name="type" value="residents">
-    <input type="hidden" name="format" value="excel">
-
-    @if(request('date_from'))
-        <input type="hidden" name="date_from" value="{{ request('date_from') }}">
-    @endif
-    @if(request('date_to'))
-        <input type="hidden" name="date_to" value="{{ request('date_to') }}">
-    @endif
-
-    <button type="submit" class="btn-primary">
-        <i class="fas fa-file-excel icon-small"></i>
-        Export to Excel
-    </button>
-</form>
+                @csrf
+                <input type="hidden" name="type" value="residents">
+                <input type="hidden" name="format" value="excel">
+                @if(request('date_from'))
+                    <input type="hidden" name="date_from" value="{{ request('date_from') }}">
+                @endif
+                @if(request('date_to'))
+                    <input type="hidden" name="date_to" value="{{ request('date_to') }}">
+                @endif
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-file-excel icon-small"></i>
+                    Export to Excel
+                </button>
+            </form>
         </div>
     </div>
 
@@ -95,9 +93,109 @@
         </div>
     </div>
 
-    <!-- Detailed Statistics -->
-    <div class="details-grid">
-        <!-- By Purok -->
+    <!-- Charts Grid -->
+    <div class="charts-grid">
+        <!-- Gender Distribution Chart -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3><i class="fas fa-venus-mars"></i> Gender Distribution</h3>
+                <div class="chart-legend">
+                    <span><span class="legend-dot male"></span> Male: {{ $statistics['by_gender']['male'] }}</span>
+                    <span><span class="legend-dot female"></span> Female: {{ $statistics['by_gender']['female'] }}</span>
+                </div>
+            </div>
+            <div class="chart-body">
+                <canvas id="genderChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+
+        <!-- Civil Status Chart -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3><i class="fas fa-heart"></i> Civil Status</h3>
+            </div>
+            <div class="chart-body">
+                <canvas id="civilStatusChart" width="400" height="200"></canvas>
+            </div>
+            <div class="chart-mini-table">
+                @foreach($statistics['by_civil_status'] as $status)
+                <div class="chart-stat-item">
+                    <span class="stat-label">{{ $status->civil_status }}:</span>
+                    <span class="stat-value">{{ $status->total }} ({{ round(($status->total / $statistics['total']) * 100, 1) }}%)</span>
+                </div>
+                @endforeach
+            </div>
+        </div>
+
+        <!-- Age Distribution Chart -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3><i class="fas fa-calendar"></i> Age Distribution</h3>
+            </div>
+            <div class="chart-body">
+                <canvas id="ageChart" width="400" height="200"></canvas>
+            </div>
+            <div class="chart-mini-table">
+                @foreach($statistics['age_distribution'] as $range => $count)
+                <div class="chart-stat-item">
+                    <span class="stat-label">{{ $range }}:</span>
+                    <span class="stat-value">{{ $count }} ({{ round(($count / $statistics['total']) * 100, 1) }}%)</span>
+                </div>
+                @endforeach
+            </div>
+        </div>
+
+        <!-- Special Categories Chart -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3><i class="fas fa-star"></i> Special Categories</h3>
+            </div>
+            <div class="chart-body">
+                <canvas id="specialChart" width="400" height="200"></canvas>
+            </div>
+            <div class="chart-mini-table">
+                <div class="chart-stat-item">
+                    <span class="stat-label">Senior Citizens:</span>
+                    <span class="stat-value">{{ $statistics['by_status']['seniors'] }} ({{ round(($statistics['by_status']['seniors'] / $statistics['total']) * 100, 1) }}%)</span>
+                </div>
+                <div class="chart-stat-item">
+                    <span class="stat-label">PWD:</span>
+                    <span class="stat-value">{{ $statistics['by_status']['pwd'] }} ({{ round(($statistics['by_status']['pwd'] / $statistics['total']) * 100, 1) }}%)</span>
+                </div>
+                <div class="chart-stat-item">
+                    <span class="stat-label">4Ps Members:</span>
+                    <span class="stat-value">{{ $statistics['by_status']['4ps'] }} ({{ round(($statistics['by_status']['4ps'] / $statistics['total']) * 100, 1) }}%)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Purok Bar Chart -->
+    <div class="chart-card full-width">
+        <div class="chart-header">
+            <h3><i class="fas fa-map-pin"></i> Population by Purok</h3>
+            <div class="chart-total">Total: {{ $statistics['total'] }} residents</div>
+        </div>
+        <div class="chart-body">
+            <canvas id="purokChart" width="800" height="300"></canvas>
+        </div>
+        <div class="purok-stats">
+            @foreach($statistics['by_purok'] as $purok)
+            <div class="purok-stat-item">
+                <span class="purok-label">Purok {{ $purok->purok }}</span>
+                <span class="purok-value">{{ $purok->total }} residents</span>
+                <div class="purok-bar">
+                    <div class="purok-bar-fill" style="width: {{ round(($purok->total / $statistics['total']) * 100, 1) }}%;"></div>
+                </div>
+                <span class="purok-percentage">{{ round(($purok->total / $statistics['total']) * 100, 1) }}%</span>
+            </div>
+            @endforeach
+        </div>
+    </div>
+
+    <!-- Detailed Statistics Tables (Optional - can be hidden if you want just charts) -->
+    <div class="details-grid" style="margin-top: 2rem;">
+        <!-- By Purok Table -->
         <div class="detail-card">
             <div class="detail-header">
                 <x-heroicon-o-map-pin class="detail-icon" />
@@ -125,7 +223,7 @@
             </div>
         </div>
 
-        <!-- By Civil Status -->
+        <!-- By Civil Status Table -->
         <div class="detail-card">
             <div class="detail-header">
                 <x-heroicon-o-heart class="detail-icon" />
@@ -153,7 +251,7 @@
             </div>
         </div>
 
-        <!-- Age Distribution -->
+        <!-- Age Distribution Table -->
         <div class="detail-card">
             <div class="detail-header">
                 <x-heroicon-o-calendar class="detail-icon" />
@@ -181,7 +279,7 @@
             </div>
         </div>
 
-        <!-- Special Status -->
+        <!-- Special Status Table -->
         <div class="detail-card">
             <div class="detail-header">
                 <x-heroicon-o-star class="detail-icon" />
@@ -219,7 +317,7 @@
     </div>
 
     <!-- Residents List -->
-    @if($residents->count() > 0)
+    {{-- @if($residents->count() > 0)
     <div class="card">
         <div class="card-header">
             <h3>Residents List</h3>
@@ -258,7 +356,7 @@
             </div>
         </div>
     </div>
-    @endif
+    @endif --}}
 </div>
 @endsection
 
@@ -444,6 +542,154 @@
     font-weight: bold;
 }
 
+/* Charts Grid */
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.chart-card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.chart-card.full-width {
+    grid-column: span 2;
+}
+
+.chart-header {
+    padding: 1rem 1.5rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.chart-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.chart-header h3 i {
+    color: #667eea;
+}
+
+.chart-legend {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.85rem;
+}
+
+.legend-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.3rem;
+}
+
+.legend-dot.male { background: #3b82f6; }
+.legend-dot.female { background: #ec4899; }
+
+.chart-total {
+    font-weight: 600;
+    color: #667eea;
+    background: #eef2ff;
+    padding: 0.3rem 1rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+}
+
+.chart-body {
+    padding: 1.5rem;
+    position: relative;
+    height: 250px;
+}
+
+.chart-mini-table {
+    padding: 0 1.5rem 1.5rem 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.5rem;
+}
+
+.chart-stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.3rem 0.5rem;
+    background: #f8fafc;
+    border-radius: 5px;
+    font-size: 0.85rem;
+}
+
+.chart-stat-item .stat-label {
+    color: #666;
+    font-weight: 500;
+}
+
+.chart-stat-item .stat-value {
+    color: #333;
+    font-weight: 600;
+}
+
+/* Purok Stats */
+.purok-stats {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.purok-stat-item {
+    display: grid;
+    grid-template-columns: 80px 80px 1fr 60px;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.9rem;
+}
+
+.purok-label {
+    font-weight: 600;
+    color: #333;
+}
+
+.purok-value {
+    color: #667eea;
+    font-weight: 500;
+}
+
+.purok-bar {
+    height: 20px;
+    background: #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.purok-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 10px;
+    transition: width 0.3s;
+}
+
+.purok-percentage {
+    font-weight: 600;
+    color: #333;
+    text-align: right;
+}
+
 /* Details Grid */
 .details-grid {
     display: grid;
@@ -577,5 +823,233 @@
     width: 16px;
     height: 16px;
 }
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .chart-card.full-width {
+        grid-column: span 1;
+    }
+
+    .purok-stat-item {
+        grid-template-columns: 80px 80px 1fr 60px;
+    }
+}
+
+@media (max-width: 768px) {
+    .page-actions {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .btn-primary, .btn-secondary {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .purok-stat-item {
+        grid-template-columns: 60px 60px 1fr 50px;
+        gap: 0.5rem;
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .purok-stat-item {
+        grid-template-columns: 1fr;
+        gap: 0.3rem;
+    }
+
+    .purok-bar {
+        width: 100%;
+    }
+}
 </style>
+@endpush
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gender Chart (Pie)
+    new Chart(document.getElementById('genderChart'), {
+        type: 'pie',
+        data: {
+            labels: ['Male', 'Female'],
+            datasets: [{
+                data: [{{ $statistics['by_gender']['male'] }}, {{ $statistics['by_gender']['female'] }}],
+                backgroundColor: ['#3b82f6', '#ec4899'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Civil Status Chart (Pie)
+    new Chart(document.getElementById('civilStatusChart'), {
+        type: 'pie',
+        data: {
+            labels: [@foreach($statistics['by_civil_status'] as $status) '{{ $status->civil_status }}', @endforeach],
+            datasets: [{
+                data: [@foreach($statistics['by_civil_status'] as $status) {{ $status->total }}, @endforeach],
+                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Age Distribution Chart (Pie)
+    new Chart(document.getElementById('ageChart'), {
+        type: 'pie',
+        data: {
+            labels: [@foreach($statistics['age_distribution'] as $range => $count) '{{ $range }}', @endforeach],
+            datasets: [{
+                data: [@foreach($statistics['age_distribution'] as $count) {{ $count }}, @endforeach],
+                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Special Categories Chart (Pie)
+    new Chart(document.getElementById('specialChart'), {
+        type: 'pie',
+        data: {
+            labels: ['Senior Citizens', 'PWD', '4Ps Members'],
+            datasets: [{
+                data: [
+                    {{ $statistics['by_status']['seniors'] }},
+                    {{ $statistics['by_status']['pwd'] }},
+                    {{ $statistics['by_status']['4ps'] }}
+                ],
+                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = {{ $statistics['total'] }};
+                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Purok Bar Chart
+    new Chart(document.getElementById('purokChart'), {
+        type: 'bar',
+        data: {
+            labels: [@foreach($statistics['by_purok'] as $purok) 'Purok {{ $purok->purok }}', @endforeach],
+            datasets: [{
+                label: 'Number of Residents',
+                data: [@foreach($statistics['by_purok'] as $purok) {{ $purok->total }}, @endforeach],
+                backgroundColor: '#667eea',
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.raw || 0;
+                            const total = {{ $statistics['total'] }};
+                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                            return `Residents: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { display: true, color: '#e2e8f0' },
+                    ticks: { stepSize: 20 }
+                },
+                x: {
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+});
+</script>
 @endpush

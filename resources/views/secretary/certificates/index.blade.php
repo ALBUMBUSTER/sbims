@@ -140,7 +140,7 @@
                 {{ $certificate->status }}
             </span>
         </td>
-    <td>
+   <td>
     <div class="action-buttons">
         <a href="{{ route('secretary.certificates.show', $certificate) }}" class="btn-icon" title="View">
             <i class="fas fa-eye"></i>
@@ -153,6 +153,8 @@
             <i class="fas fa-download"></i>
         </a>
         @endif
+        {{-- DELETE BUTTON - Hidden for Clerk --}}
+        @if(auth()->user()->role_id != 4) {{-- Not a clerk --}}
         <button type="button" class="btn-icon delete-btn" title="Delete"
             onclick="confirmDelete('{{ $certificate->id }}')">
             <i class="fas fa-trash"></i>
@@ -163,6 +165,7 @@
             @csrf
             @method('DELETE')
         </form>
+        @endif
     </div>
 </td>
     </tr>

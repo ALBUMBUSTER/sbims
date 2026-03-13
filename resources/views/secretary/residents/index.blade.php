@@ -158,12 +158,16 @@
         <a href="{{ route('secretary.residents.edit', $resident) }}" class="btn-icon" title="Edit">
             <i class="fas fa-pencil-alt"></i>
         </a>
+
+        {{-- Archive Button - Hidden for Clerk --}}
+        @if(auth()->user()->role_id != 4) {{-- Not a clerk --}}
         <button type="button" class="btn-icon archive-btn" title="Archive" onclick="confirmArchive('{{ $resident->id }}')">
             <i class="fas fa-archive"></i>
         </button>
         <form id="archive-form-{{ $resident->id }}" action="{{ route('secretary.residents.archive', $resident) }}" method="POST" style="display: none;">
             @csrf
         </form>
+        @endif
     </div>
 </td>
 
@@ -238,13 +242,16 @@
         </div>
     </div>
 </div>
-<!-- Archive Access Button -->
+
+{{-- Archive Access Button - Hidden for Clerk --}}
+@if(auth()->user()->role_id != 4) {{-- Not a clerk --}}
 <div class="archive-access">
     <a href="{{ route('secretary.residents.archived') }}" class="btn-archive">
         <i class="fas fa-archive"></i>
         View Archive ({{ \App\Models\Resident::onlyTrashed()->count() }})
     </a>
 </div>
+@endif
 @endsection
 
 @push('styles')

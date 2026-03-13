@@ -67,7 +67,7 @@
                                    value="{{ $generatedId }}"
                                    class="form-control @error('resident_id') is-invalid @enderror"
                                    readonly>
-                            <button type="button" class="btn-refresh" onclick="refreshResidentId()" title="Generate new ID">
+                            <button type="text" class="text-refresh" onclick="refreshResidentId()" title="Generate new ID">
                                 <x-heroicon-o-arrow-path class="icon-small" />
                             </button>
                         </div>

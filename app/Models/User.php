@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Hash;
 
 class User extends Authenticatable
 {
@@ -17,12 +18,15 @@ class User extends Authenticatable
         'full_name',
         'role_id',
         'is_active',
-        'last_login'
+        'last_login',
+        'security_question',  // Add this
+        'security_answer',     // Add this
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'security_answer',     // Hide security answer
     ];
 
     protected $casts = [
@@ -50,6 +54,21 @@ class User extends Authenticatable
             }
         });
     }
+
+    // Hash security answer when setting
+    public function setSecurityAnswerAttribute($value)
+    {
+        if (!empty($value)) {
+            $this->attributes['security_answer'] = Hash::make($value);
+        }
+    }
+
+    // Verify security answer
+    public function verifySecurityAnswer($answer)
+    {
+        return Hash::check($answer, $this->security_answer);
+    }
+
     // Use username for authentication instead of email
     public function username()
     {

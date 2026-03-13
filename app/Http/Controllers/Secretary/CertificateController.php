@@ -11,6 +11,19 @@ use Illuminate\Support\Facades\Auth;
 
 class CertificateController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
+    /**
+     * Check if current user is a clerk (role_id = 4)
+     */
+    private function isClerk()
+    {
+        return Auth::user()->role_id == 4;
+    }
+
     public function index(Request $request)
     {
         $query = Certificate::with('resident');
@@ -192,8 +205,17 @@ class CertificateController extends Controller
             ->with('success', 'Certificate processed successfully.');
     }
 
+    /**
+     * Remove the specified certificate from storage.
+     */
     public function destroy(Request $request, Certificate $certificate)
     {
+        // ONLY RESTRICT DELETE - Clerks cannot delete certificates
+        if ($this->isClerk()) {
+            return redirect()->route('secretary.certificates.index')
+                ->with('error', 'You do not have permission to delete certificates.');
+        }
+
         $certificateId = $certificate->certificate_id;
         $resident = $certificate->resident;
         $residentName = $resident ? $resident->first_name . ' ' . $resident->last_name : 'Unknown';

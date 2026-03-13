@@ -22,10 +22,12 @@
                 <x-heroicon-o-arrow-left class="icon-small" />
                 Back to List
             </a>
+            @if(auth()->user()->role_id != 4)
             <a href="{{ route('secretary.blotter.edit', $blotter) }}" class="btn-primary">
                 <x-heroicon-o-pencil class="icon-small" />
                 Edit Case
             </a>
+            @endif
         </div>
     </div>
 
@@ -39,63 +41,84 @@
                 </span>
             </div>
             <div class="status-body">
-                <form action="{{ route('secretary.blotter.status', $blotter) }}" method="POST" class="status-form">
-                    @csrf
-                    @method('PATCH')
+                @php
+                    $isClerk = auth()->user()->role_id == 4;
+                @endphp
 
-                    <div class="status-update-container">
-                        <div class="radio-group">
-                            <label class="radio-option">
-                                <input type="radio" name="status" value="Pending"
-                                       {{ $blotter->status == 'Pending' ? 'checked' : '' }}
-                                       onchange="toggleResolution(this.value)">
-                                <span class="radio-label status-pending-radio">Pending</span>
-                            </label>
-
-                            <label class="radio-option">
-                                <input type="radio" name="status" value="Ongoing"
-                                       {{ $blotter->status == 'Ongoing' ? 'checked' : '' }}
-                                       onchange="toggleResolution(this.value)">
-                                <span class="radio-label status-ongoing-radio">Ongoing</span>
-                            </label>
-
-                            <label class="radio-option">
-                                <input type="radio" name="status" value="Settled"
-                                       {{ $blotter->status == 'Settled' ? 'checked' : '' }}
-                                       onchange="toggleResolution(this.value)">
-                                <span class="radio-label status-settled-radio">Settled</span>
-                            </label>
-
-                            <label class="radio-option">
-                                <input type="radio" name="status" value="Referred"
-                                       {{ $blotter->status == 'Referred' ? 'checked' : '' }}
-                                       onchange="toggleResolution(this.value)">
-                                <span class="radio-label status-referred-radio">Referred</span>
-                            </label>
+                @if($isClerk)
+                    {{-- Clerk sees read-only status display --}}
+                    <div class="status-readonly">
+                        <div class="current-status-display">
+                            <span class="status-label">Current Status:</span>
+                            <span class="status-badge status-{{ strtolower($blotter->status) }}">
+                                {{ $blotter->status }}
+                            </span>
                         </div>
-
-                        <button type="submit" class="btn-update-status">
-                            <x-heroicon-o-check-circle class="icon-small" />
-                            Update Status
-                        </button>
-                    </div>
-
-                    <div id="resolution-field" class="resolution-container {{ $blotter->status == 'Settled' ? '' : 'hidden' }}">
-                        <div class="resolution-grid">
-                            <div class="form-group">
-                                <label for="resolution">Resolution <span class="required">*</span></label>
-                                <textarea name="resolution" id="resolution" class="form-control" rows="3"
-                                    {{ $blotter->status == 'Settled' ? '' : 'disabled' }}>{{ $blotter->resolution }}</textarea>
-                            </div>
-                            <div class="form-group">
-                                <label for="resolved_date">Resolution Date</label>
-                                <input type="date" name="resolved_date" id="resolved_date" class="form-control"
-                                       value="{{ $blotter->resolved_date ? $blotter->resolved_date->format('Y-m-d') : '' }}"
-                                       {{ $blotter->status == 'Settled' ? '' : 'disabled' }}>
-                            </div>
+                        <div class="clerk-notice">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Status cannot be changed by clerk. Please contact secretary for status updates.</span>
                         </div>
                     </div>
-                </form>
+                @else
+                    {{-- Secretary/Admin sees full status update form --}}
+                    <form action="{{ route('secretary.blotter.status', $blotter) }}" method="POST" class="status-form">
+                        @csrf
+                        @method('PATCH')
+
+                        <div class="status-update-container">
+                            <div class="radio-group">
+                                <label class="radio-option">
+                                    <input type="radio" name="status" value="Pending"
+                                           {{ $blotter->status == 'Pending' ? 'checked' : '' }}
+                                           onchange="toggleResolution(this.value)">
+                                    <span class="radio-label status-pending-radio">Pending</span>
+                                </label>
+
+                                <label class="radio-option">
+                                    <input type="radio" name="status" value="Ongoing"
+                                           {{ $blotter->status == 'Ongoing' ? 'checked' : '' }}
+                                           onchange="toggleResolution(this.value)">
+                                    <span class="radio-label status-ongoing-radio">Ongoing</span>
+                                </label>
+
+                                <label class="radio-option">
+                                    <input type="radio" name="status" value="Settled"
+                                           {{ $blotter->status == 'Settled' ? 'checked' : '' }}
+                                           onchange="toggleResolution(this.value)">
+                                    <span class="radio-label status-settled-radio">Settled</span>
+                                </label>
+
+                                <label class="radio-option">
+                                    <input type="radio" name="status" value="Referred"
+                                           {{ $blotter->status == 'Referred' ? 'checked' : '' }}
+                                           onchange="toggleResolution(this.value)">
+                                    <span class="radio-label status-referred-radio">Referred</span>
+                                </label>
+                            </div>
+
+                            <button type="submit" class="btn-update-status">
+                                <x-heroicon-o-check-circle class="icon-small" />
+                                Update Status
+                            </button>
+                        </div>
+
+                        <div id="resolution-field" class="resolution-container {{ $blotter->status == 'Settled' ? '' : 'hidden' }}">
+                            <div class="resolution-grid">
+                                <div class="form-group">
+                                    <label for="resolution">Resolution <span class="required">*</span></label>
+                                    <textarea name="resolution" id="resolution" class="form-control" rows="3"
+                                        {{ $blotter->status == 'Settled' ? '' : 'disabled' }}>{{ $blotter->resolution }}</textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="resolved_date">Resolution Date</label>
+                                    <input type="date" name="resolved_date" id="resolved_date" class="form-control"
+                                           value="{{ $blotter->resolved_date ? $blotter->resolved_date->format('Y-m-d') : '' }}"
+                                           {{ $blotter->status == 'Settled' ? '' : 'disabled' }}>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                @endif
             </div>
         </div>
 
@@ -272,7 +295,11 @@ function showToast(message, type = 'success') {
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
+</script>
 
+{{-- Status update functions for non-clerk users --}}
+@if(auth()->user()->role_id != 4)
+<script>
 document.addEventListener('DOMContentLoaded', function() {
     const resolutionField = document.getElementById('resolution-field');
     const radioButtons = document.querySelectorAll('input[name="status"]');
@@ -321,21 +348,22 @@ function toggleResolution(status) {
     }
 }
 </script>
+@endif
 
-{{-- Session messages - separated from main script to avoid Blade/JS conflicts --}}
+{{-- Session messages --}}
 @if(session('success'))
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        showToast("{{ session('success') }}", 'success');
-    });
+document.addEventListener('DOMContentLoaded', function() {
+    showToast("{{ session('success') }}", 'success');
+});
 </script>
 @endif
 
 @if(session('error'))
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        showToast("{{ session('error') }}", 'error');
-    });
+document.addEventListener('DOMContentLoaded', function() {
+    showToast("{{ session('error') }}", 'error');
+});
 </script>
 @endif
 @endpush
@@ -425,6 +453,42 @@ function toggleResolution(status) {
 
 .status-body {
     padding: 1.5rem;
+}
+
+/* Read-only status for clerk */
+.status-readonly {
+    padding: 1rem;
+}
+
+.current-status-display {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 8px;
+}
+
+.status-label {
+    font-weight: 600;
+    color: #4b5563;
+}
+
+.clerk-notice {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: #fef3c7;
+    border-radius: 8px;
+    color: #92400e;
+    border-left: 4px solid #f59e0b;
+}
+
+.clerk-notice i {
+    font-size: 1.2rem;
+    color: #f59e0b;
 }
 
 /* Status Update Container */

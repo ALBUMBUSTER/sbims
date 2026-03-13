@@ -25,7 +25,8 @@
     }
 
     .form-group input,
-    .form-group select {
+    .form-group select,
+    .form-group textarea {
         width: 100%;
         padding: 0.75rem;
         border: 1px solid #d1d5db;
@@ -35,10 +36,16 @@
     }
 
     .form-group input:focus,
-    .form-group select:focus {
+    .form-group select:focus,
+    .form-group textarea:focus {
         outline: none;
         border-color: #667eea;
         box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-group textarea {
+        min-height: 100px;
+        resize: vertical;
     }
 
     .form-actions {
@@ -62,6 +69,33 @@
         gap: 1.5rem;
     }
 
+    .security-section {
+        margin-top: 2rem;
+        padding: 1.5rem;
+        background: #f8fafc;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .security-section h3 {
+        color: #333;
+        font-size: 1.2rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .security-section h3 i {
+        color: #667eea;
+    }
+
+    .help-text {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-top: 0.25rem;
+    }
+
     @media (max-width: 768px) {
         .form-row {
             grid-template-columns: 1fr;
@@ -80,7 +114,7 @@
             </div>
             <div class="page-actions">
                 <a href="{{ route('admin.users.index') }}" class="btn btn-outline">
-                    <span>⬅️</span> Back to Users
+                    <i class="fas fa-arrow-left"></i> Back to Users
                 </a>
             </div>
         </div>
@@ -161,10 +195,60 @@
                     </div>
                 </div>
 
+                <!-- Security Questions Section -->
+                <div class="security-section">
+                    <h3>
+                        <i class="fas fa-shield-alt"></i>
+                        Security Questions (For Password Recovery)
+                    </h3>
+
+                    <div class="form-group">
+                        <label for="security_question">Security Question *</label>
+                        <select id="security_question" name="security_question" required>
+                            <option value="">Select a security question</option>
+                            <option value="What is your mother's maiden name?" {{ old('security_question', $user->security_question ?? '') == "What is your mother's maiden name?" ? 'selected' : '' }}>What is your mother's maiden name?</option>
+                            <option value="What was the name of your first pet?" {{ old('security_question', $user->security_question ?? '') == "What was the name of your first pet?" ? 'selected' : '' }}>What was the name of your first pet?</option>
+                            <option value="What elementary school did you attend?" {{ old('security_question', $user->security_question ?? '') == "What elementary school did you attend?" ? 'selected' : '' }}>What elementary school did you attend?</option>
+                            <option value="What is your favorite book?" {{ old('security_question', $user->security_question ?? '') == "What is your favorite book?" ? 'selected' : '' }}>What is your favorite book?</option>
+                            <option value="What city were you born in?" {{ old('security_question', $user->security_question ?? '') == "What city were you born in?" ? 'selected' : '' }}>What city were you born in?</option>
+                            <option value="When is your birthday?" {{ old('security_question', $user->security_question ?? '') == "When is your birthday?" ? 'selected' : '' }}>When is your birthday?</option>
+                            <option value="What is your favorite food?" {{ old('security_question', $user->security_question ?? '') == "What is your favorite food?" ? 'selected' : '' }}>What is your favorite food?</option>
+                            <option value="custom">Custom Question (type below)</option>
+                        </select>
+                        @error('security_question')
+                            <div class="error-message">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="form-group" id="customQuestionGroup" style="display: none;">
+                        <label for="custom_question">Custom Question *</label>
+                        <input type="text" id="custom_question" name="custom_question"
+                               value="{{ old('custom_question') }}"
+                               placeholder="Type your custom question">
+                        <div class="help-text">Enter your own security question</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="security_answer">Security Answer *</label>
+                        <input type="text" id="security_answer" name="security_answer"
+                               value="{{ old('security_answer') }}"
+                               required
+                               placeholder="Enter your answer">
+                        <div class="help-text">
+                            <i class="fas fa-info-circle"></i>
+                            This will be encrypted and used to verify your identity if you forget your password.
+                        </div>
+                        @error('security_answer')
+                            <div class="error-message">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+
                 <div class="form-actions">
                     <a href="{{ route('admin.users.index') }}" class="btn btn-outline">Cancel</a>
                     <button type="submit" class="btn btn-outline" style="background: #667eea; color: white; border-color: #667eea;">
-                        <span>💾</span> {{ isset($user) ? 'Update User' : 'Create User' }}
+                        <i class="fas fa-save"></i>
+                        {{ isset($user) ? 'Update User' : 'Create User' }}
                     </button>
                 </div>
             </form>
@@ -172,3 +256,51 @@
     </main>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const questionSelect = document.getElementById('security_question');
+        const customQuestionGroup = document.getElementById('customQuestionGroup');
+        const customQuestionInput = document.getElementById('custom_question');
+
+        function toggleCustomQuestion() {
+            if (questionSelect.value === 'custom') {
+                customQuestionGroup.style.display = 'block';
+                customQuestionInput.required = true;
+                // Don't change the name, we'll handle it in the controller
+            } else {
+                customQuestionGroup.style.display = 'none';
+                customQuestionInput.required = false;
+            }
+        }
+
+        questionSelect.addEventListener('change', toggleCustomQuestion);
+        toggleCustomQuestion(); // Initial check
+
+        // Handle form submission for custom question
+        document.querySelector('form').addEventListener('submit', function(e) {
+            if (questionSelect.value === 'custom') {
+                // Set the select value to the custom input value
+                const customQuestion = customQuestionInput.value.trim();
+                if (customQuestion) {
+                    // Create a new hidden input with the custom question
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = 'security_question';
+                    hiddenInput.value = customQuestion;
+
+                    // Disable the original select so it doesn't get submitted
+                    questionSelect.disabled = true;
+
+                    // Append the hidden input
+                    this.appendChild(hiddenInput);
+                } else {
+                    e.preventDefault();
+                    alert('Please enter your custom question');
+                }
+            }
+        });
+    });
+</script>
+@endpush

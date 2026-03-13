@@ -15,25 +15,23 @@
                 Back to Reports
             </a>
             <form action="{{ route('secretary.reports.export') }}" method="POST" style="display: inline;">
-    @csrf
-    <input type="hidden" name="type" value="certificates">
-    <input type="hidden" name="format" value="excel">
-
-    @if(request('date_from'))
-        <input type="hidden" name="date_from" value="{{ request('date_from') }}">
-    @endif
-    @if(request('date_to'))
-        <input type="hidden" name="date_to" value="{{ request('date_to') }}">
-    @endif
-    @if(request('status'))
-        <input type="hidden" name="status" value="{{ request('status') }}">
-    @endif
-
-    <button type="submit" class="btn-primary">
-        <i class="fas fa-file-excel icon-small"></i>
-        Export to Excel
-    </button>
-</form>
+                @csrf
+                <input type="hidden" name="type" value="certificates">
+                <input type="hidden" name="format" value="excel">
+                @if(request('date_from'))
+                    <input type="hidden" name="date_from" value="{{ request('date_from') }}">
+                @endif
+                @if(request('date_to'))
+                    <input type="hidden" name="date_to" value="{{ request('date_to') }}">
+                @endif
+                @if(request('status'))
+                    <input type="hidden" name="status" value="{{ request('status') }}">
+                @endif
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-file-excel icon-small"></i>
+                    Export to Excel
+                </button>
+            </form>
         </div>
     </div>
 
@@ -118,9 +116,78 @@
         </div>
     </div>
 
-    <!-- Detailed Statistics -->
-    <div class="details-grid">
-        <!-- By Certificate Type -->
+    <!-- Charts Grid -->
+    <div class="charts-grid">
+        <!-- Status Distribution Chart -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3><i class="fas fa-chart-pie"></i> Certificate Status Distribution</h3>
+                <div class="chart-total">Total: {{ $statistics['total'] }} certificates</div>
+            </div>
+            <div class="chart-body">
+                <canvas id="statusChart" width="400" height="200"></canvas>
+            </div>
+            <div class="chart-mini-table">
+                <div class="chart-stat-item">
+                    <span class="stat-label"><span class="legend-dot pending"></span> Pending:</span>
+                    <span class="stat-value">{{ $statistics['by_status']['pending'] }} ({{ round(($statistics['by_status']['pending'] / $statistics['total']) * 100, 1) }}%)</span>
+                </div>
+                <div class="chart-stat-item">
+                    <span class="stat-label"><span class="legend-dot approved"></span> Approved:</span>
+                    <span class="stat-value">{{ $statistics['by_status']['approved'] }} ({{ round(($statistics['by_status']['approved'] / $statistics['total']) * 100, 1) }}%)</span>
+                </div>
+                <div class="chart-stat-item">
+                    <span class="stat-label"><span class="legend-dot released"></span> Released:</span>
+                    <span class="stat-value">{{ $statistics['by_status']['released'] }} ({{ round(($statistics['by_status']['released'] / $statistics['total']) * 100, 1) }}%)</span>
+                </div>
+                <div class="chart-stat-item">
+                    <span class="stat-label"><span class="legend-dot rejected"></span> Rejected:</span>
+                    <span class="stat-value">{{ $statistics['by_status']['rejected'] }} ({{ round(($statistics['by_status']['rejected'] / $statistics['total']) * 100, 1) }}%)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Certificate Type Chart -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3><i class="fas fa-file-alt"></i> Certificate Type Distribution</h3>
+            </div>
+            <div class="chart-body">
+                <canvas id="typeChart" width="400" height="200"></canvas>
+            </div>
+            <div class="chart-mini-table">
+                @foreach($statistics['by_type'] as $type)
+                <div class="chart-stat-item">
+                    <span class="stat-label">{{ $type->certificate_type }}:</span>
+                    <span class="stat-value">{{ $type->total }} ({{ round(($type->total / $statistics['total']) * 100, 1) }}%)</span>
+                </div>
+                @endforeach
+            </div>
+        </div>
+
+        <!-- Monthly Trend Chart -->
+        <div class="chart-card full-width">
+            <div class="chart-header">
+                <h3><i class="fas fa-chart-line"></i> Monthly Certificate Requests (Last 6 Months)</h3>
+            </div>
+            <div class="chart-body">
+                <canvas id="monthlyTrendChart" width="800" height="250"></canvas>
+            </div>
+            <div class="purok-stats" style="padding: 0.5rem 1rem 1rem;">
+                @foreach($statistics['monthly_trend'] as $trend)
+                <div class="purok-stat-item" style="grid-template-columns: 80px 1fr 50px;">
+                    <span class="purok-label">{{ date('M Y', mktime(0, 0, 0, $trend->month, 1, $trend->year)) }}</span>
+                    <span class="purok-value">{{ $trend->total }} requests</span>
+                    <span class="purok-percentage">{{ round(($trend->total / $statistics['monthly_trend']->max('total')) * 100, 1) }}%</span>
+                </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Statistics Tables -->
+    <div class="details-grid" style="margin-top: 1.5rem;">
+        <!-- By Certificate Type Table -->
         <div class="detail-card">
             <div class="detail-header">
                 <x-heroicon-o-document-text class="detail-icon" />
@@ -148,7 +215,7 @@
             </div>
         </div>
 
-        <!-- Monthly Trend -->
+        <!-- Monthly Trend Table -->
         <div class="detail-card">
             <div class="detail-header">
                 <x-heroicon-o-chart-bar class="detail-icon" />
@@ -175,9 +242,37 @@
                 </table>
             </div>
         </div>
+
+        <!-- Processing Statistics -->
+        <div class="detail-card">
+            <div class="detail-header">
+                <x-heroicon-o-clock class="detail-icon" />
+                <h3>Processing Statistics</h3>
+            </div>
+            <div class="detail-body">
+                <div class="stats-mini-grid" style="display: grid; gap: 0.5rem;">
+                    <div class="chart-stat-item" style="justify-content: space-between;">
+                        <span class="stat-label">Issuance Rate:</span>
+                        <span class="stat-value">{{ $statistics['issuance_rate'] ?? 0 }}%</span>
+                    </div>
+                    <div class="chart-stat-item" style="justify-content: space-between;">
+                        <span class="stat-label">Avg Processing Time:</span>
+                        <span class="stat-value">{{ $statistics['avg_processing_days'] ?? 0 }} days</span>
+                    </div>
+                    <div class="chart-stat-item" style="justify-content: space-between;">
+                        <span class="stat-label">Fastest Processing:</span>
+                        <span class="stat-value">{{ $statistics['min_processing_days'] ?? 0 }} days</span>
+                    </div>
+                    <div class="chart-stat-item" style="justify-content: space-between;">
+                        <span class="stat-label">Slowest Processing:</span>
+                        <span class="stat-value">{{ $statistics['max_processing_days'] ?? 0 }} days</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Certificates List -->
+    {{-- <!-- Certificates List -->
     @if($certificates->count() > 0)
     <div class="card">
         <div class="card-header">
@@ -196,6 +291,7 @@
                             <th>Status</th>
                             <th>Request Date</th>
                             <th>Release Date</th>
+                            <th>Processing Days</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -210,7 +306,7 @@
                                 @endif
                             </td>
                             <td>{{ $certificate->certificate_type }}</td>
-                            <td>{{ $certificate->purpose }}</td>
+                            <td>{{ Str::limit($certificate->purpose, 20) }}</td>
                             <td>
                                 <span class="status-badge status-{{ strtolower($certificate->status) }}">
                                     {{ $certificate->status }}
@@ -218,6 +314,16 @@
                             </td>
                             <td>{{ $certificate->created_at ? $certificate->created_at->format('M d, Y') : 'N/A' }}</td>
                             <td>{{ $certificate->released_at ? $certificate->released_at->format('M d, Y') : 'Not released' }}</td>
+                            <td>
+                                @if($certificate->released_at && $certificate->created_at)
+                                    @php
+                                        $processingDays = $certificate->created_at->diffInDays($certificate->released_at);
+                                    @endphp
+                                    <span class="processing-days">{{ $processingDays }} days</span>
+                                @else
+                                    <span class="text-muted">-</span>
+                                @endif
+                            </td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -229,46 +335,46 @@
                 {{ $certificates->appends(request()->query())->links() }}
             </div>
         </div>
-    </div>
-    @endif
+    </div> --}}
+    {{-- @endif --}}
 </div>
 @endsection
 
 @push('styles')
 <style>
 .container-fluid {
-    padding: 1.5rem;
+    padding: 1.2rem;
 }
 
 .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: 0.8rem;
 }
 
 .page-title h1 {
     color: #333;
-    margin-bottom: 0.5rem;
-    font-size: 1.8rem;
+    margin-bottom: 0.4rem;
+    font-size: 1.4rem;
 }
 
 .page-title p {
     color: #666;
-    font-size: 1rem;
+    font-size: 0.8rem;
 }
 
 /* Buttons */
 .btn-primary, .btn-secondary {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
+    gap: 0.4rem;
+    padding: 0.6rem 1.2rem;
     border-radius: 5px;
     text-decoration: none;
-    font-size: 0.95rem;
+    font-size: 0.8rem;
     transition: all 0.3s;
     border: none;
     cursor: pointer;
@@ -297,28 +403,28 @@
 .filters-section {
     background: white;
     border-radius: 10px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
+    padding: 1.2rem;
+    margin-bottom: 1.5rem;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .filters-form {
     display: flex;
-    gap: 1rem;
+    gap: 0.8rem;
     flex-wrap: wrap;
     align-items: flex-end;
 }
 
 .filter-group {
     flex: 1;
-    min-width: 150px;
+    min-width: 140px;
 }
 
 .filter-group label {
     display: block;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
     color: #555;
-    font-size: 0.9rem;
+    font-size: 0.75rem;
     font-weight: 500;
 }
 
@@ -327,21 +433,23 @@
     padding: 0.5rem;
     border: 1px solid #e2e8f0;
     border-radius: 5px;
+    font-size: 0.8rem;
 }
 
 .filter-actions {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.4rem;
     align-items: center;
 }
 
 .btn-filter {
-    padding: 0.5rem 1.5rem;
+    padding: 0.5rem 1.2rem;
     background: #667eea;
     color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
+    font-size: 0.8rem;
 }
 
 .btn-filter:hover {
@@ -349,11 +457,12 @@
 }
 
 .btn-clear {
-    padding: 0.5rem 1.5rem;
+    padding: 0.5rem 1.2rem;
     background: #e2e8f0;
     color: #4a5568;
     text-decoration: none;
     border-radius: 5px;
+    font-size: 0.8rem;
 }
 
 .btn-clear:hover {
@@ -363,15 +472,15 @@
 /* Stats Grid */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
 }
 
 .stat-card {
     background: white;
     border-radius: 10px;
-    padding: 1.5rem;
+    padding: 1rem;
     display: flex;
     align-items: center;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -384,18 +493,18 @@
 .stat-card.rejected .stat-icon { background: #ef4444; }
 
 .stat-icon {
-    width: 50px;
-    height: 50px;
-    border-radius: 10px;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 1rem;
+    margin-right: 0.8rem;
 }
 
 .stat-icon svg {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     color: white;
 }
 
@@ -406,23 +515,158 @@
 .stat-label {
     display: block;
     color: #666;
-    font-size: 0.9rem;
-    margin-bottom: 0.25rem;
+    font-size: 0.7rem;
+    margin-bottom: 0.2rem;
 }
 
 .stat-value {
     display: block;
     color: #333;
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     font-weight: bold;
+}
+
+/* Charts Grid */
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.chart-card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.chart-card.full-width {
+    grid-column: span 2;
+}
+
+.chart-header {
+    padding: 0.8rem 1rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.chart-header h3 {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.chart-header h3 i {
+    color: #667eea;
+    font-size: 0.9rem;
+}
+
+.chart-total {
+    font-weight: 600;
+    color: #667eea;
+    background: #eef2ff;
+    padding: 0.2rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+}
+
+.chart-body {
+    padding: 1rem;
+    position: relative;
+    height: 200px;
+}
+
+.chart-mini-table {
+    padding: 0 1rem 1rem 1rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.4rem;
+}
+
+.chart-stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.2rem 0.4rem;
+    background: #f8fafc;
+    border-radius: 5px;
+    font-size: 0.7rem;
+}
+
+.chart-stat-item .stat-label {
+    color: #666;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.chart-stat-item .stat-value {
+    color: #333;
+    font-weight: 600;
+    font-size: 0.7rem;
+}
+
+.legend-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.legend-dot.pending { background: #f59e0b; }
+.legend-dot.approved { background: #10b981; }
+.legend-dot.released { background: #3b82f6; }
+.legend-dot.rejected { background: #ef4444; }
+
+/* Purok Stats (reused for trend) */
+.purok-stats {
+    padding: 0.5rem 1rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.purok-stat-item {
+    display: grid;
+    grid-template-columns: 80px 1fr 50px;
+    align-items: center;
+    gap: 0.8rem;
+    font-size: 0.7rem;
+}
+
+.purok-label {
+    font-weight: 600;
+    color: #333;
+}
+
+.purok-value {
+    color: #667eea;
+    font-weight: 500;
+}
+
+.purok-percentage {
+    font-weight: 600;
+    color: #333;
+    text-align: right;
+    font-size: 0.7rem;
 }
 
 /* Details Grid */
 .details-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
 }
 
 .detail-card {
@@ -433,28 +677,28 @@
 }
 
 .detail-header {
-    padding: 1rem;
+    padding: 0.7rem;
     background: #f8f9fa;
     border-bottom: 1px solid #e2e8f0;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
 }
 
 .detail-icon {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     color: #667eea;
 }
 
 .detail-header h3 {
     color: #333;
-    font-size: 1rem;
+    font-size: 0.8rem;
     margin: 0;
 }
 
 .detail-body {
-    padding: 1rem;
+    padding: 0.7rem;
 }
 
 /* Mini Table */
@@ -465,23 +709,19 @@
 
 .mini-table th {
     text-align: left;
-    padding: 0.5rem;
+    padding: 0.4rem;
     background: #f8f9fa;
     color: #555;
-    font-size: 0.85rem;
+    font-size: 0.65rem;
     font-weight: 600;
     border-bottom: 1px solid #e2e8f0;
 }
 
 .mini-table td {
-    padding: 0.5rem;
+    padding: 0.4rem;
     border-bottom: 1px solid #e2e8f0;
     color: #333;
-    font-size: 0.9rem;
-}
-
-.mini-table tr:last-child td {
-    border-bottom: none;
+    font-size: 0.7rem;
 }
 
 /* Status Badges */
@@ -489,9 +729,10 @@
     display: inline-block;
     padding: 0.25rem 0.5rem;
     border-radius: 9999px;
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     font-weight: 600;
-    text-transform: uppercase;
+    min-width: 70px;
+    text-align: center;
 }
 
 .status-pending {
@@ -520,11 +761,11 @@
     border-radius: 10px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     overflow: hidden;
-    margin-top: 2rem;
+    margin-top: 1.5rem;
 }
 
 .card-header {
-    padding: 1.5rem;
+    padding: 1rem;
     background: #f8f9fa;
     border-bottom: 1px solid #e2e8f0;
     display: flex;
@@ -534,17 +775,17 @@
 
 .card-header h3 {
     color: #333;
-    font-size: 1.2rem;
+    font-size: 0.9rem;
     margin: 0;
 }
 
 .record-count {
     color: #666;
-    font-size: 0.9rem;
+    font-size: 0.7rem;
 }
 
 .card-body {
-    padding: 1.5rem;
+    padding: 1rem;
 }
 
 /* Data Table */
@@ -555,48 +796,45 @@
 .data-table {
     width: 100%;
     border-collapse: collapse;
+    font-size: 0.75rem;
 }
 
 .data-table th {
     text-align: left;
-    padding: 1rem;
+    padding: 0.7rem;
     background: #f8f9fa;
     color: #555;
     font-weight: 600;
     border-bottom: 2px solid #e2e8f0;
-    white-space: nowrap;
 }
 
 .data-table td {
-    padding: 1rem;
+    padding: 0.7rem;
     border-bottom: 1px solid #e2e8f0;
     color: #333;
 }
 
-.data-table tr:hover td {
-    background: #f8fafc;
-}
-
 /* Pagination */
 .pagination-wrapper {
-    margin-top: 2rem;
+    margin-top: 1.5rem;
     display: flex;
     justify-content: center;
 }
 
 .pagination-wrapper .pagination {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.3rem;
     list-style: none;
     padding: 0;
 }
 
 .pagination-wrapper .page-item .page-link {
-    padding: 0.5rem 0.75rem;
+    padding: 0.3rem 0.6rem;
     border: 1px solid #e2e8f0;
     border-radius: 5px;
     color: #667eea;
     text-decoration: none;
+    font-size: 0.7rem;
 }
 
 .pagination-wrapper .page-item.active .page-link {
@@ -605,14 +843,183 @@
     border-color: #667eea;
 }
 
-.pagination-wrapper .page-item.disabled .page-link {
-    color: #cbd5e0;
-    pointer-events: none;
+.icon-small {
+    width: 14px;
+    height: 14px;
 }
 
-.icon-small {
-    width: 16px;
-    height: 16px;
+.text-muted {
+    color: #718096;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .chart-card.full-width {
+        grid-column: span 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .page-actions {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .btn-primary, .btn-secondary {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .purok-stat-item {
+        grid-template-columns: 80px 1fr 45px;
+        gap: 0.4rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .purok-stat-item {
+        grid-template-columns: 1fr;
+        gap: 0.2rem;
+    }
+
+    .chart-mini-table {
+        grid-template-columns: 1fr;
+    }
 }
 </style>
+@endpush
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Status Distribution Pie Chart
+    new Chart(document.getElementById('statusChart'), {
+        type: 'pie',
+        data: {
+            labels: ['Pending', 'Approved', 'Released', 'Rejected'],
+            datasets: [{
+                data: [
+                    {{ $statistics['by_status']['pending'] }},
+                    {{ $statistics['by_status']['approved'] }},
+                    {{ $statistics['by_status']['released'] }},
+                    {{ $statistics['by_status']['rejected'] }}
+                ],
+                backgroundColor: ['#f59e0b', '#10b981', '#3b82f6', '#ef4444'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Certificate Type Pie Chart
+    new Chart(document.getElementById('typeChart'), {
+        type: 'pie',
+        data: {
+            labels: [@foreach($statistics['by_type'] as $type) '{{ $type->certificate_type }}', @endforeach],
+            datasets: [{
+                data: [@foreach($statistics['by_type'] as $type) {{ $type->total }}, @endforeach],
+                backgroundColor: ['#667eea', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#3b82f6'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Monthly Trend Line Chart
+    new Chart(document.getElementById('monthlyTrendChart'), {
+        type: 'line',
+        data: {
+            labels: [@foreach($statistics['monthly_trend'] as $trend) '{{ date('M', mktime(0, 0, 0, $trend->month, 1)) }}', @endforeach],
+            datasets: [{
+                label: 'Number of Requests',
+                data: [@foreach($statistics['monthly_trend'] as $trend) {{ $trend->total }}, @endforeach],
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: '#667eea',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `Requests: ${context.raw}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#e2e8f0' },
+                    ticks: {
+                        stepSize: 1,
+                        font: { size: 9 }
+                    }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 9 } }
+                }
+            }
+        }
+    });
+});
+</script>
 @endpush

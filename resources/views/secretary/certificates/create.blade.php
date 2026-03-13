@@ -83,6 +83,16 @@
                     @enderror
                 </div>
 
+                <!-- Purpose Selection -->
+                <div class="form-group full-width">
+                    <label for="purpose_category">Purpose Category</label>
+                    <select id="purpose_category" class="form-control">
+                        <option value="">Select Common Purpose</option>
+                        <!-- Options will be populated by JavaScript -->
+                    </select>
+                    <small class="form-text text-muted">Select a common purpose or type your own below</small>
+                </div>
+
                 <!-- Purpose -->
                 <div class="form-group full-width">
                     <label for="purpose">Purpose <span class="required">*</span></label>
@@ -90,6 +100,7 @@
                               name="purpose"
                               class="form-control @error('purpose') is-invalid @enderror"
                               rows="3"
+                              placeholder="Type your purpose here or select from the common purposes above"
                               required>{{ old('purpose') }}</textarea>
                     @error('purpose')
                         <span class="error-message">{{ $message }}</span>
@@ -177,6 +188,7 @@
 
 @push('styles')
 <style>
+/* All your existing styles remain the same */
 .container-fluid {
     padding: 1.5rem;
 }
@@ -759,9 +771,97 @@ textarea.form-control {
 // Residents data for autocomplete
 const residents = <?php echo json_encode($residents); ?>;
 
+// Common purposes for each certificate type
+const purposeOptions = {
+    'Clearance': [
+        'Employment application',
+        'Local employment',
+        'Overseas employment (OFW)',
+        'Business permit application',
+        'School enrollment',
+        'Scholarship application',
+        'Travel requirements',
+        'Bank account opening',
+        'Loan application',
+        'Government ID application',
+        'Driver\'s license application',
+        'Passport application',
+        'Visa application',
+        'Civil service eligibility',
+        'Job promotion',
+        'Training/seminar attendance',
+        'Police clearance requirement',
+        'NBI clearance requirement',
+        'SSS/GSIS requirements',
+        'Pag-IBIG requirements',
+        'PhilHealth requirements',
+        'Voter\'s registration',
+        'Marriage license application',
+        'Court requirement',
+        'Notarial document requirement'
+    ],
+    'Indigency': [
+        'Medical assistance',
+        'Hospital bill assistance',
+        'Financial assistance from LGU',
+        'Scholarship grant (financial aid)',
+        'Social welfare programs (4Ps)',
+        'Food assistance',
+        'Burial assistance',
+        'Medicine assistance',
+        'Senior citizen benefits',
+        'PWD benefits',
+        'Solo parent benefits',
+        'Disaster relief assistance',
+        'Educational assistance',
+        'Livelihood program application',
+        'Housing assistance',
+        'Utility bill discount application',
+        'Legal aid qualification',
+        'Free legal assistance',
+        'Public attorney\'s office (PAO) assistance',
+        'Health center services',
+        'Government hospital charity ward',
+        'DSWD programs',
+        'Food stamp program',
+        'Tulong Panghanapbuhay sa Ating Disadvantaged/Displaced Workers (TUPAD)',
+        'Emergency cash assistance'
+    ],
+    'Residency': [
+        'Proof of residency requirement',
+        'Voter\'s registration',
+        'School enrollment (transfer students)',
+        'Local employment (proof of residency)',
+        'Business registration',
+        'Barangay ID application',
+        'Tax identification number (TIN) application',
+        'Postal ID application',
+        'Driver\'s license (address verification)',
+        'Voter\'s ID application',
+        'Senior citizen ID application',
+        'PWD ID application',
+        'Utility connection application (water/electricity)',
+        'Internet connection application',
+        'Bank account address verification',
+        'Loan application (address verification)',
+        'Credit card application',
+        'Insurance application',
+        'Government service eligibility',
+        'Residency verification for court cases',
+        'Adoption requirements',
+        'Foster care application',
+        'Relocation/transfer verification',
+        'Community tax certificate (cedula) application',
+        'Barangay assembly participation'
+    ]
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     // Setup search functionality
     setupResidentSearch();
+
+    // Setup purpose dropdown based on certificate type
+    setupPurposeDropdown();
 
     // Preview button click handler
     document.getElementById('previewBtn').addEventListener('click', function() {
@@ -778,6 +878,68 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+function setupPurposeDropdown() {
+    const certificateType = document.getElementById('certificate_type');
+    const purposeCategory = document.getElementById('purpose_category');
+    const purposeTextarea = document.getElementById('purpose');
+
+    // Update purpose options when certificate type changes
+    certificateType.addEventListener('change', function() {
+        updatePurposeOptions(this.value, purposeCategory);
+    });
+
+    // Handle purpose category selection
+    purposeCategory.addEventListener('change', function() {
+        if (this.value) {
+            // If "Other" is selected, clear the textarea and focus on it
+            if (this.value === 'Other') {
+                purposeTextarea.value = '';
+                purposeTextarea.focus();
+            } else {
+                purposeTextarea.value = this.value;
+            }
+        }
+    });
+
+    // Initialize with existing value if any
+    if (certificateType.value) {
+        updatePurposeOptions(certificateType.value, purposeCategory);
+        // If there's an old purpose value, try to select it in the dropdown
+        const oldPurpose = '{{ old('purpose') }}';
+        if (oldPurpose) {
+            const options = purposeCategory.options;
+            for (let i = 0; i < options.length; i++) {
+                if (options[i].value === oldPurpose) {
+                    options[i].selected = true;
+                    purposeTextarea.value = oldPurpose;
+                    break;
+                }
+            }
+        }
+    }
+}
+
+function updatePurposeOptions(type, purposeCategory) {
+    // Clear existing options
+    purposeCategory.innerHTML = '<option value="">Select Common Purpose</option>';
+
+    if (type && purposeOptions[type]) {
+        // Add purpose options for selected certificate type
+        purposeOptions[type].forEach(purpose => {
+            const option = document.createElement('option');
+            option.value = purpose;
+            option.textContent = purpose;
+            purposeCategory.appendChild(option);
+        });
+
+        // Add "Other" option
+        const otherOption = document.createElement('option');
+        otherOption.value = 'Other';
+        otherOption.textContent = '-- Other (Type below) --';
+        purposeCategory.appendChild(otherOption);
+    }
+}
 
 function setupResidentSearch() {
     const input = document.getElementById('resident_search');
@@ -811,6 +973,9 @@ function setupResidentSearch() {
                 return fullName.includes(searchTerm) || residentId.includes(searchTerm) || address.includes(searchTerm);
             });
 
+            // Store filtered residents for keyboard navigation
+            window.filteredResidents = filtered;
+
             // Display results
             if (filtered.length > 0) {
                 results.innerHTML = '';
@@ -840,6 +1005,7 @@ function setupResidentSearch() {
                 });
             } else {
                 results.innerHTML = '<div class="no-results">No residents found</div>';
+                window.filteredResidents = [];
             }
         }, 300);
     });
@@ -865,7 +1031,7 @@ function setupResidentSearch() {
             const selectedOption = options[currentFocus];
             if (selectedOption) {
                 const residentIndex = selectedOption.getAttribute('data-index');
-                const resident = filteredResidents ? filteredResidents[residentIndex] : null;
+                const resident = window.filteredResidents ? window.filteredResidents[residentIndex] : null;
                 if (resident) {
                     selectResident(resident);
                 }

@@ -66,15 +66,26 @@
                         @enderror
                     </div>
 
-                    <!-- Status -->
+                    <!-- Status - Read-only for Clerk, Editable for others -->
                     <div class="form-group">
                         <label for="status">Status <span class="required">*</span></label>
-                        <select name="status" id="status" class="form-control @error('status') is-invalid @enderror" required onchange="toggleRejectionField()">
-                            <option value="Pending" {{ old('status', $certificate->status) == 'Pending' ? 'selected' : '' }}>Pending</option>
-                            <option value="Approved" {{ old('status', $certificate->status) == 'Approved' ? 'selected' : '' }}>Approved</option>
-                            <option value="Released" {{ old('status', $certificate->status) == 'Released' ? 'selected' : '' }}>Released</option>
-                            <option value="Rejected" {{ old('status', $certificate->status) == 'Rejected' ? 'selected' : '' }}>Rejected</option>
-                        </select>
+                        @if(auth()->user()->role_id == 4) {{-- Clerk --}}
+                            <input type="text"
+                                   id="status"
+                                   name="status_display"
+                                   value="{{ old('status', $certificate->status) }}"
+                                   class="form-control"
+                                   readonly>
+                            <input type="hidden" name="status" value="{{ $certificate->status }}">
+                            <small class="form-text text-muted">Status cannot be changed by clerk. Please contact secretary for status updates.</small>
+                        @else {{-- Secretary or Admin --}}
+                            <select name="status" id="status" class="form-control @error('status') is-invalid @enderror" required onchange="toggleRejectionField()">
+                                <option value="Pending" {{ old('status', $certificate->status) == 'Pending' ? 'selected' : '' }}>Pending</option>
+                                <option value="Approved" {{ old('status', $certificate->status) == 'Approved' ? 'selected' : '' }}>Approved</option>
+                                <option value="Released" {{ old('status', $certificate->status) == 'Released' ? 'selected' : '' }}>Released</option>
+                                <option value="Rejected" {{ old('status', $certificate->status) == 'Rejected' ? 'selected' : '' }}>Rejected</option>
+                            </select>
+                        @endif
                         @error('status')
                             <span class="error-message">{{ $message }}</span>
                         @enderror
@@ -93,11 +104,11 @@
                         <span class="error-message">{{ $message }}</span>
                     @enderror
                 </div>
-
                 <!-- Rejection Reason (shown only when Rejected is selected) -->
-<div id="rejectionField" class="form-group full-width"
-     style="display: <?php echo old('status', $certificate->status) == 'Rejected' ? 'block' : 'none'; ?>;">
-                       <label for="rejection_reason">
+                <div id="rejectionField" class="form-group full-width"
+                     .rejection-field-visible { display: block !important; }
+                     .rejection-field-hidden { display: none !important; }
+                    <label for="rejection_reason">
                         Rejection Reason
                         @if(old('status', $certificate->status) == 'Rejected')
                             <span class="required">*</span>
@@ -106,7 +117,8 @@
                     <textarea name="rejection_reason"
                               id="rejection_reason"
                               class="form-control @error('rejection_reason') is-invalid @enderror"
-                              rows="2">{{ old('rejection_reason', $certificate->rejection_reason) }}</textarea>
+                              rows="2"
+                              {{ auth()->user()->role_id == 4 ? 'readonly' : '' }}>{{ old('rejection_reason', $certificate->rejection_reason) }}</textarea>
                     @error('rejection_reason')
                         <span class="error-message">{{ $message }}</span>
                     @enderror
@@ -287,18 +299,34 @@ textarea.form-control {
 .icon-small {
     font-size: 16px;
 }
+
+/* Read-only field styling */
+input:read-only, textarea:read-only {
+    background-color: #f8f9fa;
+    cursor: not-allowed;
+}
+
+/* Helper text */
+.text-muted {
+    color: #6c757d;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    display: block;
+}
 </style>
 @endpush
 
 @push('scripts')
 <script>
 function toggleRejectionField() {
-    const status = document.getElementById('status').value;
+    const status = document.getElementById('status');
     const rejectionField = document.getElementById('rejectionField');
     const rejectionReason = document.getElementById('rejection_reason');
-    const requiredSpan = rejectionField ? rejectionField.querySelector('.required') : null;
 
-    if (status === 'Rejected') {
+    // Only run for non-clerk users (status select exists)
+    if (!status) return;
+
+    if (status.value === 'Rejected') {
         rejectionField.style.display = 'block';
         if (rejectionReason) rejectionReason.required = true;
     } else {

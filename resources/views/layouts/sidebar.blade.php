@@ -70,6 +70,12 @@
                             <span class="nav-text">Barangay Info</span>
                         </a>
                     </li>
+                    <li class="nav-item {{ request()->routeIs('secretary.residents.*') ? 'active' : '' }}">
+                        <a href="{{ route('secretary.residents.index') }}">
+                            <span class="nav-icon"><x-heroicon-o-user-group /></span>
+                            <span class="nav-text">Resident Records</span>
+                        </a>
+                    </li>
                     <li class="nav-item {{ request()->is('admin/logs*') ? 'active' : '' }}">
                         <a href="{{ route('admin.logs.index') }}">
                             <span class="nav-icon"><x-heroicon-o-document-text /></span>

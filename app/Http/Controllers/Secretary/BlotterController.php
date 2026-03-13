@@ -55,7 +55,6 @@ class BlotterController extends Controller
     public function create()
     {
         $residents = Resident::orderBy('first_name')->get();
-        // Generate a temporary case ID for display
         $case_id = $this->generateCaseId();
 
         return view('secretary.blotter.create', compact('residents', 'case_id'));
@@ -70,12 +69,12 @@ class BlotterController extends Controller
             'incident_type' => 'required|string|max:255',
             'incident_date' => 'required|date|before_or_equal:today',
             'incident_location' => 'required|string|max:255',
-            'description' => 'required|string', // Changed from complaint_details to description
+            'description' => 'required|string',
         ]);
 
-        $validated['case_id'] = $this->generateCaseId(); // Changed from blotter_number to case_id
+        $validated['case_id'] = $this->generateCaseId();
         $validated['status'] = 'Pending';
-        $validated['handled_by'] = Auth::id(); // Add the current user as handler
+        $validated['handled_by'] = Auth::id();
 
         $blotter = Blotter::create($validated);
 
@@ -118,7 +117,7 @@ class BlotterController extends Controller
             'incident_type' => 'required|string|max:255',
             'incident_date' => 'required|date|before_or_equal:today',
             'incident_location' => 'required|string|max:255',
-            'description' => 'required|string', // Changed from complaint_details to description
+            'description' => 'required|string',
             'status' => 'required|in:Pending,Ongoing,Settled,Referred',
             'resolution' => 'nullable|required_if:status,Settled|string',
             'resolved_date' => 'nullable|required_if:status,Settled|date',
@@ -188,8 +187,23 @@ class BlotterController extends Controller
             ->with('success', 'Blotter case status updated successfully.');
     }
 
-    public function destroy(Request $request, Blotter $blotter)
+    /**
+     * Archive (Soft Delete) the specified blotter case
+     */
+    public function archive(Request $request, Blotter $blotter)
     {
+        // Check if user is authenticated
+        if (!Auth::check()) {
+            return redirect()->route('login')
+                ->with('error', 'You must be logged in.');
+        }
+
+        // Clerks (role_id = 4) cannot archive
+        if (Auth::user()->role_id == 4) {
+            return redirect()->route('secretary.blotter.index')
+                ->with('error', 'You do not have permission to archive blotter cases.');
+        }
+
         $caseId = $blotter->case_id;
         $incidentType = $blotter->incident_type;
         $complainant = $blotter->complainant;
@@ -197,8 +211,8 @@ class BlotterController extends Controller
 
         ActivityLog::create([
             'user_id' => Auth::id(),
-            'action' => 'DELETE_BLOTTER',
-            'description' => 'Deleted blotter case ' . $caseId .
+            'action' => 'ARCHIVE_BLOTTER',
+            'description' => 'Archived blotter case ' . $caseId .
                             ' - ' . $incidentType .
                             ' (Complainant: ' . $complainantName .
                             ', Respondent: ' . $blotter->respondent_name . ')',
@@ -206,10 +220,121 @@ class BlotterController extends Controller
             'user_agent' => $request->userAgent()
         ]);
 
-        $blotter->delete();
+        $blotter->delete(); // Soft delete
 
         return redirect()->route('secretary.blotter.index')
-            ->with('success', 'Blotter case deleted successfully.');
+            ->with('success', 'Blotter case archived successfully.');
+    }
+
+    /**
+     * Display archived blotter cases
+     */
+    public function archived(Request $request)
+    {
+        // Check if user is authenticated
+        if (!Auth::check()) {
+            return redirect()->route('login')
+                ->with('error', 'You must be logged in.');
+        }
+
+        // Clerks (role_id = 4) cannot view archive
+        if (Auth::user()->role_id == 4) {
+            return redirect()->route('secretary.blotter.index')
+                ->with('error', 'You do not have permission to view archived cases.');
+        }
+
+        $query = Blotter::onlyTrashed()->with('complainant');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('case_id', 'like', "%{$search}%")
+                  ->orWhere('respondent_name', 'like', "%{$search}%")
+                  ->orWhere('incident_type', 'like', "%{$search}%");
+            });
+        }
+
+        $archived = $query->orderBy('deleted_at', 'desc')->paginate(15);
+
+        return view('secretary.blotter.archived', compact('archived'));
+    }
+
+    /**
+     * Restore archived blotter case
+     */
+    public function restore(Request $request, $id)
+    {
+        // Check if user is authenticated
+        if (!Auth::check()) {
+            return redirect()->route('login')
+                ->with('error', 'You must be logged in.');
+        }
+
+        // Clerks (role_id = 4) cannot restore
+        if (Auth::user()->role_id == 4) {
+            return redirect()->route('secretary.blotter.index')
+                ->with('error', 'You do not have permission to restore cases.');
+        }
+
+        $blotter = Blotter::onlyTrashed()->findOrFail($id);
+        $blotter->restore();
+
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'RESTORE_BLOTTER',
+            'description' => 'Restored blotter case ' . $blotter->case_id,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
+        return redirect()->route('secretary.blotter.archived')
+            ->with('success', 'Blotter case restored successfully.');
+    }
+
+    /**
+     * Permanently delete blotter case (Force Delete)
+     */
+    public function forceDelete(Request $request, $id)
+    {
+        // Check if user is authenticated
+        if (!Auth::check()) {
+            return redirect()->route('login')
+                ->with('error', 'You must be logged in.');
+        }
+
+        $userRole = Auth::user()->role_id;
+
+        // Allow only Admin (1) to permanently delete
+        // If you want to allow Secretary as well, add 2 to the array
+        if (!in_array($userRole, [1])) { // Only Admin can permanently delete
+            return redirect()->route('secretary.blotter.archived')
+                ->with('error', 'You do not have permission to permanently delete cases.');
+        }
+
+        $blotter = Blotter::onlyTrashed()->findOrFail($id);
+        $caseId = $blotter->case_id;
+
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'FORCE_DELETE_BLOTTER',
+            'description' => 'Permanently deleted blotter case ' . $caseId,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
+        $blotter->forceDelete();
+
+        return redirect()->route('secretary.blotter.archived')
+            ->with('success', 'Blotter case permanently deleted.');
+    }
+
+    /**
+     * Legacy destroy method - consider removing or redirecting to archive
+     */
+    public function destroy(Request $request, Blotter $blotter)
+    {
+        // Redirect to archive method instead
+        return $this->archive($request, $blotter);
     }
 
     private function generateCaseId()
@@ -217,7 +342,6 @@ class BlotterController extends Controller
         $year = date('Y');
         $prefix = 'BLT';
 
-        // Use case_id column instead of blotter_number
         $lastBlotter = Blotter::where('case_id', 'like', "{$prefix}-{$year}-%")
             ->orderBy('case_id', 'desc')
             ->first();

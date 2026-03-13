@@ -4,6 +4,7 @@
 
 @section('content')
 <div class="container-fluid">
+    <!-- Page Header -->
     <div class="page-header">
         <div class="page-title">
             <h1>Residents Report</h1>
@@ -14,7 +15,7 @@
                 <x-heroicon-o-arrow-left class="icon-small" />
                 Back to Reports
             </a>
-            <form action="{{ route('secretary.reports.export') }}" method="POST" style="display: inline;">
+            <form action="{{ route('secretary.reports.export') }}" method="POST">
                 @csrf
                 <input type="hidden" name="type" value="residents">
                 <input type="hidden" name="format" value="excel">
@@ -32,7 +33,7 @@
         </div>
     </div>
 
-    <!-- Filter Form -->
+    <!-- Filter Section -->
     <div class="filters-section">
         <form action="{{ route('secretary.reports.residents') }}" method="GET" class="filters-form">
             <div class="filter-group">
@@ -50,8 +51,9 @@
         </form>
     </div>
 
-    <!-- Statistics Grid -->
+    <!-- Key Statistics Cards -->
     <div class="stats-grid">
+        <!-- Total Residents Card -->
         <div class="stat-card total">
             <div class="stat-icon">
                 <x-heroicon-o-users />
@@ -62,6 +64,7 @@
             </div>
         </div>
 
+        <!-- Male Residents Card -->
         <div class="stat-card male">
             <div class="stat-icon">
                 <x-heroicon-o-user />
@@ -72,6 +75,7 @@
             </div>
         </div>
 
+        <!-- Female Residents Card -->
         <div class="stat-card female">
             <div class="stat-icon">
                 <x-heroicon-o-user />
@@ -82,6 +86,7 @@
             </div>
         </div>
 
+        <!-- Registered Voters Card -->
         <div class="stat-card voters">
             <div class="stat-icon">
                 <x-heroicon-o-check-badge />
@@ -93,9 +98,9 @@
         </div>
     </div>
 
-    <!-- Charts Grid -->
+    <!-- Charts Section -->
     <div class="charts-grid">
-        <!-- Gender Distribution Chart -->
+        <!-- Gender Distribution Pie Chart -->
         <div class="chart-card">
             <div class="chart-header">
                 <h3><i class="fas fa-venus-mars"></i> Gender Distribution</h3>
@@ -109,7 +114,7 @@
             </div>
         </div>
 
-        <!-- Civil Status Chart -->
+        <!-- Civil Status Pie Chart -->
         <div class="chart-card">
             <div class="chart-header">
                 <h3><i class="fas fa-heart"></i> Civil Status</h3>
@@ -127,7 +132,7 @@
             </div>
         </div>
 
-        <!-- Age Distribution Chart -->
+        <!-- Age Distribution Pie Chart -->
         <div class="chart-card">
             <div class="chart-header">
                 <h3><i class="fas fa-calendar"></i> Age Distribution</h3>
@@ -145,7 +150,7 @@
             </div>
         </div>
 
-        <!-- Special Categories Chart -->
+        <!-- Special Categories Pie Chart -->
         <div class="chart-card">
             <div class="chart-header">
                 <h3><i class="fas fa-star"></i> Special Categories</h3>
@@ -170,7 +175,7 @@
         </div>
     </div>
 
-    <!-- Purok Bar Chart -->
+    <!-- Purok Distribution Bar Chart -->
     <div class="chart-card full-width">
         <div class="chart-header">
             <h3><i class="fas fa-map-pin"></i> Population by Purok</h3>
@@ -179,6 +184,7 @@
         <div class="chart-body">
             <canvas id="purokChart" width="800" height="300"></canvas>
         </div>
+        <!-- Purok Statistics with Progress Bars -->
         <div class="purok-stats">
             @foreach($statistics['by_purok'] as $purok)
             <div class="purok-stat-item">
@@ -193,9 +199,9 @@
         </div>
     </div>
 
-    <!-- Detailed Statistics Tables (Optional - can be hidden if you want just charts) -->
-    <div class="details-grid" style="margin-top: 2rem;">
-        <!-- By Purok Table -->
+    <!-- Detailed Data Tables -->
+    <div class="details-grid">
+        <!-- Purok Distribution Table -->
         <div class="detail-card">
             <div class="detail-header">
                 <x-heroicon-o-map-pin class="detail-icon" />
@@ -223,7 +229,7 @@
             </div>
         </div>
 
-        <!-- By Civil Status Table -->
+        <!-- Civil Status Table -->
         <div class="detail-card">
             <div class="detail-header">
                 <x-heroicon-o-heart class="detail-icon" />
@@ -279,7 +285,7 @@
             </div>
         </div>
 
-        <!-- Special Status Table -->
+        <!-- Special Categories Table -->
         <div class="detail-card">
             <div class="detail-header">
                 <x-heroicon-o-star class="detail-icon" />
@@ -316,7 +322,7 @@
         </div>
     </div>
 
-    <!-- Residents List -->
+    <!-- Residents List (Commented out - enable if needed) -->
     {{-- @if($residents->count() > 0)
     <div class="card">
         <div class="card-header">
@@ -362,10 +368,16 @@
 
 @push('styles')
 <style>
+/* ==================== */
+/* Container & Layout   */
+/* ==================== */
 .container-fluid {
     padding: 1.5rem;
 }
 
+/* ==================== */
+/* Page Header          */
+/* ==================== */
 .page-header {
     display: flex;
     justify-content: space-between;
@@ -384,20 +396,46 @@
 .page-title p {
     color: #666;
     font-size: 1rem;
+    margin: 0;
 }
 
-/* Buttons */
-.btn-primary, .btn-secondary {
-    display: inline-flex;
+/* ==================== */
+/* Page Actions         */
+/* ==================== */
+.page-actions {
+    display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
+}
+
+.page-actions form {
+    margin: 0;
+    padding: 0;
+    line-height: 0; /* Remove extra line-height from form */
+}
+
+/* ==================== */
+/* Buttons              */
+/* ==================== */
+.btn-primary,
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.2rem;
     border-radius: 5px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    height: 40px; /* Fixed height for perfect alignment */
+    line-height: 1;
+    box-sizing: border-box;
+    vertical-align: middle;
+    white-space: nowrap;
     text-decoration: none;
-    font-size: 0.95rem;
-    transition: all 0.3s;
     border: none;
     cursor: pointer;
+    transition: all 0.3s;
 }
 
 .btn-primary {
@@ -407,6 +445,8 @@
 
 .btn-primary:hover {
     opacity: 0.9;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 .btn-secondary {
@@ -417,9 +457,20 @@
 
 .btn-secondary:hover {
     background: #eef2ff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
-/* Filters Section */
+.icon-small {
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* ==================== */
+/* Filter Section       */
+/* ==================== */
 .filters-section {
     background: white;
     border-radius: 10px;
@@ -468,6 +519,7 @@
     border: none;
     border-radius: 5px;
     cursor: pointer;
+    height: 38px;
 }
 
 .btn-filter:hover {
@@ -480,13 +532,18 @@
     color: #4a5568;
     text-decoration: none;
     border-radius: 5px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
 }
 
 .btn-clear:hover {
     background: #cbd5e0;
 }
 
-/* Stats Grid */
+/* ==================== */
+/* Statistics Cards     */
+/* ==================== */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -542,7 +599,9 @@
     font-weight: bold;
 }
 
-/* Charts Grid */
+/* ==================== */
+/* Charts Grid          */
+/* ==================== */
 .charts-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -634,17 +693,9 @@
     font-size: 0.85rem;
 }
 
-.chart-stat-item .stat-label {
-    color: #666;
-    font-weight: 500;
-}
-
-.chart-stat-item .stat-value {
-    color: #333;
-    font-weight: 600;
-}
-
-/* Purok Stats */
+/* ==================== */
+/* Purok Stats          */
+/* ==================== */
 .purok-stats {
     padding: 1.5rem;
     display: flex;
@@ -690,7 +741,9 @@
     text-align: right;
 }
 
-/* Details Grid */
+/* ==================== */
+/* Details Grid         */
+/* ==================== */
 .details-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -730,7 +783,9 @@
     padding: 1rem;
 }
 
-/* Mini Table */
+/* ==================== */
+/* Mini Table           */
+/* ==================== */
 .mini-table {
     width: 100%;
     border-collapse: collapse;
@@ -757,74 +812,9 @@
     border-bottom: none;
 }
 
-/* Card */
-.card {
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    overflow: hidden;
-    margin-top: 2rem;
-}
-
-.card-header {
-    padding: 1.5rem;
-    background: #f8f9fa;
-    border-bottom: 1px solid #e2e8f0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.card-header h3 {
-    color: #333;
-    font-size: 1.2rem;
-    margin: 0;
-}
-
-.record-count {
-    color: #666;
-    font-size: 0.9rem;
-}
-
-.card-body {
-    padding: 1.5rem;
-}
-
-/* Data Table */
-.table-responsive {
-    overflow-x: auto;
-}
-
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.data-table th {
-    text-align: left;
-    padding: 1rem;
-    background: #f8f9fa;
-    color: #555;
-    font-weight: 600;
-    border-bottom: 2px solid #e2e8f0;
-}
-
-.data-table td {
-    padding: 1rem;
-    border-bottom: 1px solid #e2e8f0;
-    color: #333;
-}
-
-.data-table tr:hover td {
-    background: #f8fafc;
-}
-
-.icon-small {
-    width: 16px;
-    height: 16px;
-}
-
-/* Responsive */
+/* ==================== */
+/* Responsive Design    */
+/* ==================== */
 @media (max-width: 1024px) {
     .charts-grid {
         grid-template-columns: 1fr;
@@ -840,16 +830,6 @@
 }
 
 @media (max-width: 768px) {
-    .page-actions {
-        width: 100%;
-        flex-direction: column;
-    }
-
-    .btn-primary, .btn-secondary {
-        width: 100%;
-        justify-content: center;
-    }
-
     .stats-grid {
         grid-template-columns: 1fr 1fr;
     }
@@ -858,6 +838,29 @@
         grid-template-columns: 60px 60px 1fr 50px;
         gap: 0.5rem;
         font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .page-actions {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .page-actions form {
+        width: 100%;
+    }
+
+    .page-actions .btn-primary,
+    .page-actions .btn-secondary {
+        width: 100%;
+        justify-content: center;
     }
 }
 
@@ -879,10 +882,13 @@
 @endpush
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{{ asset('js/chart.umd.min.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Gender Chart (Pie)
+    /**
+     * Gender Distribution Pie Chart
+     * Shows male vs female population
+     */
     new Chart(document.getElementById('genderChart'), {
         type: 'pie',
         data: {
@@ -913,7 +919,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Civil Status Chart (Pie)
+    /**
+     * Civil Status Pie Chart
+     * Shows distribution of civil status
+     */
     new Chart(document.getElementById('civilStatusChart'), {
         type: 'pie',
         data: {
@@ -944,7 +953,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Age Distribution Chart (Pie)
+    /**
+     * Age Distribution Pie Chart
+     * Shows population by age ranges
+     */
     new Chart(document.getElementById('ageChart'), {
         type: 'pie',
         data: {
@@ -975,7 +987,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Special Categories Chart (Pie)
+    /**
+     * Special Categories Pie Chart
+     * Shows senior citizens, PWD, and 4Ps members
+     */
     new Chart(document.getElementById('specialChart'), {
         type: 'pie',
         data: {
@@ -1010,7 +1025,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Purok Bar Chart
+    /**
+     * Purok Bar Chart
+     * Shows population per purok
+     */
     new Chart(document.getElementById('purokChart'), {
         type: 'bar',
         data: {

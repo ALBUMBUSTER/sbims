@@ -80,6 +80,7 @@ class CertificateController extends Controller
             'resident_id' => 'required|exists:residents,id',
             'certificate_type' => 'required|in:Clearance,Indigency,Residency',
             'purpose' => 'required|string',
+            'transaction_fee' => 'nullable|numeric|min:0|max:999999.99',
         ]);
 
         $validated['certificate_id'] = $this->generateCertificateNumber();
@@ -121,6 +122,7 @@ class CertificateController extends Controller
             'resident_id' => 'required|exists:residents,id',
             'certificate_type' => 'required|in:Clearance,Indigency,Residency',
             'purpose' => 'required|string',
+            'transaction_fee' => 'nullable|numeric|min:0|max:999999.99',
             'status' => 'required|in:Pending,Approved,Released,Rejected',
             'rejection_reason' => 'nullable|required_if:status,Rejected|string',
         ]);
@@ -206,14 +208,14 @@ class CertificateController extends Controller
     }
 
     /**
-     * Remove the specified certificate from storage.
+     * Archive (Soft Delete) the specified certificate
      */
-    public function destroy(Request $request, Certificate $certificate)
+    public function archive(Request $request, Certificate $certificate)
     {
-        // ONLY RESTRICT DELETE - Clerks cannot delete certificates
+        // Clerks cannot archive
         if ($this->isClerk()) {
             return redirect()->route('secretary.certificates.index')
-                ->with('error', 'You do not have permission to delete certificates.');
+                ->with('error', 'You do not have permission to archive certificates.');
         }
 
         $certificateId = $certificate->certificate_id;
@@ -222,17 +224,107 @@ class CertificateController extends Controller
 
         ActivityLog::create([
             'user_id' => Auth::id(),
-            'action' => 'DELETE_CERTIFICATE',
-            'description' => 'Deleted certificate ' . $certificateId . ' for ' . $residentName,
+            'action' => 'ARCHIVE_CERTIFICATE',
+            'description' => 'Archived certificate ' . $certificateId . ' for ' . $residentName,
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent()
         ]);
 
-        $certificate->delete();
+        $certificate->delete(); // Soft delete
 
         return redirect()->route('secretary.certificates.index')
-            ->with('success', 'Certificate deleted successfully.');
+            ->with('success', 'Certificate archived successfully.');
     }
+
+    /**
+     * Display archived certificates
+     */
+    public function archived(Request $request)
+    {
+        // Clerks cannot view archive
+        if ($this->isClerk()) {
+            return redirect()->route('secretary.certificates.index')
+                ->with('error', 'You do not have permission to view archived certificates.');
+        }
+
+        $query = Certificate::onlyTrashed()->with('resident');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('certificate_id', 'like', "%{$search}%")
+                  ->orWhere('purpose', 'like', "%{$search}%")
+                  ->orWhereHas('resident', function($rq) use ($search) {
+                      $rq->where('first_name', 'like', "%{$search}%")
+                         ->orWhere('last_name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $archived = $query->orderBy('deleted_at', 'desc')->paginate(15);
+
+        return view('secretary.certificates.archived', compact('archived'));
+    }
+
+    /**
+     * Restore archived certificate
+     */
+    public function restore(Request $request, $id)
+    {
+        // Clerks cannot restore
+        if ($this->isClerk()) {
+            return redirect()->route('secretary.certificates.index')
+                ->with('error', 'You do not have permission to restore certificates.');
+        }
+
+        $certificate = Certificate::onlyTrashed()->findOrFail($id);
+        $certificate->restore();
+
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'RESTORE_CERTIFICATE',
+            'description' => 'Restored certificate ' . $certificate->certificate_id,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
+        return redirect()->route('secretary.certificates.archived')
+            ->with('success', 'Certificate restored successfully.');
+    }
+
+    /**
+ * Permanently delete certificate (Force Delete)
+ */
+public function forceDelete(Request $request, $id)
+{
+    // Check if user is authenticated
+    if (!Auth::check()) {
+        return redirect()->route('login')
+            ->with('error', 'You must be logged in.');
+    }
+
+    // Only Admin can permanently delete (role_id = 1)
+    if (Auth::user()->role_id != 1) {
+        return redirect()->route('secretary.certificates.archived')
+            ->with('error', 'You do not have permission to permanently delete certificates.');
+    }
+
+    $certificate = Certificate::onlyTrashed()->findOrFail($id);
+    $certificateId = $certificate->certificate_id;
+
+    ActivityLog::create([
+        'user_id' => Auth::id(),
+        'action' => 'FORCE_DELETE_CERTIFICATE',
+        'description' => 'Permanently deleted certificate ' . $certificateId,
+        'ip_address' => $request->ip(),
+        'user_agent' => $request->userAgent()
+    ]);
+
+    $certificate->forceDelete();
+
+    return redirect()->route('secretary.certificates.archived')
+        ->with('success', 'Certificate permanently deleted.');
+}
 
     public function print(Certificate $certificate)
     {

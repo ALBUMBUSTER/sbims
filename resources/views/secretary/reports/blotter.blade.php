@@ -4,6 +4,7 @@
 
 @section('content')
 <div class="container-fluid">
+    <!-- Page Header -->
     <div class="page-header">
         <div class="page-title">
             <h1>Blotter Report</h1>
@@ -11,10 +12,10 @@
         </div>
         <div class="page-actions">
             <a href="{{ route('secretary.reports.index') }}" class="btn-secondary">
-                <x-heroicon-o-arrow-left class="icon-small" />
+                <i class="fas fa-arrow-left icon-small"></i>
                 Back to Reports
             </a>
-            <form action="{{ route('secretary.reports.export') }}" method="POST" style="display: inline;">
+            <form action="{{ route('secretary.reports.export') }}" method="POST">
                 @csrf
                 <input type="hidden" name="type" value="blotter">
                 <input type="hidden" name="format" value="excel">
@@ -35,7 +36,7 @@
         </div>
     </div>
 
-    <!-- Filter Form -->
+    <!-- Filter Section -->
     <div class="filters-section">
         <form action="{{ route('secretary.reports.blotter') }}" method="GET" class="filters-form">
             <div class="filter-group">
@@ -64,8 +65,9 @@
         </form>
     </div>
 
-    <!-- Statistics Grid -->
+    <!-- Key Statistics Cards -->
     <div class="stats-grid">
+        <!-- Total Cases Card -->
         <div class="stat-card total">
             <div class="stat-icon">
                 <x-heroicon-o-scale />
@@ -76,6 +78,7 @@
             </div>
         </div>
 
+        <!-- Pending Cases Card -->
         <div class="stat-card pending">
             <div class="stat-icon">
                 <x-heroicon-o-clock />
@@ -86,6 +89,7 @@
             </div>
         </div>
 
+        <!-- Ongoing Cases Card -->
         <div class="stat-card ongoing">
             <div class="stat-icon">
                 <x-heroicon-o-arrow-path />
@@ -96,6 +100,7 @@
             </div>
         </div>
 
+        <!-- Settled Cases Card -->
         <div class="stat-card settled">
             <div class="stat-icon">
                 <x-heroicon-o-check-circle />
@@ -106,6 +111,7 @@
             </div>
         </div>
 
+        <!-- Referred Cases Card -->
         <div class="stat-card referred">
             <div class="stat-icon">
                 <x-heroicon-o-arrow-right-circle />
@@ -116,6 +122,7 @@
             </div>
         </div>
 
+        <!-- Resolution Rate Card -->
         <div class="stat-card resolution">
             <div class="stat-icon">
                 <x-heroicon-o-chart-bar />
@@ -127,9 +134,9 @@
         </div>
     </div>
 
-    <!-- Charts Grid -->
+    <!-- Charts Section -->
     <div class="charts-grid">
-        <!-- Status Distribution Chart -->
+        <!-- Case Status Distribution Pie Chart -->
         <div class="chart-card">
             <div class="chart-header">
                 <h3><i class="fas fa-chart-pie"></i> Case Status Distribution</h3>
@@ -158,7 +165,7 @@
             </div>
         </div>
 
-        <!-- Incident Type Chart -->
+        <!-- Incident Type Distribution Pie Chart -->
         <div class="chart-card">
             <div class="chart-header">
                 <h3><i class="fas fa-list"></i> Incident Type Distribution</h3>
@@ -176,7 +183,7 @@
             </div>
         </div>
 
-        <!-- Monthly Trend Chart -->
+        <!-- Monthly Trend Line Chart -->
         <div class="chart-card full-width">
             <div class="chart-header">
                 <h3><i class="fas fa-chart-line"></i> Monthly Case Trend (Last 6 Months)</h3>
@@ -184,21 +191,25 @@
             <div class="chart-body">
                 <canvas id="monthlyTrendChart" width="800" height="250"></canvas>
             </div>
-            <div class="purok-stats" style="padding: 0.5rem 1rem 1rem;">
+            <!-- Monthly Statistics with Progress Bars -->
+            <div class="trend-stats">
                 @foreach($statistics['monthly_trend'] as $trend)
-                <div class="purok-stat-item" style="grid-template-columns: 80px 1fr 50px;">
-                    <span class="purok-label">{{ date('M Y', mktime(0, 0, 0, $trend->month, 1, $trend->year)) }}</span>
-                    <span class="purok-value">{{ $trend->total }} cases</span>
-                    <span class="purok-percentage">{{ round(($trend->total / $statistics['monthly_trend']->max('total')) * 100, 1) }}%</span>
+                <div class="trend-stat-item">
+                    <span class="trend-label">{{ date('M Y', mktime(0, 0, 0, $trend->month, 1, $trend->year)) }}</span>
+                    <span class="trend-value">{{ $trend->total }} cases</span>
+                    <div class="trend-bar">
+                        <div class="trend-bar-fill" style="width: {{ round(($trend->total / $statistics['monthly_trend']->max('total')) * 100, 1) }}%;"></div>
+                    </div>
+                    <span class="trend-percentage">{{ round(($trend->total / $statistics['monthly_trend']->max('total')) * 100, 1) }}%</span>
                 </div>
                 @endforeach
             </div>
         </div>
     </div>
 
-    <!-- Detailed Statistics Tables -->
-    <div class="details-grid" style="margin-top: 1.5rem;">
-        <!-- By Incident Type Table -->
+    <!-- Detailed Data Tables -->
+    <div class="details-grid">
+        <!-- Incident Type Distribution Table -->
         <div class="detail-card">
             <div class="detail-header">
                 <x-heroicon-o-document-text class="detail-icon" />
@@ -262,32 +273,32 @@
             </div>
         </div>
 
-        <!-- Case Resolution Timeline -->
+        <!-- Case Resolution Timeline Card -->
         <div class="detail-card">
             <div class="detail-header">
                 <x-heroicon-o-clock class="detail-icon" />
                 <h3>Case Resolution Timeline</h3>
             </div>
             <div class="detail-body">
-                <div class="stats-mini-grid" style="display: grid; gap: 0.5rem;">
-                    <div class="chart-stat-item" style="justify-content: space-between;">
-                        <span class="stat-label">Average Resolution Time:</span>
-                        <span class="stat-value">{{ $statistics['avg_resolution_days'] ?? 0 }} days</span>
+                <div class="stats-mini-grid">
+                    <div class="stat-mini-item">
+                        <span class="stat-mini-label">Average Resolution Time:</span>
+                        <span class="stat-mini-value">{{ $statistics['avg_resolution_days'] ?? 0 }} days</span>
                     </div>
-                    <div class="chart-stat-item" style="justify-content: space-between;">
-                        <span class="stat-label">Fastest Resolution:</span>
-                        <span class="stat-value">{{ $statistics['min_resolution_days'] ?? 0 }} days</span>
+                    <div class="stat-mini-item">
+                        <span class="stat-mini-label">Fastest Resolution:</span>
+                        <span class="stat-mini-value">{{ $statistics['min_resolution_days'] ?? 0 }} days</span>
                     </div>
-                    <div class="chart-stat-item" style="justify-content: space-between;">
-                        <span class="stat-label">Slowest Resolution:</span>
-                        <span class="stat-value">{{ $statistics['max_resolution_days'] ?? 0 }} days</span>
+                    <div class="stat-mini-item">
+                        <span class="stat-mini-label">Slowest Resolution:</span>
+                        <span class="stat-mini-value">{{ $statistics['max_resolution_days'] ?? 0 }} days</span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Blotters List -->
+    <!-- Blotters List (Commented out - enable if needed) -->
     {{-- @if($blotters->count() > 0)
     <div class="card">
         <div class="card-header">
@@ -356,8 +367,8 @@
                 {{ $blotters->appends(request()->query())->links() }}
             </div>
         </div>
-    </div> --}}
-    {{-- @else
+    </div>
+    @else
     <div class="empty-state">
         <x-heroicon-o-scale class="empty-icon" />
         <h3>No Blotter Cases Found</h3>
@@ -373,17 +384,23 @@
 
 @push('styles')
 <style>
+/* ==================== */
+/* Container & Layout   */
+/* ==================== */
 .container-fluid {
     padding: 1.2rem;
 }
 
+/* ==================== */
+/* Page Header          */
+/* ==================== */
 .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1.5rem;
     flex-wrap: wrap;
-    gap: 0.8rem;
+    gap: 1rem;
 }
 
 .page-title h1 {
@@ -395,20 +412,47 @@
 .page-title p {
     color: #666;
     font-size: 0.8rem;
+    margin: 0;
 }
 
-/* Buttons */
-.btn-primary, .btn-secondary, .btn-view {
+/* ==================== */
+/* Page Actions         */
+/* ==================== */
+.page-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.page-actions form {
+    margin: 0;
+    padding: 0;
+    line-height: 0;
+}
+
+/* ==================== */
+/* Buttons              */
+/* ==================== */
+.btn-primary,
+.btn-secondary,
+.btn-view {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
+    justify-content: center;
+    gap: 0.5rem;
     padding: 0.6rem 1.2rem;
     border-radius: 5px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    height: 40px;
+    line-height: 1;
+    box-sizing: border-box;
+    vertical-align: middle;
+    white-space: nowrap;
     text-decoration: none;
-    font-size: 0.8rem;
-    transition: all 0.3s;
     border: none;
     cursor: pointer;
+    transition: all 0.3s;
 }
 
 .btn-primary {
@@ -418,6 +462,8 @@
 
 .btn-primary:hover {
     opacity: 0.9;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 .btn-secondary {
@@ -428,20 +474,32 @@
 
 .btn-secondary:hover {
     background: #eef2ff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 .btn-view {
-    padding: 0.3rem 0.6rem;
+    padding: 0.3rem 0.8rem;
+    height: 32px;
     background: #f3f4f6;
     color: #4b5563;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
 }
 
 .btn-view:hover {
     background: #e5e7eb;
 }
 
-/* Filters Section */
+.icon-small {
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* ==================== */
+/* Filter Section       */
+/* ==================== */
 .filters-section {
     background: white;
     border-radius: 10px;
@@ -492,6 +550,9 @@
     border-radius: 5px;
     cursor: pointer;
     font-size: 0.8rem;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
 }
 
 .btn-filter:hover {
@@ -505,13 +566,18 @@
     text-decoration: none;
     border-radius: 5px;
     font-size: 0.8rem;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
 }
 
 .btn-clear:hover {
     background: #cbd5e0;
 }
 
-/* Stats Grid */
+/* ==================== */
+/* Statistics Cards     */
+/* ==================== */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -569,7 +635,9 @@
     font-weight: bold;
 }
 
-/* Charts Grid */
+/* ==================== */
+/* Charts Grid          */
+/* ==================== */
 .charts-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -659,6 +727,9 @@
     font-size: 0.7rem;
 }
 
+/* ==================== */
+/* Legend Dots          */
+/* ==================== */
 .legend-dot {
     display: inline-block;
     width: 8px;
@@ -671,15 +742,17 @@
 .legend-dot.settled { background: #10b981; }
 .legend-dot.referred { background: #ef4444; }
 
-/* Purok Stats (reused for trend) */
-.purok-stats {
+/* ==================== */
+/* Trend Stats          */
+/* ==================== */
+.trend-stats {
     padding: 0.5rem 1rem 1rem;
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
 }
 
-.purok-stat-item {
+.trend-stat-item {
     display: grid;
     grid-template-columns: 80px 1fr 50px;
     align-items: center;
@@ -687,38 +760,40 @@
     font-size: 0.7rem;
 }
 
-.purok-label {
+.trend-label {
     font-weight: 600;
     color: #333;
 }
 
-.purok-value {
+.trend-value {
     color: #667eea;
     font-weight: 500;
 }
 
-.purok-bar {
+.trend-bar {
     height: 16px;
     background: #e2e8f0;
     border-radius: 8px;
     overflow: hidden;
 }
 
-.purok-bar-fill {
+.trend-bar-fill {
     height: 100%;
     background: linear-gradient(90deg, #667eea, #764ba2);
     border-radius: 8px;
     transition: width 0.3s;
 }
 
-.purok-percentage {
+.trend-percentage {
     font-weight: 600;
     color: #333;
     text-align: right;
     font-size: 0.7rem;
 }
 
-/* Details Grid */
+/* ==================== */
+/* Details Grid         */
+/* ==================== */
 .details-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -758,7 +833,9 @@
     padding: 0.7rem;
 }
 
-/* Mini Table */
+/* ==================== */
+/* Mini Table           */
+/* ==================== */
 .mini-table {
     width: 100%;
     border-collapse: collapse;
@@ -781,7 +858,37 @@
     font-size: 0.7rem;
 }
 
-/* Status Badges */
+/* ==================== */
+/* Stats Mini Grid      */
+/* ==================== */
+.stats-mini-grid {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.stat-mini-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.3rem 0.5rem;
+    background: #f8fafc;
+    border-radius: 5px;
+    font-size: 0.7rem;
+}
+
+.stat-mini-label {
+    color: #666;
+    font-weight: 500;
+}
+
+.stat-mini-value {
+    color: #333;
+    font-weight: 600;
+}
+
+/* ==================== */
+/* Status Badges        */
+/* ==================== */
 .status-badge {
     display: inline-block;
     padding: 0.25rem 0.5rem;
@@ -822,7 +929,9 @@
     color: #4b5563;
 }
 
-/* Card */
+/* ==================== */
+/* Card                 */
+/* ==================== */
 .card {
     background: white;
     border-radius: 10px;
@@ -855,7 +964,9 @@
     padding: 1rem;
 }
 
-/* Data Table */
+/* ==================== */
+/* Data Table           */
+/* ==================== */
 .table-responsive {
     overflow-x: auto;
 }
@@ -881,7 +992,9 @@
     color: #333;
 }
 
-/* Case ID */
+/* ==================== */
+/* Case ID              */
+/* ==================== */
 .case-id {
     font-family: monospace;
     font-weight: 600;
@@ -892,7 +1005,9 @@
     font-size: 0.7rem;
 }
 
-/* Pagination */
+/* ==================== */
+/* Pagination           */
+/* ==================== */
 .pagination-wrapper {
     margin-top: 1.5rem;
     display: flex;
@@ -921,7 +1036,9 @@
     border-color: #667eea;
 }
 
-/* Empty State */
+/* ==================== */
+/* Empty State          */
+/* ==================== */
 .empty-state {
     text-align: center;
     padding: 3rem 2rem;
@@ -950,12 +1067,9 @@
     margin-bottom: 1rem;
 }
 
-.icon-small {
-    width: 14px;
-    height: 14px;
-}
-
-/* Responsive */
+/* ==================== */
+/* Responsive Design    */
+/* ==================== */
 @media (max-width: 1024px) {
     .charts-grid {
         grid-template-columns: 1fr;
@@ -970,9 +1084,15 @@
     .page-actions {
         width: 100%;
         flex-direction: column;
+        align-items: stretch;
     }
 
-    .btn-primary, .btn-secondary {
+    .page-actions form {
+        width: 100%;
+    }
+
+    .btn-primary,
+    .btn-secondary {
         width: 100%;
         justify-content: center;
     }
@@ -981,9 +1101,20 @@
         grid-template-columns: 1fr 1fr;
     }
 
-    .purok-stat-item {
+    .trend-stat-item {
         grid-template-columns: 80px 1fr 45px;
         gap: 0.4rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .page-actions {
+        width: 100%;
     }
 }
 
@@ -992,7 +1123,7 @@
         grid-template-columns: 1fr;
     }
 
-    .purok-stat-item {
+    .trend-stat-item {
         grid-template-columns: 1fr;
         gap: 0.2rem;
     }
@@ -1005,10 +1136,13 @@
 @endpush
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{{ asset('js/chart.umd.min.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Status Distribution Pie Chart
+    /**
+     * Case Status Distribution Pie Chart
+     * Shows breakdown of cases by status (Pending, Ongoing, Settled, Referred)
+     */
     new Chart(document.getElementById('statusChart'), {
         type: 'pie',
         data: {
@@ -1044,7 +1178,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Incident Type Pie Chart
+    /**
+     * Incident Type Distribution Pie Chart
+     * Shows distribution of cases by incident type
+     */
     new Chart(document.getElementById('incidentTypeChart'), {
         type: 'pie',
         data: {
@@ -1075,7 +1212,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Monthly Trend Line Chart
+    /**
+     * Monthly Trend Line Chart
+     * Shows case trends over the last 6 months
+     */
     new Chart(document.getElementById('monthlyTrendChart'), {
         type: 'line',
         data: {

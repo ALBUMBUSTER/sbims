@@ -45,8 +45,8 @@
             @endif
         </form>
     </div>
-<!-- Filter Section with Status Buttons and Civil Status Dropdown -->
-<div class="filter-section">
+    <!-- Filter Section with Status Buttons and Civil Status Dropdown -->
+    <div class="filter-section">
     <div class="filter-left">
         <div class="filter-label">Filter by Status:</div>
         <div class="filter-buttons">
@@ -91,7 +91,7 @@
             <i class="fas fa-chevron-down dropdown-icon"></i>
         </div>
     </div>
-</div>
+    </div>
 
     <div class="card">
         <div class="card-body">
@@ -149,7 +149,7 @@
             @endif
         @endif
     </div>
-</td>
+    </td>
                             <td>
     <div class="action-buttons">
         <a href="{{ route('secretary.residents.show', $resident) }}" class="btn-icon" title="View">
@@ -169,7 +169,7 @@
         </form>
         @endif
     </div>
-</td>
+    </td>
 
                         </tr>
                         @empty
@@ -241,21 +241,151 @@
             @endif
         </div>
     </div>
-</div>
+    </div>
 
-{{-- Archive Access Button - Hidden for Clerk --}}
-@if(auth()->user()->role_id != 4) {{-- Not a clerk --}}
-<div class="archive-access">
+    {{-- Archive Access Button - Hidden for Clerk --}}
+    @if(auth()->user()->role_id != 4) {{-- Not a clerk --}}
+    <div class="archive-access">
     <a href="{{ route('secretary.residents.archived') }}" class="btn-archive">
         <i class="fas fa-archive"></i>
         View Archive ({{ \App\Models\Resident::onlyTrashed()->count() }})
     </a>
+    </div>
+    <!-- Custom Confirmation Modal -->
+<div id="confirmModal" class="confirm-modal" style="display: none;">
+    <div class="confirm-modal-content">
+        <div class="confirm-modal-header">
+            <div class="confirm-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3>Confirm Archive</h3>
+        </div>
+        <div class="confirm-modal-body">
+            <p>Are you sure you want to archive this resident? They will be moved to the archive.</p>
+        </div>
+        <div class="confirm-modal-footer">
+            <button type="button" class="btn-cancel" onclick="closeConfirmModal()">Cancel</button>
+            <button type="button" class="btn-confirm" id="confirmArchiveBtn">Yes, Archive</button>
+        </div>
+    </div>
 </div>
 @endif
 @endsection
 
 @push('styles')
 <style>
+/* Custom Confirmation Modal */
+.confirm-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeIn 0.3s ease forwards;
+}
+
+.confirm-modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+    margin: 0 auto; /* Center horizontally */
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    animation: modalPop 0.3s ease forwards;
+    transform: scale(0.9);
+    opacity: 0;
+}
+
+@keyframes modalPop {
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.confirm-modal-header {
+    padding: 1.5rem 1.5rem 0.5rem 1.5rem;
+    text-align: center;
+}
+
+.confirm-icon {
+    font-size: 3rem;
+    color: #f59e0b;
+    margin-bottom: 0.5rem;
+}
+
+.confirm-modal-header h3 {
+    color: #333;
+    font-size: 1.3rem;
+    margin: 0;
+    font-weight: 600;
+}
+
+.confirm-modal-body {
+    padding: 1rem 1.5rem;
+    text-align: center;
+}
+
+.confirm-modal-body p {
+    color: #666;
+    font-size: 1rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.confirm-modal-footer {
+    padding: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    border-top: 1px solid #e2e8f0;
+}
+
+.btn-cancel {
+    padding: 0.75rem 1.5rem;
+    background: #f3f4f6;
+    color: #4b5563;
+    border: none;
+    border-radius: 5px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    flex: 1;
+}
+
+.btn-cancel:hover {
+    background: #e5e7eb;
+}
+
+.btn-confirm {
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    flex: 1;
+}
+
+.btn-confirm:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
 /* Shared styles */
 .container-fluid { padding: 1.5rem; }
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
@@ -957,12 +1087,31 @@ function showToast(message, type = 'success') {
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-// Archive confirmation function (replace confirmDelete)
+// Variable to store the current resident ID for archiving
+let currentArchiveId = null;
+
+// Archive confirmation function with custom modal
 function confirmArchive(residentId) {
-    if (confirm('Are you sure you want to archive this resident? They will be moved to the archive.')) {
-        document.getElementById('archive-form-' + residentId).submit();
-    }
+    currentArchiveId = residentId;
+    document.getElementById('confirmModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
 }
+
+// Close confirmation modal
+function closeConfirmModal() {
+    document.getElementById('confirmModal').style.display = 'none';
+    document.body.style.overflow = ''; // Restore scrolling
+    currentArchiveId = null;
+}
+
+// Execute archive
+function executeArchive() {
+    if (currentArchiveId) {
+        document.getElementById('archive-form-' + currentArchiveId).submit();
+    }
+    closeConfirmModal();
+}
+
 // Civil status filter function
 function applyCivilFilter(value) {
     const url = new URL(window.location.href);
@@ -981,6 +1130,31 @@ function applyCivilFilter(value) {
 
     window.location.href = url.pathname + '?' + params.toString();
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listener for confirm button
+    const confirmBtn = document.getElementById('confirmArchiveBtn');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', executeArchive);
+    }
+
+    // Close modal when clicking outside
+    const modal = document.getElementById('confirmModal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeConfirmModal();
+            }
+        });
+    }
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && document.getElementById('confirmModal').style.display === 'flex') {
+            closeConfirmModal();
+        }
+    });
+});
 </script>
 
 {{-- Session messages --}}

@@ -140,19 +140,18 @@
                                         <i class="fas fa-pencil-alt"></i>
                                     </a>
 
-                                    {{-- Delete Button - Hidden for Clerk --}}
-                                    @if(auth()->user()->role_id != 4) {{-- Not a clerk --}}
-                                    <button type="button" class="btn-icon delete-btn" title="Delete"
-                                        onclick="confirmDelete('{{ $blotter->id }}')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                    <form id="delete-form-{{ $blotter->id }}"
-                                          action="{{ route('secretary.blotter.destroy', $blotter) }}"
-                                          method="POST" style="display: none;">
-                                        @csrf
-                                        @method('DELETE')
-                                    </form>
-                                    @endif
+                                    {{-- Archive Button - Hidden for Clerk --}}
+@if(auth()->user()->role_id != 4) {{-- Not a clerk --}}
+<button type="button" class="btn-icon archive-btn" title="Archive"
+    onclick="confirmArchive('{{ $blotter->id }}')">
+    <i class="fas fa-archive"></i>
+</button>
+<form id="archive-form-{{ $blotter->id }}"
+      action="{{ route('secretary.blotter.archive', $blotter) }}"
+      method="POST" style="display: none;">
+    @csrf
+</form>
+@endif
                                 </div>
                             </td>
                         </tr>
@@ -182,11 +181,43 @@
             @endif
         </div>
     </div>
+    {{-- Archive Access Button - Hidden for Clerk --}}
+@if(auth()->user()->role_id != 4) {{-- Not a clerk --}}
+<div class="archive-access">
+    <a href="{{ route('secretary.blotter.archived') }}" class="btn-archive">
+        <i class="fas fa-archive"></i>
+        View Archive ({{ \App\Models\Blotter::onlyTrashed()->count() }})
+    </a>
+</div>
+@endif
 </div>
 @endsection
 
 @push('styles')
 <style>
+    /* Archive Access Button */
+.archive-access {
+    margin-top: 2rem;
+    text-align: right;
+}
+
+.btn-archive {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: #f8fafc;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: all 0.3s;
+}
+
+.btn-archive:hover {
+    background: #e2e8f0;
+    color: #475569;
+}
 .container-fluid {
     padding: 1.5rem;
 }
@@ -541,6 +572,12 @@
 function confirmDelete(id) {
     if (confirm('Are you sure you want to delete this blotter case? This action cannot be undone.')) {
         document.getElementById('delete-form-' + id).submit();
+    }
+}
+// Archive confirmation function
+function confirmArchive(id) {
+    if (confirm('Are you sure you want to archive this item? It will be moved to the archive.')) {
+        document.getElementById('archive-form-' + id).submit();
     }
 }
 </script>

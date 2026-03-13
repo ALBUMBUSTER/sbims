@@ -4,16 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Certificate extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
+
+    protected $dates = ['deleted_at'];
 
     protected $fillable = [
         'certificate_id',
         'resident_id',
         'certificate_type',
         'purpose',
+        'transaction_fee',
         'status',
         'rejection_reason',
         'rejected_at',
@@ -29,6 +33,7 @@ class Certificate extends Model
         'rejected_at' => 'datetime',
         'released_at' => 'datetime',
         'issued_date' => 'datetime',
+        'transaction_fee' => 'decimal:2',
     ];
 
     /**

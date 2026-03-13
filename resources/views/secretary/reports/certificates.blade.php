@@ -4,6 +4,7 @@
 
 @section('content')
 <div class="container-fluid">
+    <!-- Page Header -->
     <div class="page-header">
         <div class="page-title">
             <h1>Certificates Report</h1>
@@ -11,10 +12,10 @@
         </div>
         <div class="page-actions">
             <a href="{{ route('secretary.reports.index') }}" class="btn-secondary">
-                <x-heroicon-o-arrow-left class="icon-small" />
+                <i class="fas fa-arrow-left icon-small"></i>
                 Back to Reports
             </a>
-            <form action="{{ route('secretary.reports.export') }}" method="POST" style="display: inline;">
+            <form action="{{ route('secretary.reports.export') }}" method="POST">
                 @csrf
                 <input type="hidden" name="type" value="certificates">
                 <input type="hidden" name="format" value="excel">
@@ -35,7 +36,7 @@
         </div>
     </div>
 
-    <!-- Filter Form -->
+    <!-- Filter Section -->
     <div class="filters-section">
         <form action="{{ route('secretary.reports.certificates') }}" method="GET" class="filters-form">
             <div class="filter-group">
@@ -63,8 +64,9 @@
         </form>
     </div>
 
-    <!-- Statistics Grid -->
+    <!-- Key Statistics Cards -->
     <div class="stats-grid">
+        <!-- Total Certificates Card -->
         <div class="stat-card total">
             <div class="stat-icon">
                 <x-heroicon-o-document-text />
@@ -75,50 +77,54 @@
             </div>
         </div>
 
+        <!-- Pending Certificates Card -->
         <div class="stat-card pending">
             <div class="stat-icon">
                 <x-heroicon-o-clock />
             </div>
             <div class="stat-content">
                 <span class="stat-label">Pending</span>
-                <span class="stat-value">{{ $statistics['by_status']['pending'] }}</span>
+                <span class="stat-value">{{ $statistics['by_status']['pending'] ?? 0 }}</span>
             </div>
         </div>
 
+        <!-- Approved Certificates Card -->
         <div class="stat-card approved">
             <div class="stat-icon">
                 <x-heroicon-o-check-circle />
             </div>
             <div class="stat-content">
                 <span class="stat-label">Approved</span>
-                <span class="stat-value">{{ $statistics['by_status']['approved'] }}</span>
+                <span class="stat-value">{{ $statistics['by_status']['approved'] ?? 0 }}</span>
             </div>
         </div>
 
+        <!-- Released Certificates Card -->
         <div class="stat-card released">
             <div class="stat-icon">
                 <x-heroicon-o-check-badge />
             </div>
             <div class="stat-content">
                 <span class="stat-label">Released</span>
-                <span class="stat-value">{{ $statistics['by_status']['released'] }}</span>
+                <span class="stat-value">{{ $statistics['by_status']['released'] ?? 0 }}</span>
             </div>
         </div>
 
+        <!-- Rejected Certificates Card -->
         <div class="stat-card rejected">
             <div class="stat-icon">
                 <x-heroicon-o-x-circle />
             </div>
             <div class="stat-content">
                 <span class="stat-label">Rejected</span>
-                <span class="stat-value">{{ $statistics['by_status']['rejected'] }}</span>
+                <span class="stat-value">{{ $statistics['by_status']['rejected'] ?? 0 }}</span>
             </div>
         </div>
     </div>
 
-    <!-- Charts Grid -->
+    <!-- Charts Section -->
     <div class="charts-grid">
-        <!-- Status Distribution Chart -->
+        <!-- Certificate Status Distribution Pie Chart -->
         <div class="chart-card">
             <div class="chart-header">
                 <h3><i class="fas fa-chart-pie"></i> Certificate Status Distribution</h3>
@@ -128,26 +134,33 @@
                 <canvas id="statusChart" width="400" height="200"></canvas>
             </div>
             <div class="chart-mini-table">
+                @php
+                    $certPending = $statistics['by_status']['pending'] ?? 0;
+                    $certApproved = $statistics['by_status']['approved'] ?? 0;
+                    $certReleased = $statistics['by_status']['released'] ?? 0;
+                    $certRejected = $statistics['by_status']['rejected'] ?? 0;
+                    $certTotal = max($statistics['total'], 1);
+                @endphp
                 <div class="chart-stat-item">
                     <span class="stat-label"><span class="legend-dot pending"></span> Pending:</span>
-                    <span class="stat-value">{{ $statistics['by_status']['pending'] }} ({{ round(($statistics['by_status']['pending'] / $statistics['total']) * 100, 1) }}%)</span>
+                    <span class="stat-value">{{ $certPending }} ({{ round(($certPending / $certTotal) * 100, 1) }}%)</span>
                 </div>
                 <div class="chart-stat-item">
                     <span class="stat-label"><span class="legend-dot approved"></span> Approved:</span>
-                    <span class="stat-value">{{ $statistics['by_status']['approved'] }} ({{ round(($statistics['by_status']['approved'] / $statistics['total']) * 100, 1) }}%)</span>
+                    <span class="stat-value">{{ $certApproved }} ({{ round(($certApproved / $certTotal) * 100, 1) }}%)</span>
                 </div>
                 <div class="chart-stat-item">
                     <span class="stat-label"><span class="legend-dot released"></span> Released:</span>
-                    <span class="stat-value">{{ $statistics['by_status']['released'] }} ({{ round(($statistics['by_status']['released'] / $statistics['total']) * 100, 1) }}%)</span>
+                    <span class="stat-value">{{ $certReleased }} ({{ round(($certReleased / $certTotal) * 100, 1) }}%)</span>
                 </div>
                 <div class="chart-stat-item">
                     <span class="stat-label"><span class="legend-dot rejected"></span> Rejected:</span>
-                    <span class="stat-value">{{ $statistics['by_status']['rejected'] }} ({{ round(($statistics['by_status']['rejected'] / $statistics['total']) * 100, 1) }}%)</span>
+                    <span class="stat-value">{{ $certRejected }} ({{ round(($certRejected / $certTotal) * 100, 1) }}%)</span>
                 </div>
             </div>
         </div>
 
-        <!-- Certificate Type Chart -->
+        <!-- Certificate Type Distribution Pie Chart -->
         <div class="chart-card">
             <div class="chart-header">
                 <h3><i class="fas fa-file-alt"></i> Certificate Type Distribution</h3>
@@ -165,7 +178,7 @@
             </div>
         </div>
 
-        <!-- Monthly Trend Chart -->
+        <!-- Monthly Trend Line Chart -->
         <div class="chart-card full-width">
             <div class="chart-header">
                 <h3><i class="fas fa-chart-line"></i> Monthly Certificate Requests (Last 6 Months)</h3>
@@ -173,21 +186,25 @@
             <div class="chart-body">
                 <canvas id="monthlyTrendChart" width="800" height="250"></canvas>
             </div>
-            <div class="purok-stats" style="padding: 0.5rem 1rem 1rem;">
+            <!-- Monthly Statistics with Progress Bars -->
+            <div class="trend-stats">
                 @foreach($statistics['monthly_trend'] as $trend)
-                <div class="purok-stat-item" style="grid-template-columns: 80px 1fr 50px;">
-                    <span class="purok-label">{{ date('M Y', mktime(0, 0, 0, $trend->month, 1, $trend->year)) }}</span>
-                    <span class="purok-value">{{ $trend->total }} requests</span>
-                    <span class="purok-percentage">{{ round(($trend->total / $statistics['monthly_trend']->max('total')) * 100, 1) }}%</span>
+                <div class="trend-stat-item">
+                    <span class="trend-label">{{ date('M Y', mktime(0, 0, 0, $trend->month, 1, $trend->year)) }}</span>
+                    <span class="trend-value">{{ $trend->total }} requests</span>
+                    <div class="trend-bar">
+                        <div class="trend-bar-fill" style="width: {{ round(($trend->total / $statistics['monthly_trend']->max('total')) * 100, 1) }}%;"></div>
+                    </div>
+                    <span class="trend-percentage">{{ round(($trend->total / $statistics['monthly_trend']->max('total')) * 100, 1) }}%</span>
                 </div>
                 @endforeach
             </div>
         </div>
     </div>
 
-    <!-- Detailed Statistics Tables -->
-    <div class="details-grid" style="margin-top: 1.5rem;">
-        <!-- By Certificate Type Table -->
+    <!-- Detailed Data Tables -->
+    <div class="details-grid">
+        <!-- Certificate Type Distribution Table -->
         <div class="detail-card">
             <div class="detail-header">
                 <x-heroicon-o-document-text class="detail-icon" />
@@ -243,37 +260,37 @@
             </div>
         </div>
 
-        <!-- Processing Statistics -->
+        <!-- Processing Statistics Card -->
         <div class="detail-card">
             <div class="detail-header">
                 <x-heroicon-o-clock class="detail-icon" />
                 <h3>Processing Statistics</h3>
             </div>
             <div class="detail-body">
-                <div class="stats-mini-grid" style="display: grid; gap: 0.5rem;">
-                    <div class="chart-stat-item" style="justify-content: space-between;">
-                        <span class="stat-label">Issuance Rate:</span>
-                        <span class="stat-value">{{ $statistics['issuance_rate'] ?? 0 }}%</span>
+                <div class="stats-mini-grid">
+                    <div class="stat-mini-item">
+                        <span class="stat-mini-label">Issuance Rate:</span>
+                        <span class="stat-mini-value">{{ $statistics['issuance_rate'] ?? 0 }}%</span>
                     </div>
-                    <div class="chart-stat-item" style="justify-content: space-between;">
-                        <span class="stat-label">Avg Processing Time:</span>
-                        <span class="stat-value">{{ $statistics['avg_processing_days'] ?? 0 }} days</span>
+                    <div class="stat-mini-item">
+                        <span class="stat-mini-label">Avg Processing Time:</span>
+                        <span class="stat-mini-value">{{ $statistics['avg_processing_days'] ?? 0 }} days</span>
                     </div>
-                    <div class="chart-stat-item" style="justify-content: space-between;">
-                        <span class="stat-label">Fastest Processing:</span>
-                        <span class="stat-value">{{ $statistics['min_processing_days'] ?? 0 }} days</span>
+                    <div class="stat-mini-item">
+                        <span class="stat-mini-label">Fastest Processing:</span>
+                        <span class="stat-mini-value">{{ $statistics['min_processing_days'] ?? 0 }} days</span>
                     </div>
-                    <div class="chart-stat-item" style="justify-content: space-between;">
-                        <span class="stat-label">Slowest Processing:</span>
-                        <span class="stat-value">{{ $statistics['max_processing_days'] ?? 0 }} days</span>
+                    <div class="stat-mini-item">
+                        <span class="stat-mini-label">Slowest Processing:</span>
+                        <span class="stat-mini-value">{{ $statistics['max_processing_days'] ?? 0 }} days</span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- <!-- Certificates List -->
-    @if($certificates->count() > 0)
+    <!-- Certificates List (Commented out - enable if needed) -->
+    {{-- @if($certificates->count() > 0)
     <div class="card">
         <div class="card-header">
             <h3>Certificates List</h3>
@@ -335,24 +352,30 @@
                 {{ $certificates->appends(request()->query())->links() }}
             </div>
         </div>
-    </div> --}}
-    {{-- @endif --}}
+    </div>
+    @endif --}}
 </div>
 @endsection
 
 @push('styles')
 <style>
+/* ==================== */
+/* Container & Layout   */
+/* ==================== */
 .container-fluid {
     padding: 1.2rem;
 }
 
+/* ==================== */
+/* Page Header          */
+/* ==================== */
 .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1.5rem;
     flex-wrap: wrap;
-    gap: 0.8rem;
+    gap: 1rem;
 }
 
 .page-title h1 {
@@ -364,20 +387,46 @@
 .page-title p {
     color: #666;
     font-size: 0.8rem;
+    margin: 0;
 }
 
-/* Buttons */
-.btn-primary, .btn-secondary {
+/* ==================== */
+/* Page Actions         */
+/* ==================== */
+.page-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.page-actions form {
+    margin: 0;
+    padding: 0;
+    line-height: 0;
+}
+
+/* ==================== */
+/* Buttons              */
+/* ==================== */
+.btn-primary,
+.btn-secondary {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
+    justify-content: center;
+    gap: 0.5rem;
     padding: 0.6rem 1.2rem;
     border-radius: 5px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    height: 40px;
+    line-height: 1;
+    box-sizing: border-box;
+    vertical-align: middle;
+    white-space: nowrap;
     text-decoration: none;
-    font-size: 0.8rem;
-    transition: all 0.3s;
     border: none;
     cursor: pointer;
+    transition: all 0.3s;
 }
 
 .btn-primary {
@@ -387,6 +436,8 @@
 
 .btn-primary:hover {
     opacity: 0.9;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 .btn-secondary {
@@ -397,9 +448,20 @@
 
 .btn-secondary:hover {
     background: #eef2ff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
-/* Filters Section */
+.icon-small {
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* ==================== */
+/* Filter Section       */
+/* ==================== */
 .filters-section {
     background: white;
     border-radius: 10px;
@@ -450,6 +512,9 @@
     border-radius: 5px;
     cursor: pointer;
     font-size: 0.8rem;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
 }
 
 .btn-filter:hover {
@@ -463,13 +528,18 @@
     text-decoration: none;
     border-radius: 5px;
     font-size: 0.8rem;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
 }
 
 .btn-clear:hover {
     background: #cbd5e0;
 }
 
-/* Stats Grid */
+/* ==================== */
+/* Statistics Cards     */
+/* ==================== */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -526,7 +596,9 @@
     font-weight: bold;
 }
 
-/* Charts Grid */
+/* ==================== */
+/* Charts Grid          */
+/* ==================== */
 .charts-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -616,6 +688,9 @@
     font-size: 0.7rem;
 }
 
+/* ==================== */
+/* Legend Dots          */
+/* ==================== */
 .legend-dot {
     display: inline-block;
     width: 8px;
@@ -628,15 +703,17 @@
 .legend-dot.released { background: #3b82f6; }
 .legend-dot.rejected { background: #ef4444; }
 
-/* Purok Stats (reused for trend) */
-.purok-stats {
+/* ==================== */
+/* Trend Stats          */
+/* ==================== */
+.trend-stats {
     padding: 0.5rem 1rem 1rem;
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
 }
 
-.purok-stat-item {
+.trend-stat-item {
     display: grid;
     grid-template-columns: 80px 1fr 50px;
     align-items: center;
@@ -644,24 +721,40 @@
     font-size: 0.7rem;
 }
 
-.purok-label {
+.trend-label {
     font-weight: 600;
     color: #333;
 }
 
-.purok-value {
+.trend-value {
     color: #667eea;
     font-weight: 500;
 }
 
-.purok-percentage {
+.trend-bar {
+    height: 16px;
+    background: #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.trend-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 8px;
+    transition: width 0.3s;
+}
+
+.trend-percentage {
     font-weight: 600;
     color: #333;
     text-align: right;
     font-size: 0.7rem;
 }
 
-/* Details Grid */
+/* ==================== */
+/* Details Grid         */
+/* ==================== */
 .details-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -701,7 +794,9 @@
     padding: 0.7rem;
 }
 
-/* Mini Table */
+/* ==================== */
+/* Mini Table           */
+/* ==================== */
 .mini-table {
     width: 100%;
     border-collapse: collapse;
@@ -724,7 +819,37 @@
     font-size: 0.7rem;
 }
 
-/* Status Badges */
+/* ==================== */
+/* Stats Mini Grid      */
+/* ==================== */
+.stats-mini-grid {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.stat-mini-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.3rem 0.5rem;
+    background: #f8fafc;
+    border-radius: 5px;
+    font-size: 0.7rem;
+}
+
+.stat-mini-label {
+    color: #666;
+    font-weight: 500;
+}
+
+.stat-mini-value {
+    color: #333;
+    font-weight: 600;
+}
+
+/* ==================== */
+/* Status Badges        */
+/* ==================== */
 .status-badge {
     display: inline-block;
     padding: 0.25rem 0.5rem;
@@ -755,7 +880,9 @@
     color: #991b1b;
 }
 
-/* Card */
+/* ==================== */
+/* Card                 */
+/* ==================== */
 .card {
     background: white;
     border-radius: 10px;
@@ -788,7 +915,9 @@
     padding: 1rem;
 }
 
-/* Data Table */
+/* ==================== */
+/* Data Table           */
+/* ==================== */
 .table-responsive {
     overflow-x: auto;
 }
@@ -814,7 +943,9 @@
     color: #333;
 }
 
-/* Pagination */
+/* ==================== */
+/* Pagination           */
+/* ==================== */
 .pagination-wrapper {
     margin-top: 1.5rem;
     display: flex;
@@ -843,16 +974,16 @@
     border-color: #667eea;
 }
 
-.icon-small {
-    width: 14px;
-    height: 14px;
-}
-
+/* ==================== */
+/* Utilities            */
+/* ==================== */
 .text-muted {
     color: #718096;
 }
 
-/* Responsive */
+/* ==================== */
+/* Responsive Design    */
+/* ==================== */
 @media (max-width: 1024px) {
     .charts-grid {
         grid-template-columns: 1fr;
@@ -867,9 +998,15 @@
     .page-actions {
         width: 100%;
         flex-direction: column;
+        align-items: stretch;
     }
 
-    .btn-primary, .btn-secondary {
+    .page-actions form {
+        width: 100%;
+    }
+
+    .btn-primary,
+    .btn-secondary {
         width: 100%;
         justify-content: center;
     }
@@ -878,9 +1015,20 @@
         grid-template-columns: 1fr 1fr;
     }
 
-    .purok-stat-item {
+    .trend-stat-item {
         grid-template-columns: 80px 1fr 45px;
         gap: 0.4rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .page-actions {
+        width: 100%;
     }
 }
 
@@ -889,7 +1037,7 @@
         grid-template-columns: 1fr;
     }
 
-    .purok-stat-item {
+    .trend-stat-item {
         grid-template-columns: 1fr;
         gap: 0.2rem;
     }
@@ -902,124 +1050,163 @@
 @endpush
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- Chart.js CDN with fallback for offline use -->
+<script src="{{ asset('js/chart.umd.min.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Status Distribution Pie Chart
-    new Chart(document.getElementById('statusChart'), {
-        type: 'pie',
-        data: {
-            labels: ['Pending', 'Approved', 'Released', 'Rejected'],
-            datasets: [{
-                data: [
-                    {{ $statistics['by_status']['pending'] }},
-                    {{ $statistics['by_status']['approved'] }},
-                    {{ $statistics['by_status']['released'] }},
-                    {{ $statistics['by_status']['rejected'] }}
-                ],
-                backgroundColor: ['#f59e0b', '#10b981', '#3b82f6', '#ef4444'],
-                borderWidth: 0
-            }]
+    // Safely get statistics with fallbacks
+    const statistics = {
+        total: {{ $statistics['total'] ?? 0 }},
+        by_status: {
+            pending: {{ $statistics['by_status']['pending'] ?? 0 }},
+            approved: {{ $statistics['by_status']['approved'] ?? 0 }},
+            released: {{ $statistics['by_status']['released'] ?? 0 }},
+            rejected: {{ $statistics['by_status']['rejected'] ?? 0 }}
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.raw || 0;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                            return `${label}: ${value} (${percentage}%)`;
-                        }
-                    }
-                }
-            }
-        }
-    });
+        by_type: @json($statistics['by_type'] ?? []),
+        monthly_trend: @json($statistics['monthly_trend'] ?? [])
+    };
 
-    // Certificate Type Pie Chart
-    new Chart(document.getElementById('typeChart'), {
-        type: 'pie',
-        data: {
-            labels: [@foreach($statistics['by_type'] as $type) '{{ $type->certificate_type }}', @endforeach],
-            datasets: [{
-                data: [@foreach($statistics['by_type'] as $type) {{ $type->total }}, @endforeach],
-                backgroundColor: ['#667eea', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#3b82f6'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.raw || 0;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                            return `${label}: ${value} (${percentage}%)`;
-                        }
-                    }
-                }
-            }
-        }
-    });
-
-    // Monthly Trend Line Chart
-    new Chart(document.getElementById('monthlyTrendChart'), {
-        type: 'line',
-        data: {
-            labels: [@foreach($statistics['monthly_trend'] as $trend) '{{ date('M', mktime(0, 0, 0, $trend->month, 1)) }}', @endforeach],
-            datasets: [{
-                label: 'Number of Requests',
-                data: [@foreach($statistics['monthly_trend'] as $trend) {{ $trend->total }}, @endforeach],
-                borderColor: '#667eea',
-                backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                tension: 0.4,
-                fill: true,
-                pointBackgroundColor: '#667eea',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointRadius: 4,
-                pointHoverRadius: 6
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return `Requests: ${context.raw}`;
-                        }
-                    }
-                }
+    /**
+     * Certificate Status Distribution Pie Chart
+     * Shows breakdown of certificates by status
+     */
+    if (document.getElementById('statusChart')) {
+        new Chart(document.getElementById('statusChart'), {
+            type: 'pie',
+            data: {
+                labels: ['Pending', 'Approved', 'Released', 'Rejected'],
+                datasets: [{
+                    data: [
+                        statistics.by_status.pending,
+                        statistics.by_status.approved,
+                        statistics.by_status.released,
+                        statistics.by_status.rejected
+                    ],
+                    backgroundColor: ['#f59e0b', '#10b981', '#3b82f6', '#ef4444'],
+                    borderWidth: 0
+                }]
             },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: { color: '#e2e8f0' },
-                    ticks: {
-                        stepSize: 1,
-                        font: { size: 9 }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * Certificate Type Distribution Pie Chart
+     * Shows distribution of certificates by type
+     */
+    if (document.getElementById('typeChart') && statistics.by_type.length > 0) {
+        const typeLabels = statistics.by_type.map(item => item.certificate_type);
+        const typeData = statistics.by_type.map(item => item.total);
+        const backgroundColors = ['#667eea', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#3b82f6'];
+
+        new Chart(document.getElementById('typeChart'), {
+            type: 'pie',
+            data: {
+                labels: typeLabels,
+                datasets: [{
+                    data: typeData,
+                    backgroundColor: backgroundColors.slice(0, typeData.length),
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * Monthly Trend Line Chart
+     * Shows certificate request trends over the last 6 months
+     */
+    if (document.getElementById('monthlyTrendChart') && statistics.monthly_trend.length > 0) {
+        const monthLabels = statistics.monthly_trend.map(item => {
+            const date = new Date(item.year, item.month - 1, 1);
+            return date.toLocaleString('default', { month: 'short' });
+        });
+        const monthData = statistics.monthly_trend.map(item => item.total);
+
+        new Chart(document.getElementById('monthlyTrendChart'), {
+            type: 'line',
+            data: {
+                labels: monthLabels,
+                datasets: [{
+                    label: 'Number of Requests',
+                    data: monthData,
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#667eea',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Requests: ${context.raw}`;
+                            }
+                        }
                     }
                 },
-                x: {
-                    grid: { display: false },
-                    ticks: { font: { size: 9 } }
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#e2e8f0' },
+                        ticks: {
+                            stepSize: 1,
+                            font: { size: 9 }
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 9 } }
+                    }
                 }
             }
-        }
-    });
+        });
+    }
 });
 </script>
 @endpush

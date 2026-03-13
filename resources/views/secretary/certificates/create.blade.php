@@ -107,6 +107,26 @@
                     @enderror
                     <small class="form-text text-muted">State the purpose of requesting this certificate</small>
                 </div>
+
+                <!-- Transaction Fee -->
+                <div class="form-group">
+                    <label for="transaction_fee">Transaction Fee (₱)</label>
+                    <div class="input-group">
+                        <span class="input-group-text">₱</span>
+                        <input type="number"
+                               id="transaction_fee"
+                               name="transaction_fee"
+                               class="form-control @error('transaction_fee') is-invalid @enderror"
+                               value="{{ old('transaction_fee') }}"
+                               step="0.01"
+                               min="0"
+                               placeholder="0.00">
+                    </div>
+                    @error('transaction_fee')
+                        <span class="error-message">{{ $message }}</span>
+                    @enderror
+                    <small class="form-text text-muted">Enter the transaction fee amount (optional)</small>
+                </div>
             </div>
 
             <div class="form-actions">
@@ -350,6 +370,35 @@ textarea.form-control {
 
 .text-muted {
     color: #6c757d !important;
+}
+
+/* Input Group for Transaction Fee */
+.input-group {
+    display: flex;
+    align-items: stretch;
+}
+
+.input-group-text {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    background: #f3f4f6;
+    border: 1px solid #e2e8f0;
+    border-right: none;
+    border-radius: 5px 0 0 5px;
+    color: #4b5563;
+    font-weight: 500;
+}
+
+.input-group .form-control {
+    border-left: none;
+    border-radius: 0 5px 5px 0;
+}
+
+.input-group .form-control:focus {
+    border-left: none;
+    outline: none;
+    border-color: #667eea;
 }
 
 /* Form Actions */
@@ -1148,6 +1197,7 @@ function showPreview() {
     const certificateType = document.getElementById('certificate_type').value;
     const certificateTypeText = document.getElementById('certificate_type').options[document.getElementById('certificate_type').selectedIndex].text;
     const purpose = document.getElementById('purpose').value;
+    const transactionFee = document.getElementById('transaction_fee').value;
 
     // Update preview
     document.getElementById('preview_name').textContent = `${resident.first_name} ${resident.last_name} ${resident.suffix || ''}`;
@@ -1155,6 +1205,32 @@ function showPreview() {
     document.getElementById('preview_address').textContent = `${resident.address}, Purok ${resident.purok}`;
     document.getElementById('preview_certificate_type').textContent = certificateTypeText;
     document.getElementById('preview_purpose').textContent = purpose;
+
+    // Add transaction fee to preview
+    const previewSections = document.querySelector('.preview-sections');
+    const existingFeeRow = document.getElementById('preview_fee_row');
+
+    if (transactionFee && transactionFee > 0) {
+        const feeHtml = `
+            <div class="preview-section" id="preview_fee_row">
+                <h4>💰 Payment Information</h4>
+                <div class="preview-grid">
+                    <div class="preview-item">
+                        <span class="preview-label">Transaction Fee:</span>
+                        <span class="preview-value highlight">₱ ${parseFloat(transactionFee).toFixed(2)}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        if (existingFeeRow) {
+            existingFeeRow.outerHTML = feeHtml;
+        } else {
+            previewSections.insertAdjacentHTML('beforeend', feeHtml);
+        }
+    } else if (existingFeeRow) {
+        existingFeeRow.remove();
+    }
 
     // Show modal
     const modal = document.getElementById('previewModal');

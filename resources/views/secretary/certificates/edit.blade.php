@@ -28,6 +28,14 @@
             </div>
         @endif
 
+        @if($certificate->status === 'Released')
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>This certificate has been released and cannot be edited.</strong>
+                Only viewing is allowed. Please go back to view details.
+            </div>
+        @endif
+
         <form action="{{ route('secretary.certificates.update', $certificate) }}" method="POST" class="certificate-form">
             @csrf
             @method('PUT')
@@ -39,7 +47,11 @@
                     <!-- Select Resident -->
                     <div class="form-group full-width">
                         <label for="resident_id">Select Resident <span class="required">*</span></label>
-                        <select name="resident_id" id="resident_id" class="form-control @error('resident_id') is-invalid @enderror" required>
+                        <select name="resident_id"
+                                id="resident_id"
+                                class="form-control @error('resident_id') is-invalid @enderror"
+                                required
+                                {{ $certificate->status === 'Released' ? 'disabled' : '' }}>
                             <option value="">-- Select Resident --</option>
                             @foreach($residents as $resident)
                                 <option value="{{ $resident->id }}" {{ old('resident_id', $certificate->resident_id) == $resident->id ? 'selected' : '' }}>
@@ -47,6 +59,9 @@
                                 </option>
                             @endforeach
                         </select>
+                        @if($certificate->status === 'Released')
+                            <input type="hidden" name="resident_id" value="{{ $certificate->resident_id }}">
+                        @endif
                         @error('resident_id')
                             <span class="error-message">{{ $message }}</span>
                         @enderror
@@ -55,21 +70,39 @@
                     <!-- Certificate Type -->
                     <div class="form-group">
                         <label for="certificate_type">Certificate Type <span class="required">*</span></label>
-                        <select name="certificate_type" id="certificate_type" class="form-control @error('certificate_type') is-invalid @enderror" required>
+                        <select name="certificate_type"
+                                id="certificate_type"
+                                class="form-control @error('certificate_type') is-invalid @enderror"
+                                required
+                                {{ $certificate->status === 'Released' ? 'disabled' : '' }}>
                             <option value="">Select Type</option>
                             <option value="Clearance" {{ old('certificate_type', $certificate->certificate_type) == 'Clearance' ? 'selected' : '' }}>Barangay Clearance</option>
                             <option value="Indigency" {{ old('certificate_type', $certificate->certificate_type) == 'Indigency' ? 'selected' : '' }}>Certificate of Indigency</option>
                             <option value="Residency" {{ old('certificate_type', $certificate->certificate_type) == 'Residency' ? 'selected' : '' }}>Certificate of Residency</option>
                         </select>
+                        @if($certificate->status === 'Released')
+                            <input type="hidden" name="certificate_type" value="{{ $certificate->certificate_type }}">
+                        @endif
                         @error('certificate_type')
                             <span class="error-message">{{ $message }}</span>
                         @enderror
                     </div>
 
-                    <!-- Status - Read-only for Clerk, Editable for others -->
+                    <!-- Status - Read-only for Clerk, Editable for others BUT disabled if Released -->
                     <div class="form-group">
                         <label for="status">Status <span class="required">*</span></label>
-                        @if(auth()->user()->role_id == 4) {{-- Clerk --}}
+
+                        @if($certificate->status === 'Released')
+                            {{-- If Released, always show as read-only text --}}
+                            <input type="text"
+                                   id="status"
+                                   value="{{ $certificate->status }}"
+                                   class="form-control"
+                                   readonly>
+                            <input type="hidden" name="status" value="{{ $certificate->status }}">
+                            <small class="form-text text-muted">Released certificates cannot be modified.</small>
+
+                        @elseif(auth()->user()->role_id == 4) {{-- Clerk --}}
                             <input type="text"
                                    id="status"
                                    name="status_display"
@@ -78,6 +111,7 @@
                                    readonly>
                             <input type="hidden" name="status" value="{{ $certificate->status }}">
                             <small class="form-text text-muted">Status cannot be changed by clerk. Please contact secretary for status updates.</small>
+
                         @else {{-- Secretary or Admin --}}
                             <select name="status" id="status" class="form-control @error('status') is-invalid @enderror" required onchange="toggleRejectionField()">
                                 <option value="Pending" {{ old('status', $certificate->status) == 'Pending' ? 'selected' : '' }}>Pending</option>
@@ -86,7 +120,31 @@
                                 <option value="Rejected" {{ old('status', $certificate->status) == 'Rejected' ? 'selected' : '' }}>Rejected</option>
                             </select>
                         @endif
+
                         @error('status')
+                            <span class="error-message">{{ $message }}</span>
+                        @enderror
+                    </div>
+
+                    <!-- Transaction Fee (if you added it) -->
+                    <div class="form-group">
+                        <label for="transaction_fee">Transaction Fee (₱)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₱</span>
+                            <input type="number"
+                                   id="transaction_fee"
+                                   name="transaction_fee"
+                                   class="form-control @error('transaction_fee') is-invalid @enderror"
+                                   value="{{ old('transaction_fee', $certificate->transaction_fee) }}"
+                                   step="0.01"
+                                   min="0"
+                                   placeholder="0.00"
+                                   {{ $certificate->status === 'Released' ? 'readonly' : '' }}>
+                        </div>
+                        @if($certificate->status === 'Released')
+                            <small class="form-text text-muted">Transaction fee cannot be modified for released certificates.</small>
+                        @endif
+                        @error('transaction_fee')
                             <span class="error-message">{{ $message }}</span>
                         @enderror
                     </div>
@@ -99,15 +157,19 @@
                               name="purpose"
                               class="form-control @error('purpose') is-invalid @enderror"
                               rows="3"
-                              required>{{ old('purpose', $certificate->purpose) }}</textarea>
+                              required
+                              {{ $certificate->status === 'Released' ? 'readonly' : '' }}>{{ old('purpose', $certificate->purpose) }}</textarea>
+                    @if($certificate->status === 'Released')
+                        <input type="hidden" name="purpose" value="{{ $certificate->purpose }}">
+                    @endif
                     @error('purpose')
                         <span class="error-message">{{ $message }}</span>
                     @enderror
                 </div>
+
                 <!-- Rejection Reason (shown only when Rejected is selected) -->
                 <div id="rejectionField" class="form-group full-width"
-                     .rejection-field-visible { display: block !important; }
-                     .rejection-field-hidden { display: none !important; }
+                     style="{{ old('status', $certificate->status) == 'Rejected' ? 'display: block;' : 'display: none;' }}">
                     <label for="rejection_reason">
                         Rejection Reason
                         @if(old('status', $certificate->status) == 'Rejected')
@@ -118,7 +180,11 @@
                               id="rejection_reason"
                               class="form-control @error('rejection_reason') is-invalid @enderror"
                               rows="2"
+                              {{ $certificate->status === 'Released' ? 'readonly' : '' }}
                               {{ auth()->user()->role_id == 4 ? 'readonly' : '' }}>{{ old('rejection_reason', $certificate->rejection_reason) }}</textarea>
+                    @if($certificate->status === 'Released' && $certificate->rejection_reason)
+                        <input type="hidden" name="rejection_reason" value="{{ $certificate->rejection_reason }}">
+                    @endif
                     @error('rejection_reason')
                         <span class="error-message">{{ $message }}</span>
                     @enderror
@@ -126,10 +192,12 @@
             </div>
 
             <div class="form-actions">
-                <button type="submit" class="btn-primary">
-                    <i class="fas fa-check icon-small"></i>
-                    Update Certificate
-                </button>
+                @if($certificate->status !== 'Released')
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-check icon-small"></i>
+                        Update Certificate
+                    </button>
+                @endif
                 <a href="{{ route('secretary.certificates.show', $certificate) }}" class="btn-secondary">
                     Cancel
                 </a>
@@ -209,6 +277,12 @@
     background: #fee2e2;
     border: 1px solid #fecaca;
     color: #dc2626;
+}
+
+.alert-warning {
+    background: #fff3cd;
+    border: 1px solid #ffecb5;
+    color: #856404;
 }
 
 .alert-danger ul {
@@ -300,10 +374,40 @@ textarea.form-control {
     font-size: 16px;
 }
 
+/* Input Group for Transaction Fee */
+.input-group {
+    display: flex;
+    align-items: stretch;
+}
+
+.input-group-text {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    background: #f3f4f6;
+    border: 1px solid #e2e8f0;
+    border-right: none;
+    border-radius: 5px 0 0 5px;
+    color: #4b5563;
+    font-weight: 500;
+}
+
+.input-group .form-control {
+    border-left: none;
+    border-radius: 0 5px 5px 0;
+}
+
+.input-group .form-control:focus {
+    border-left: none;
+    outline: none;
+    border-color: #667eea;
+}
+
 /* Read-only field styling */
-input:read-only, textarea:read-only {
+input:read-only, textarea:read-only, select:disabled {
     background-color: #f8f9fa;
     cursor: not-allowed;
+    opacity: 0.8;
 }
 
 /* Helper text */
@@ -323,8 +427,8 @@ function toggleRejectionField() {
     const rejectionField = document.getElementById('rejectionField');
     const rejectionReason = document.getElementById('rejection_reason');
 
-    // Only run for non-clerk users (status select exists)
-    if (!status) return;
+    // Only run for non-clerk users and if status select exists (not read-only)
+    if (!status || status.tagName !== 'SELECT') return;
 
     if (status.value === 'Rejected') {
         rejectionField.style.display = 'block';

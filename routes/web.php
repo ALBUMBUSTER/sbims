@@ -32,58 +32,65 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'redirectToRoleDashboard'])->name('dashboard');
 
     // Secretary Routes
-    Route::prefix('secretary')->name('secretary.')->group(function () {
-        // Dashboard & Activities
-        Route::get('/dashboard', [DashboardController::class, 'secretary'])->name('dashboard');
-        Route::get('/activities', [DashboardController::class, 'activities'])->name('activities');
+Route::prefix('secretary')->name('secretary.')->group(function () {
+    // Dashboard & Activities
+    Route::get('/dashboard', [DashboardController::class, 'secretary'])->name('dashboard');
+    Route::get('/activities', [DashboardController::class, 'activities'])->name('activities');
 
-        // IMPORT ROUTES - Move these ABOVE the resource route
-        Route::get('/residents/import', [ResidentController::class, 'showImportForm'])->name('residents.import');
-        Route::post('/residents/import', [ResidentController::class, 'import'])->name('residents.import.post');
+    // ===== RESIDENTS =====
+    // IMPORT ROUTES - Place these BEFORE resource routes
+    Route::get('/residents/import', [ResidentController::class, 'showImportForm'])->name('residents.import');
+    Route::post('/residents/import', [ResidentController::class, 'import'])->name('residents.import.post');
 
-        // ARCHIVE ROUTES - Add these BEFORE the resource route
-        Route::post('/residents/{resident}/archive', [ResidentController::class, 'archive'])->name('residents.archive');
-        Route::get('/residents/archived', [ResidentController::class, 'archived'])->name('residents.archived');
-        Route::post('/residents/{id}/restore', [ResidentController::class, 'restore'])->name('residents.restore');
-        Route::delete('/residents/{id}/force-delete', [ResidentController::class, 'forceDelete'])->name('residents.force-delete');
+    // ARCHIVE ROUTES - Place these BEFORE resource routes
+    Route::post('/residents/{resident}/archive', [ResidentController::class, 'archive'])->name('residents.archive');
+    Route::get('/residents/archived', [ResidentController::class, 'archived'])->name('residents.archived');
+    Route::post('/residents/{id}/restore', [ResidentController::class, 'restore'])->name('residents.restore');
+    Route::delete('/residents/{id}/force-delete', [ResidentController::class, 'forceDelete'])->name('residents.force-delete');
 
-        // Resident Records (Resourceful routes) - This comes AFTER import and archive routes
-        Route::resource('residents', ResidentController::class)->except(['show']);
-        Route::get('/residents/{resident}', [ResidentController::class, 'show'])->name('residents.show');
-        Route::get('/residents/generate-id', [ResidentController::class, 'generateId'])->name('residents.generate-id');
+    // Resident Records (Resourceful routes)
+    Route::resource('residents', ResidentController::class)->except(['show']);
+    Route::get('/residents/{resident}', [ResidentController::class, 'show'])->name('residents.show');
+    Route::get('/residents/generate-id', [ResidentController::class, 'generateId'])->name('residents.generate-id');
+    Route::get('/residents/generate-pwd-id', [ResidentController::class, 'generatePwdId'])->name('residents.generate-pwd-id');
 
-        // Blotter Cases (Resourceful routes)
-        Route::resource('blotter', BlotterController::class)->except(['show']);
-        Route::get('/blotter/{blotter}', [BlotterController::class, 'show'])->name('blotter.show');
-        Route::patch('/blotter/{blotter}/status', [BlotterController::class, 'updateStatus'])->name('blotter.status');
+    // ===== BLOTTER =====
+    // Blotter Archive Routes - Place these BEFORE resource routes
+    Route::post('/blotter/{blotter}/archive', [BlotterController::class, 'archive'])->name('blotter.archive');
+    Route::get('/blotter/archived', [BlotterController::class, 'archived'])->name('blotter.archived');
+    Route::post('/blotter/{id}/restore', [BlotterController::class, 'restore'])->name('blotter.restore');
+    Route::delete('/blotter/{id}/force-delete', [BlotterController::class, 'forceDelete'])->name('blotter.force-delete');
 
-        // Certificates (Resourceful routes)
-        Route::resource('certificates', CertificateController::class)->except(['show']);
-        Route::get('/certificates/{certificate}', [CertificateController::class, 'show'])->name('certificates.show');
-        Route::post('/certificates/{certificate}/process', [CertificateController::class, 'process'])->name('certificates.process');
-        Route::get('/certificates/{certificate}/print', [CertificateController::class, 'print'])->name('certificates.print');
+    // Blotter Cases (Resourceful routes)
+    Route::resource('blotter', BlotterController::class)->except(['show']);
+    Route::get('/blotter/{blotter}', [BlotterController::class, 'show'])->name('blotter.show');
+    Route::patch('/blotter/{blotter}/status', [BlotterController::class, 'updateStatus'])->name('blotter.status');
 
-        // Reports
-        Route::prefix('reports')->name('reports.')->group(function () {
-            Route::get('/', [ReportController::class, 'index'])->name('index');
-            Route::get('/residents', [ReportController::class, 'residents'])->name('residents');
-            Route::get('/certificates', [ReportController::class, 'certificates'])->name('certificates');
-            Route::get('/blotter', [ReportController::class, 'blotter'])->name('blotter');
-            Route::get('/summary', [ReportController::class, 'summary'])->name('summary');
-            Route::post('/export', [ReportController::class, 'export'])->name('export');
-        });
+    // ===== CERTIFICATES =====
+    // Certificate Archive Routes - Place these BEFORE resource routes
+    Route::post('/certificates/{certificate}/archive', [CertificateController::class, 'archive'])->name('certificates.archive');
+    Route::get('/certificates/archived', [CertificateController::class, 'archived'])->name('certificates.archived');
+    Route::post('/certificates/{id}/restore', [CertificateController::class, 'restore'])->name('certificates.restore');
+    Route::delete('/certificates/{id}/force-delete', [CertificateController::class, 'forceDelete'])->name('certificates.force-delete');
 
-        // Certificate Template Routes
-        Route::get('/certificates/{certificate}/generate-doc', [App\Http\Controllers\TemplateController::class, 'generateCertificate'])
-            ->name('certificates.generate-doc');
-        Route::get('/certificates/{certificate}/print-doc', [App\Http\Controllers\TemplateController::class, 'printCertificate'])
-            ->name('certificates.print-doc');
+    // Certificates (Resourceful routes)
+    Route::resource('certificates', CertificateController::class)->except(['show']);
+    Route::get('/certificates/{certificate}', [CertificateController::class, 'show'])->name('certificates.show');
+    Route::post('/certificates/{certificate}/process', [CertificateController::class, 'process'])->name('certificates.process');
+    Route::get('/certificates/{certificate}/print', [CertificateController::class, 'print'])->name('certificates.print');
+    Route::get('/certificates/{certificate}/generate-doc', [App\Http\Controllers\TemplateController::class, 'generateCertificate'])->name('certificates.generate-doc');
+    Route::get('/certificates/{certificate}/print-doc', [App\Http\Controllers\TemplateController::class, 'printCertificate'])->name('certificates.print-doc');
 
-        // ID generation routes
-        Route::get('residents/generate-id', [App\Http\Controllers\Secretary\ResidentController::class, 'generateId'])->name('residents.generate-id');
-        Route::get('residents/generate-pwd-id', [App\Http\Controllers\Secretary\ResidentController::class, 'generatePwdId'])->name('residents.generate-pwd-id');
+    // ===== REPORTS =====
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('/', [ReportController::class, 'index'])->name('index');
+        Route::get('/residents', [ReportController::class, 'residents'])->name('residents');
+        Route::get('/certificates', [ReportController::class, 'certificates'])->name('certificates');
+        Route::get('/blotter', [ReportController::class, 'blotter'])->name('blotter');
+        Route::get('/summary', [ReportController::class, 'summary'])->name('summary');
+        Route::post('/export', [ReportController::class, 'export'])->name('export');
     });
-
+});
     // Admin Routes
     Route::prefix('admin')->name('admin.')->group(function () {
         // User Management (Resourceful routes)

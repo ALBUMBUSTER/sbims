@@ -4,17 +4,18 @@
 
 @section('content')
 <div class="container-fluid">
+    <!-- Page Header -->
     <div class="page-header">
         <div class="page-title">
             <h1>Summary Report</h1>
-            <p>Yearly overview for {{ $statistics['year'] }}</p>
+            <p>Yearly overview for {{ $statistics['year'] ?? date('Y') }}</p>
         </div>
         <div class="page-actions">
             <a href="{{ route('secretary.reports.index') }}" class="btn-secondary">
                 <x-heroicon-o-arrow-left class="icon-small" />
                 Back to Reports
             </a>
-            <form action="{{ route('secretary.reports.export') }}" method="POST" style="display: inline;">
+            <form action="{{ route('secretary.reports.export') }}" method="POST">
                 @csrf
                 <input type="hidden" name="type" value="summary">
                 <input type="hidden" name="format" value="excel">
@@ -46,6 +47,7 @@
 
     <!-- Year Overview Cards -->
     <div class="year-overview">
+        <!-- Residents Overview Card -->
         <div class="overview-card residents">
             <div class="overview-icon">
                 <x-heroicon-o-users />
@@ -55,24 +57,25 @@
                 <div class="overview-stats">
                     <div class="overview-stat">
                         <span class="stat-label">Total</span>
-                        <span class="stat-value">{{ $statistics['residents']['total'] }}</span>
+                        <span class="stat-value">{{ $statistics['residents']['total'] ?? 0 }}</span>
                     </div>
                     <div class="overview-stat">
                         <span class="stat-label">New this year</span>
-                        <span class="stat-value">{{ $statistics['residents']['new_this_year'] }}</span>
+                        <span class="stat-value">{{ $statistics['residents']['new_this_year'] ?? 0 }}</span>
                     </div>
                     <div class="overview-stat">
                         <span class="stat-label">Male</span>
-                        <span class="stat-value">{{ $statistics['residents']['by_gender']['male'] }}</span>
+                        <span class="stat-value">{{ $statistics['residents']['by_gender']['male'] ?? 0 }}</span>
                     </div>
                     <div class="overview-stat">
                         <span class="stat-label">Female</span>
-                        <span class="stat-value">{{ $statistics['residents']['by_gender']['female'] }}</span>
+                        <span class="stat-value">{{ $statistics['residents']['by_gender']['female'] ?? 0 }}</span>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Certificates Overview Card -->
         <div class="overview-card certificates">
             <div class="overview-icon">
                 <x-heroicon-o-document-text />
@@ -82,11 +85,11 @@
                 <div class="overview-stats">
                     <div class="overview-stat">
                         <span class="stat-label">Total</span>
-                        <span class="stat-value">{{ $statistics['certificates']['total'] }}</span>
+                        <span class="stat-value">{{ $statistics['certificates']['total'] ?? 0 }}</span>
                     </div>
                     <div class="overview-stat">
                         <span class="stat-label">Issued this year</span>
-                        <span class="stat-value">{{ $statistics['certificates']['issued_this_year'] }}</span>
+                        <span class="stat-value">{{ $statistics['certificates']['issued_this_year'] ?? 0 }}</span>
                     </div>
                     <div class="overview-stat">
                         <span class="stat-label">Pending</span>
@@ -100,6 +103,7 @@
             </div>
         </div>
 
+        <!-- Blotter Cases Overview Card -->
         <div class="overview-card blotters">
             <div class="overview-icon">
                 <x-heroicon-o-scale />
@@ -109,11 +113,11 @@
                 <div class="overview-stats">
                     <div class="overview-stat">
                         <span class="stat-label">Total</span>
-                        <span class="stat-value">{{ $statistics['blotters']['total'] }}</span>
+                        <span class="stat-value">{{ $statistics['blotters']['total'] ?? 0 }}</span>
                     </div>
                     <div class="overview-stat">
                         <span class="stat-label">Filed this year</span>
-                        <span class="stat-value">{{ $statistics['blotters']['filed_this_year'] }}</span>
+                        <span class="stat-value">{{ $statistics['blotters']['filed_this_year'] ?? 0 }}</span>
                     </div>
                     <div class="overview-stat">
                         <span class="stat-label">Active</span>
@@ -128,15 +132,15 @@
         </div>
     </div>
 
-    <!-- Charts Grid -->
+    <!-- Charts Section -->
     <div class="charts-grid">
-        <!-- Gender Distribution Chart -->
+        <!-- Gender Distribution Pie Chart -->
         <div class="chart-card">
             <div class="chart-header">
                 <h3><i class="fas fa-venus-mars"></i> Gender Distribution</h3>
                 <div class="chart-legend">
-                    <span><span class="legend-dot male"></span> Male: {{ $statistics['residents']['by_gender']['male'] }}</span>
-                    <span><span class="legend-dot female"></span> Female: {{ $statistics['residents']['by_gender']['female'] }}</span>
+                    <span><span class="legend-dot male"></span> Male: {{ $statistics['residents']['by_gender']['male'] ?? 0 }}</span>
+                    <span><span class="legend-dot female"></span> Female: {{ $statistics['residents']['by_gender']['female'] ?? 0 }}</span>
                 </div>
             </div>
             <div class="chart-body">
@@ -144,87 +148,89 @@
             </div>
         </div>
 
-        <!-- Certificate Status Chart -->
+        <!-- Certificate Status Pie Chart -->
         <div class="chart-card">
             <div class="chart-header">
                 <h3><i class="fas fa-file-alt"></i> Certificate Status</h3>
-                <div class="chart-total">{{ $statistics['certificates']['total'] }} total</div>
+                <div class="chart-total">{{ $statistics['certificates']['total'] ?? 0 }} total</div>
             </div>
             <div class="chart-body">
                 <canvas id="certificateStatusChart" width="400" height="200"></canvas>
             </div>
             <div class="chart-mini-table">
                 @php
+                    $certTotal = $statistics['certificates']['total'] ?? 0;
                     $certPending = $statistics['certificates']['by_status']['pending'] ?? 0;
                     $certApproved = $statistics['certificates']['by_status']['approved'] ?? 0;
                     $certReleased = $statistics['certificates']['by_status']['released'] ?? 0;
                     $certRejected = $statistics['certificates']['by_status']['rejected'] ?? 0;
-                    $certTotal = max($statistics['certificates']['total'], 1);
+                    $certSafeTotal = max($certTotal, 1);
                 @endphp
                 <div class="chart-stat-item">
                     <span class="stat-label"><span class="legend-dot pending"></span> Pending:</span>
-                    <span class="stat-value">{{ $certPending }} ({{ round(($certPending / $certTotal) * 100, 1) }}%)</span>
+                    <span class="stat-value">{{ $certPending }} ({{ round(($certPending / $certSafeTotal) * 100, 1) }}%)</span>
                 </div>
                 <div class="chart-stat-item">
                     <span class="stat-label"><span class="legend-dot approved"></span> Approved:</span>
-                    <span class="stat-value">{{ $certApproved }} ({{ round(($certApproved / $certTotal) * 100, 1) }}%)</span>
+                    <span class="stat-value">{{ $certApproved }} ({{ round(($certApproved / $certSafeTotal) * 100, 1) }}%)</span>
                 </div>
                 <div class="chart-stat-item">
                     <span class="stat-label"><span class="legend-dot released"></span> Released:</span>
-                    <span class="stat-value">{{ $certReleased }} ({{ round(($certReleased / $certTotal) * 100, 1) }}%)</span>
+                    <span class="stat-value">{{ $certReleased }} ({{ round(($certReleased / $certSafeTotal) * 100, 1) }}%)</span>
                 </div>
                 <div class="chart-stat-item">
                     <span class="stat-label"><span class="legend-dot rejected"></span> Rejected:</span>
-                    <span class="stat-value">{{ $certRejected }} ({{ round(($certRejected / $certTotal) * 100, 1) }}%)</span>
+                    <span class="stat-value">{{ $certRejected }} ({{ round(($certRejected / $certSafeTotal) * 100, 1) }}%)</span>
                 </div>
             </div>
         </div>
 
-        <!-- Blotter Status Chart -->
+        <!-- Blotter Status Pie Chart -->
         <div class="chart-card">
             <div class="chart-header">
                 <h3><i class="fas fa-gavel"></i> Blotter Case Status</h3>
-                <div class="chart-total">{{ $statistics['blotters']['total'] }} total</div>
+                <div class="chart-total">{{ $statistics['blotters']['total'] ?? 0 }} total</div>
             </div>
             <div class="chart-body">
                 <canvas id="blotterStatusChart" width="400" height="200"></canvas>
             </div>
             <div class="chart-mini-table">
                 @php
+                    $blotterTotal = $statistics['blotters']['total'] ?? 0;
                     $blotterPending = $statistics['blotters']['by_status']['pending'] ?? 0;
                     $blotterOngoing = $statistics['blotters']['by_status']['ongoing'] ?? 0;
                     $blotterSettled = $statistics['blotters']['by_status']['settled'] ?? 0;
                     $blotterReferred = $statistics['blotters']['by_status']['referred'] ?? 0;
-                    $blotterTotal = max($statistics['blotters']['total'], 1);
+                    $blotterSafeTotal = max($blotterTotal, 1);
                 @endphp
                 <div class="chart-stat-item">
                     <span class="stat-label"><span class="legend-dot pending"></span> Pending:</span>
-                    <span class="stat-value">{{ $blotterPending }} ({{ round(($blotterPending / $blotterTotal) * 100, 1) }}%)</span>
+                    <span class="stat-value">{{ $blotterPending }} ({{ round(($blotterPending / $blotterSafeTotal) * 100, 1) }}%)</span>
                 </div>
                 <div class="chart-stat-item">
                     <span class="stat-label"><span class="legend-dot ongoing"></span> Ongoing:</span>
-                    <span class="stat-value">{{ $blotterOngoing }} ({{ round(($blotterOngoing / $blotterTotal) * 100, 1) }}%)</span>
+                    <span class="stat-value">{{ $blotterOngoing }} ({{ round(($blotterOngoing / $blotterSafeTotal) * 100, 1) }}%)</span>
                 </div>
                 <div class="chart-stat-item">
                     <span class="stat-label"><span class="legend-dot settled"></span> Settled:</span>
-                    <span class="stat-value">{{ $blotterSettled }} ({{ round(($blotterSettled / $blotterTotal) * 100, 1) }}%)</span>
+                    <span class="stat-value">{{ $blotterSettled }} ({{ round(($blotterSettled / $blotterSafeTotal) * 100, 1) }}%)</span>
                 </div>
                 <div class="chart-stat-item">
                     <span class="stat-label"><span class="legend-dot referred"></span> Referred:</span>
-                    <span class="stat-value">{{ $blotterReferred }} ({{ round(($blotterReferred / $blotterTotal) * 100, 1) }}%)</span>
+                    <span class="stat-value">{{ $blotterReferred }} ({{ round(($blotterReferred / $blotterSafeTotal) * 100, 1) }}%)</span>
                 </div>
             </div>
         </div>
 
-        <!-- Year Comparison Chart -->
+        <!-- Monthly Comparison Line Chart -->
         <div class="chart-card full-width">
             <div class="chart-header">
-                <h3><i class="fas fa-chart-bar"></i> Monthly Comparison for {{ $statistics['year'] }}</h3>
+                <h3><i class="fas fa-chart-line"></i> Monthly Comparison for {{ $statistics['year'] ?? date('Y') }}</h3>
             </div>
             <div class="chart-body" style="height: 300px;">
                 <canvas id="monthlyComparisonChart" width="800" height="250"></canvas>
             </div>
-            <div class="purok-stats" style="padding: 0.5rem 1rem 1rem;">
+            <div class="comparison-legend-wrapper">
                 <div class="comparison-legend">
                     <span><span class="legend-dot residents"></span> Residents</span>
                     <span><span class="legend-dot certificates"></span> Certificates</span>
@@ -234,164 +240,45 @@
         </div>
     </div>
 
-    {{-- <!-- Monthly Trends with Mini Charts -->
-    <div class="trends-section">
-        <h2 class="section-title">Monthly Trends for {{ $statistics['year'] }}</h2>
-
-        <div class="trends-grid">
-            <!-- Residents Monthly Trend -->
-            <div class="trend-card">
-                <div class="trend-header">
-                    <x-heroicon-o-users class="trend-icon" />
-                    <h3>Residents Registration</h3>
-                    <span class="trend-total">Total: {{ array_sum($statistics['residents']['monthly']) }}</span>
-                </div>
-                <div class="trend-body">
-                    <canvas id="residentsTrendChart" width="300" height="150"></canvas>
-                    <table class="trend-table">
-                        <thead>
-                            <tr>
-                                <th>Month</th>
-                                <th>New Residents</th>
-                                <th>% of Year</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @php $residentsTotal = array_sum($statistics['residents']['monthly']); @endphp
-                            @foreach($statistics['residents']['monthly'] as $month => $count)
-                            <tr>
-                                <td>{{ $month }}</td>
-                                <td>{{ $count }}</td>
-                                <td>
-                                    <div class="percentage-bar">
-                                        <span class="percentage-value">{{ $residentsTotal > 0 ? round(($count / $residentsTotal) * 100, 1) : 0 }}%</span>
-                                        <div class="progress-bar">
-                                            <div class="progress-fill" style="width: {{ $residentsTotal > 0 ? round(($count / $residentsTotal) * 100, 1) : 0 }}%;"></div>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Certificates Monthly Trend -->
-            <div class="trend-card">
-                <div class="trend-header">
-                    <x-heroicon-o-document-text class="trend-icon" />
-                    <h3>Certificate Issuance</h3>
-                    <span class="trend-total">Total: {{ array_sum($statistics['certificates']['monthly']) }}</span>
-                </div>
-                <div class="trend-body">
-                    <canvas id="certificatesTrendChart" width="300" height="150"></canvas>
-                    <table class="trend-table">
-                        <thead>
-                            <tr>
-                                <th>Month</th>
-                                <th>Certificates Issued</th>
-                                <th>% of Year</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @php $certificatesTotal = array_sum($statistics['certificates']['monthly']); @endphp
-                            @foreach($statistics['certificates']['monthly'] as $month => $count)
-                            <tr>
-                                <td>{{ $month }}</td>
-                                <td>{{ $count }}</td>
-                                <td>
-                                    <div class="percentage-bar">
-                                        <span class="percentage-value">{{ $certificatesTotal > 0 ? round(($count / $certificatesTotal) * 100, 1) : 0 }}%</span>
-                                        <div class="progress-bar">
-                                            <div class="progress-fill" style="width: {{ $certificatesTotal > 0 ? round(($count / $certificatesTotal) * 100, 1) : 0 }}%;"></div>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Blotters Monthly Trend -->
-            <div class="trend-card">
-                <div class="trend-header">
-                    <x-heroicon-o-scale class="trend-icon" />
-                    <h3>Blotter Cases Filed</h3>
-                    <span class="trend-total">Total: {{ array_sum($statistics['blotters']['monthly']) }}</span>
-                </div>
-                <div class="trend-body">
-                    <canvas id="blottersTrendChart" width="300" height="150"></canvas>
-                    <table class="trend-table">
-                        <thead>
-                            <tr>
-                                <th>Month</th>
-                                <th>Cases Filed</th>
-                                <th>% of Year</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @php $blottersTotal = array_sum($statistics['blotters']['monthly']); @endphp
-                            @foreach($statistics['blotters']['monthly'] as $month => $count)
-                            <tr>
-                                <td>{{ $month }}</td>
-                                <td>{{ $count }}</td>
-                                <td>
-                                    <div class="percentage-bar">
-                                        <span class="percentage-value">{{ $blottersTotal > 0 ? round(($count / $blottersTotal) * 100, 1) : 0 }}%</span>
-                                        <div class="progress-bar">
-                                            <div class="progress-fill" style="width: {{ $blottersTotal > 0 ? round(($count / $blottersTotal) * 100, 1) : 0 }}%;"></div>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div> --}}
-
-    <!-- Summary Statistics -->
-    <div class="summary-stats-grid" style="margin-top: 2rem;">
+    <!-- Summary Statistics Cards -->
+    <div class="summary-stats-grid">
+        <!-- Year Summary Card -->
         <div class="detail-card">
             <div class="detail-header">
                 <x-heroicon-o-chart-bar class="detail-icon" />
-                <h3>Year {{ $statistics['year'] }} Summary</h3>
+                <h3>Year {{ $statistics['year'] ?? date('Y') }} Summary</h3>
             </div>
             <div class="detail-body">
                 <div class="summary-items">
                     <div class="summary-item">
                         <span class="summary-label">Total Residents:</span>
-                        <span class="summary-value">{{ $statistics['residents']['total'] }}</span>
+                        <span class="summary-value">{{ $statistics['residents']['total'] ?? 0 }}</span>
                     </div>
                     <div class="summary-item">
                         <span class="summary-label">New Residents:</span>
-                        <span class="summary-value">{{ $statistics['residents']['new_this_year'] }}</span>
+                        <span class="summary-value">{{ $statistics['residents']['new_this_year'] ?? 0 }}</span>
                     </div>
                     <div class="summary-item">
                         <span class="summary-label">Total Certificates:</span>
-                        <span class="summary-value">{{ $statistics['certificates']['total'] }}</span>
+                        <span class="summary-value">{{ $statistics['certificates']['total'] ?? 0 }}</span>
                     </div>
                     <div class="summary-item">
                         <span class="summary-label">Certificates Issued:</span>
-                        <span class="summary-value">{{ $statistics['certificates']['issued_this_year'] }}</span>
+                        <span class="summary-value">{{ $statistics['certificates']['issued_this_year'] ?? 0 }}</span>
                     </div>
                     <div class="summary-item">
                         <span class="summary-label">Total Blotter Cases:</span>
-                        <span class="summary-value">{{ $statistics['blotters']['total'] }}</span>
+                        <span class="summary-value">{{ $statistics['blotters']['total'] ?? 0 }}</span>
                     </div>
                     <div class="summary-item">
                         <span class="summary-label">Cases Filed:</span>
-                        <span class="summary-value">{{ $statistics['blotters']['filed_this_year'] }}</span>
+                        <span class="summary-value">{{ $statistics['blotters']['filed_this_year'] ?? 0 }}</span>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Performance Metrics Card -->
         <div class="detail-card">
             <div class="detail-header">
                 <x-heroicon-o-clock class="detail-icon" />
@@ -400,10 +287,14 @@
             <div class="detail-body">
                 <div class="summary-items">
                     @php
-                        $certificatesTotal = array_sum($statistics['certificates']['monthly']);
-                        $blottersTotal = array_sum($statistics['blotters']['monthly']);
+                        $certificatesMonthly = $statistics['certificates']['monthly'] ?? [];
+                        $blottersMonthly = $statistics['blotters']['monthly'] ?? [];
+                        $certificatesTotal = array_sum($certificatesMonthly);
+                        $blottersTotal = array_sum($blottersMonthly);
                         $certReleased = $statistics['certificates']['by_status']['released'] ?? 0;
                         $blotterSettled = $statistics['blotters']['by_status']['settled'] ?? 0;
+                        $certGrandTotal = $statistics['certificates']['total'] ?? 1;
+                        $blotterGrandTotal = $statistics['blotters']['total'] ?? 1;
                     @endphp
                     <div class="summary-item">
                         <span class="summary-label">Avg Certificates/Month:</span>
@@ -415,11 +306,11 @@
                     </div>
                     <div class="summary-item">
                         <span class="summary-label">Certificate Release Rate:</span>
-                        <span class="summary-value">{{ $statistics['certificates']['total'] > 0 ? round(($certReleased / $statistics['certificates']['total']) * 100, 1) : 0 }}%</span>
+                        <span class="summary-value">{{ round(($certReleased / $certGrandTotal) * 100, 1) }}%</span>
                     </div>
                     <div class="summary-item">
                         <span class="summary-label">Case Resolution Rate:</span>
-                        <span class="summary-value">{{ $statistics['blotters']['total'] > 0 ? round(($blotterSettled / $statistics['blotters']['total']) * 100, 1) : 0 }}%</span>
+                        <span class="summary-value">{{ round(($blotterSettled / $blotterGrandTotal) * 100, 1) }}%</span>
                     </div>
                 </div>
             </div>
@@ -430,17 +321,23 @@
 
 @push('styles')
 <style>
+/* ==================== */
+/* Container & Layout   */
+/* ==================== */
 .container-fluid {
     padding: 1.2rem;
 }
 
+/* ==================== */
+/* Page Header          */
+/* ==================== */
 .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1.5rem;
     flex-wrap: wrap;
-    gap: 0.8rem;
+    gap: 1rem;
 }
 
 .page-title h1 {
@@ -452,20 +349,46 @@
 .page-title p {
     color: #666;
     font-size: 0.8rem;
+    margin: 0;
 }
 
-/* Buttons */
-.btn-primary, .btn-secondary {
+/* ==================== */
+/* Page Actions         */
+/* ==================== */
+.page-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.page-actions form {
+    margin: 0;
+    padding: 0;
+    line-height: 0;
+}
+
+/* ==================== */
+/* Buttons              */
+/* ==================== */
+.btn-primary,
+.btn-secondary {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
+    justify-content: center;
+    gap: 0.5rem;
     padding: 0.6rem 1.2rem;
     border-radius: 5px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    height: 40px;
+    line-height: 1;
+    box-sizing: border-box;
+    vertical-align: middle;
+    white-space: nowrap;
     text-decoration: none;
-    font-size: 0.8rem;
-    transition: all 0.3s;
     border: none;
     cursor: pointer;
+    transition: all 0.3s;
 }
 
 .btn-primary {
@@ -475,6 +398,8 @@
 
 .btn-primary:hover {
     opacity: 0.9;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 .btn-secondary {
@@ -485,9 +410,20 @@
 
 .btn-secondary:hover {
     background: #eef2ff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
-/* Filters Section */
+.icon-small {
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* ==================== */
+/* Filter Section       */
+/* ==================== */
 .filters-section {
     background: white;
     border-radius: 10px;
@@ -538,13 +474,18 @@
     border-radius: 5px;
     cursor: pointer;
     font-size: 0.8rem;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
 }
 
 .btn-filter:hover {
     background: #5a67d8;
 }
 
-/* Year Overview */
+/* ==================== */
+/* Year Overview Cards  */
+/* ==================== */
 .year-overview {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -615,7 +556,9 @@
     font-weight: bold;
 }
 
-/* Charts Grid */
+/* ==================== */
+/* Charts Grid          */
+/* ==================== */
 .charts-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -711,6 +654,9 @@
     font-size: 0.7rem;
 }
 
+/* ==================== */
+/* Legend Dots          */
+/* ==================== */
 .legend-dot {
     display: inline-block;
     width: 8px;
@@ -731,6 +677,15 @@
 .legend-dot.certificates { background: #f59e0b; }
 .legend-dot.blotters { background: #ef4444; }
 
+/* ==================== */
+/* Comparison Legend    */
+/* ==================== */
+.comparison-legend-wrapper {
+    padding: 0.5rem 1rem 1rem;
+    display: flex;
+    justify-content: center;
+}
+
 .comparison-legend {
     display: flex;
     gap: 1.5rem;
@@ -744,122 +699,9 @@
     gap: 0.3rem;
 }
 
-/* Purok Stats (reused) */
-.purok-stats {
-    padding: 0.5rem 1rem 1rem;
-}
-
-/* Trends Section */
-.trends-section {
-    margin-top: 1.5rem;
-}
-
-.section-title {
-    color: #333;
-    font-size: 1.1rem;
-    margin-bottom: 1rem;
-}
-
-.trends-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1rem;
-}
-
-.trend-card {
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    overflow: hidden;
-}
-
-.trend-header {
-    padding: 0.7rem;
-    background: #f8f9fa;
-    border-bottom: 1px solid #e2e8f0;
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-}
-
-.trend-icon {
-    width: 16px;
-    height: 16px;
-    color: #667eea;
-}
-
-.trend-header h3 {
-    color: #333;
-    font-size: 0.8rem;
-    margin: 0;
-    flex: 1;
-}
-
-.trend-total {
-    font-size: 0.7rem;
-    color: #667eea;
-    font-weight: 600;
-}
-
-.trend-body {
-    padding: 0.7rem;
-}
-
-.trend-body canvas {
-    width: 100%;
-    height: 150px;
-    margin-bottom: 1rem;
-}
-
-/* Trend Table */
-.trend-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.7rem;
-}
-
-.trend-table th {
-    text-align: left;
-    padding: 0.4rem;
-    background: #f8f9fa;
-    color: #555;
-    font-weight: 600;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.trend-table td {
-    padding: 0.4rem;
-    border-bottom: 1px solid #e2e8f0;
-    color: #333;
-}
-
-/* Percentage Bar */
-.percentage-bar {
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-}
-
-.percentage-value {
-    min-width: 35px;
-    font-size: 0.65rem;
-}
-
-.progress-bar {
-    flex: 1;
-    height: 4px;
-    background: #e2e8f0;
-    border-radius: 2px;
-    overflow: hidden;
-}
-
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #667eea, #764ba2);
-    border-radius: 2px;
-}
-
-/* Summary Stats Grid */
+/* ==================== */
+/* Summary Stats Grid   */
+/* ==================== */
 .summary-stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -928,12 +770,9 @@
     font-size: 0.8rem;
 }
 
-.icon-small {
-    width: 14px;
-    height: 14px;
-}
-
-/* Responsive */
+/* ==================== */
+/* Responsive Design    */
+/* ==================== */
 @media (max-width: 1024px) {
     .charts-grid {
         grid-template-columns: 1fr;
@@ -948,9 +787,15 @@
     .page-actions {
         width: 100%;
         flex-direction: column;
+        align-items: stretch;
     }
 
-    .btn-primary, .btn-secondary {
+    .page-actions form {
+        width: 100%;
+    }
+
+    .btn-primary,
+    .btn-secondary {
         width: 100%;
         justify-content: center;
     }
@@ -958,278 +803,288 @@
     .year-overview {
         grid-template-columns: 1fr;
     }
+
+    .comparison-legend {
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .page-actions {
+        width: 100%;
+    }
 }
 </style>
 @endpush
-
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{{ asset('js/chart.umd.min.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Gender Distribution Chart
-    new Chart(document.getElementById('genderChart'), {
-        type: 'pie',
-        data: {
-            labels: ['Male', 'Female'],
-            datasets: [{
-                data: [{{ $statistics['residents']['by_gender']['male'] }}, {{ $statistics['residents']['by_gender']['female'] }}],
-                backgroundColor: ['#3b82f6', '#ec4899'],
-                borderWidth: 0
-            }]
+    // Safely get statistics with fallbacks
+    const statistics = {
+        year: {{ $statistics['year'] ?? date('Y') }},
+        residents: {
+            total: {{ $statistics['residents']['total'] ?? 0 }},
+            new_this_year: {{ $statistics['residents']['new_this_year'] ?? 0 }},
+            by_gender: {
+                male: {{ $statistics['residents']['by_gender']['male'] ?? 0 }},
+                female: {{ $statistics['residents']['by_gender']['female'] ?? 0 }}
+            },
+            monthly: @json($statistics['residents']['monthly'] ?? [])
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.raw || 0;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                            return `${label}: ${value} (${percentage}%)`;
+        certificates: {
+            total: {{ $statistics['certificates']['total'] ?? 0 }},
+            issued_this_year: {{ $statistics['certificates']['issued_this_year'] ?? 0 }},
+            by_status: {
+                pending: {{ $statistics['certificates']['by_status']['pending'] ?? 0 }},
+                approved: {{ $statistics['certificates']['by_status']['approved'] ?? 0 }},
+                released: {{ $statistics['certificates']['by_status']['released'] ?? 0 }},
+                rejected: {{ $statistics['certificates']['by_status']['rejected'] ?? 0 }}
+            },
+            monthly: @json($statistics['certificates']['monthly'] ?? [])
+        },
+        blotters: {
+            total: {{ $statistics['blotters']['total'] ?? 0 }},
+            filed_this_year: {{ $statistics['blotters']['filed_this_year'] ?? 0 }},
+            by_status: {
+                pending: {{ $statistics['blotters']['by_status']['pending'] ?? 0 }},
+                ongoing: {{ $statistics['blotters']['by_status']['ongoing'] ?? 0 }},
+                settled: {{ $statistics['blotters']['by_status']['settled'] ?? 0 }},
+                referred: {{ $statistics['blotters']['by_status']['referred'] ?? 0 }},
+                active: {{ $statistics['blotters']['by_status']['active'] ?? 0 }}
+            },
+            monthly: @json($statistics['blotters']['monthly'] ?? [])
+        }
+    };
+
+    /**
+     * Gender Distribution Pie Chart
+     */
+    if (document.getElementById('genderChart')) {
+        new Chart(document.getElementById('genderChart'), {
+            type: 'pie',
+            data: {
+                labels: ['Male', 'Female'],
+                datasets: [{
+                    data: [statistics.residents.by_gender.male, statistics.residents.by_gender.female],
+                    backgroundColor: ['#3b82f6', '#ec4899'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
                         }
                     }
                 }
             }
-        }
-    });
+        });
+    }
 
-    // Certificate Status Chart
-    new Chart(document.getElementById('certificateStatusChart'), {
-        type: 'pie',
-        data: {
-            labels: ['Pending', 'Approved', 'Released', 'Rejected'],
-            datasets: [{
-                data: [
-                    {{ $statistics['certificates']['by_status']['pending'] ?? 0 }},
-                    {{ $statistics['certificates']['by_status']['approved'] ?? 0 }},
-                    {{ $statistics['certificates']['by_status']['released'] ?? 0 }},
-                    {{ $statistics['certificates']['by_status']['rejected'] ?? 0 }}
-                ],
-                backgroundColor: ['#f59e0b', '#10b981', '#3b82f6', '#ef4444'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.raw || 0;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                            return `${label}: ${value} (${percentage}%)`;
+    /**
+     * Certificate Status Pie Chart
+     */
+    if (document.getElementById('certificateStatusChart')) {
+        new Chart(document.getElementById('certificateStatusChart'), {
+            type: 'pie',
+            data: {
+                labels: ['Pending', 'Approved', 'Released', 'Rejected'],
+                datasets: [{
+                    data: [
+                        statistics.certificates.by_status.pending,
+                        statistics.certificates.by_status.approved,
+                        statistics.certificates.by_status.released,
+                        statistics.certificates.by_status.rejected
+                    ],
+                    backgroundColor: ['#f59e0b', '#10b981', '#3b82f6', '#ef4444'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
                         }
                     }
                 }
             }
-        }
-    });
+        });
+    }
 
-    // Blotter Status Chart
-    new Chart(document.getElementById('blotterStatusChart'), {
-        type: 'pie',
-        data: {
-            labels: ['Pending', 'Ongoing', 'Settled', 'Referred'],
-            datasets: [{
-                data: [
-                    {{ $statistics['blotters']['by_status']['pending'] ?? 0 }},
-                    {{ $statistics['blotters']['by_status']['ongoing'] ?? 0 }},
-                    {{ $statistics['blotters']['by_status']['settled'] ?? 0 }},
-                    {{ $statistics['blotters']['by_status']['referred'] ?? 0 }}
-                ],
-                backgroundColor: ['#f59e0b', '#8b5cf6', '#10b981', '#ef4444'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.raw || 0;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                            return `${label}: ${value} (${percentage}%)`;
+    /**
+     * Blotter Status Pie Chart
+     */
+    if (document.getElementById('blotterStatusChart')) {
+        new Chart(document.getElementById('blotterStatusChart'), {
+            type: 'pie',
+            data: {
+                labels: ['Pending', 'Ongoing', 'Settled', 'Referred'],
+                datasets: [{
+                    data: [
+                        statistics.blotters.by_status.pending,
+                        statistics.blotters.by_status.ongoing,
+                        statistics.blotters.by_status.settled,
+                        statistics.blotters.by_status.referred
+                    ],
+                    backgroundColor: ['#f59e0b', '#8b5cf6', '#10b981', '#ef4444'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
                         }
                     }
                 }
             }
+        });
+    }
+
+    /**
+     * Monthly Comparison Line Chart
+     */
+    if (document.getElementById('monthlyComparisonChart')) {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        // Ensure we have 12 months of data (pad with zeros if needed)
+        const residentsData = Array(12).fill(0);
+        const certificatesData = Array(12).fill(0);
+        const blottersData = Array(12).fill(0);
+
+        // Fill in available data
+        if (Array.isArray(statistics.residents.monthly)) {
+            statistics.residents.monthly.forEach((value, index) => {
+                if (index < 12) residentsData[index] = value;
+            });
         }
-    });
+        if (Array.isArray(statistics.certificates.monthly)) {
+            statistics.certificates.monthly.forEach((value, index) => {
+                if (index < 12) certificatesData[index] = value;
+            });
+        }
+        if (Array.isArray(statistics.blotters.monthly)) {
+            statistics.blotters.monthly.forEach((value, index) => {
+                if (index < 12) blottersData[index] = value;
+            });
+        }
 
-    // Monthly Comparison Chart
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const residentsData = @json(array_values($statistics['residents']['monthly']));
-    const certificatesData = @json(array_values($statistics['certificates']['monthly']));
-    const blottersData = @json(array_values($statistics['blotters']['monthly']));
-
-    new Chart(document.getElementById('monthlyComparisonChart'), {
-        type: 'line',
-        data: {
-            labels: months,
-            datasets: [
-                {
-                    label: 'Residents',
-                    data: residentsData,
-                    borderColor: '#667eea',
-                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                    tension: 0.4,
-                    fill: true,
-                    pointBackgroundColor: '#667eea',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 3,
-                    pointHoverRadius: 5
-                },
-                {
-                    label: 'Certificates',
-                    data: certificatesData,
-                    borderColor: '#f59e0b',
-                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                    tension: 0.4,
-                    fill: true,
-                    pointBackgroundColor: '#f59e0b',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 3,
-                    pointHoverRadius: 5
-                },
-                {
-                    label: 'Blotters',
-                    data: blottersData,
-                    borderColor: '#ef4444',
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                    tension: 0.4,
-                    fill: true,
-                    pointBackgroundColor: '#ef4444',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 3,
-                    pointHoverRadius: 5
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    mode: 'index',
-                    intersect: false
-                }
+        new Chart(document.getElementById('monthlyComparisonChart'), {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [
+                    {
+                        label: 'Residents',
+                        data: residentsData,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#667eea',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    },
+                    {
+                        label: 'Certificates',
+                        data: certificatesData,
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#f59e0b',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    },
+                    {
+                        label: 'Blotters',
+                        data: blottersData,
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#ef4444',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    }
+                ]
             },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: { color: '#e2e8f0' },
-                    ticks: {
-                        stepSize: 1,
-                        font: { size: 9 }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
                     }
                 },
-                x: {
-                    grid: { display: false },
-                    ticks: { font: { size: 9 } }
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#e2e8f0' },
+                        ticks: {
+                            stepSize: 1,
+                            font: { size: 9 }
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 9 } }
+                    }
                 }
             }
-        }
-    });
+        });
+    }
 
-    // Residents Trend Chart (mini line)
-    new Chart(document.getElementById('residentsTrendChart'), {
-        type: 'line',
-        data: {
-            labels: months,
-            datasets: [{
-                data: residentsData,
-                borderColor: '#667eea',
-                borderWidth: 2,
-                fill: false,
-                pointRadius: 2,
-                pointHoverRadius: 4,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { display: false, beginAtZero: true },
-                x: { display: false }
-            },
-            elements: { line: { borderWidth: 2 } }
-        }
-    });
-
-    // Certificates Trend Chart (mini line)
-    new Chart(document.getElementById('certificatesTrendChart'), {
-        type: 'line',
-        data: {
-            labels: months,
-            datasets: [{
-                data: certificatesData,
-                borderColor: '#f59e0b',
-                borderWidth: 2,
-                fill: false,
-                pointRadius: 2,
-                pointHoverRadius: 4,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { display: false, beginAtZero: true },
-                x: { display: false }
-            },
-            elements: { line: { borderWidth: 2 } }
-        }
-    });
-
-    // Blotters Trend Chart (mini line)
-    new Chart(document.getElementById('blottersTrendChart'), {
-        type: 'line',
-        data: {
-            labels: months,
-            datasets: [{
-                data: blottersData,
-                borderColor: '#ef4444',
-                borderWidth: 2,
-                fill: false,
-                pointRadius: 2,
-                pointHoverRadius: 4,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { display: false, beginAtZero: true },
-                x: { display: false }
-            },
-            elements: { line: { borderWidth: 2 } }
-        }
-    });
+    // Note: Mini trend charts are commented out in the HTML
+    // If you want to enable them, uncomment the HTML section and these chart initializations
 });
 </script>
 @endpush

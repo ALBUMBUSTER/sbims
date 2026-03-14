@@ -208,6 +208,35 @@
 
 @push('styles')
 <style>
+    /* for button add resident */
+    .btn-add-new-inline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.3s;
+    width: auto;
+    min-width: 160px;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-add-new-inline:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-add-new-inline i {
+    font-size: 0.9rem;
+}
 /* All your existing styles remain the same */
 .container-fluid {
     padding: 1.5rem;
@@ -1053,8 +1082,16 @@ function setupResidentSearch() {
                     results.appendChild(option);
                 });
             } else {
-                results.innerHTML = '<div class="no-results">No residents found</div>';
-                window.filteredResidents = [];
+                // Show "No residents found" with inline Add New Resident button
+                results.innerHTML = `
+                    <div class="no-results">
+                        <div class="no-results-message">No residents found</div>
+                        <a href="{{ route('secretary.residents.create') }}" target="_blank" class="btn-add-new-inline">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>Add New Resident</span>
+                        </a>
+                    </div>
+                `;
             }
         }, 300);
     });

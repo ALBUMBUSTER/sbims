@@ -125,7 +125,6 @@
                     <div class="form-group">
                         <label for="incident_date">Incident Date *</label>
                         <input type="date" id="incident_date" name="incident_date" value="{{ old('incident_date', date('Y-m-d')) }}" max="{{ date('Y-m-d') }}" required>
-                        <small>Must be today or earlier</small>
                     </div>
 
                     <div class="form-group">

@@ -32,7 +32,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'redirectToRoleDashboard'])->name('dashboard');
 
     // Secretary Routes
-Route::prefix('secretary')->name('secretary.')->group(function () {
+    Route::prefix('secretary')->name('secretary.')->group(function () {
     // Dashboard & Activities
     Route::get('/dashboard', [DashboardController::class, 'secretary'])->name('dashboard');
     Route::get('/activities', [DashboardController::class, 'activities'])->name('activities');
@@ -40,7 +40,10 @@ Route::prefix('secretary')->name('secretary.')->group(function () {
     // ===== RESIDENTS =====
     // IMPORT ROUTES - Place these BEFORE resource routes
     Route::get('/residents/import', [ResidentController::class, 'showImportForm'])->name('residents.import');
-    Route::post('/residents/import', [ResidentController::class, 'import'])->name('residents.import.post');
+    Route::post('/residents/import/upload', [ResidentController::class, 'uploadImport'])->name('residents.import.upload');
+    Route::post('/residents/import/map', [ResidentController::class, 'processMapping'])->name('residents.import.map');
+    Route::post('/residents/import/confirm', [ResidentController::class, 'confirmImport'])->name('residents.import.confirm');
+    Route::get('/residents/import/template', [ResidentController::class, 'downloadTemplate'])->name('residents.import.template');
 
     // ARCHIVE ROUTES - Place these BEFORE resource routes
     Route::post('/residents/{resident}/archive', [ResidentController::class, 'archive'])->name('residents.archive');

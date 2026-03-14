@@ -283,11 +283,11 @@
             </div>
 
             {{-- Import Form --}}
-            <form method="POST" action="{{ route('secretary.residents.import.post') }}" enctype="multipart/form-data" class="import-form" id="importForm">
+            <form method="POST" action="{{ route('secretary.residents.import.upload') }}" enctype="multipart/form-data" class="import-form" id="importForm">
                 @csrf
 
                 <div class="form-group">
-                    <label for="csv_file">
+                    <label for="import_file">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                             <polyline points="14 2 14 8 20 8"></polyline>
@@ -295,17 +295,17 @@
                             <line x1="16" y1="17" x2="8" y2="17"></line>
                             <polyline points="10 9 9 9 8 9"></polyline>
                         </svg>
-                        Select CSV File
+                        Select CSV or Excel File
                     </label>
                     <div class="file-input-wrapper">
                         <input type="file"
-                               name="csv_file"
-                               id="csv_file"
-                               accept=".csv, .txt"
-                               class="file-input @error('csv_file') is-invalid @enderror"
+                               name="import_file"
+                               id="import_file"
+                               accept=".csv, .txt, .xlsx, .xls"
+                               class="file-input @error('import_file') is-invalid @enderror"
                                required>
                         <div class="file-input-preview" id="filePreview">
-                            <span class="preview-placeholder">No file chosen</span>
+                            <span class="preview-placeholder" id="filePreviewText">No file chosen</span>
                         </div>
                     </div>
                     <small class="text-muted">
@@ -314,11 +314,26 @@
                             <line x1="12" y1="12" x2="12" y2="16"></line>
                             <line x1="12" y1="8" x2="12.01" y2="8"></line>
                         </svg>
-                        Only .csv files accepted (Max: 10MB)
+                        Supported formats: CSV, Excel (XLSX, XLS) - Max: 10MB
                     </small>
-                    @error('csv_file')
+                    @error('import_file')
                         <span class="error-message">{{ $message }}</span>
                     @enderror
+                </div>
+
+                <div class="smart-import-features">
+                    <div class="feature-badge">
+                        <i class="fas fa-magic"></i> Smart Column Detection
+                    </div>
+                    <div class="feature-badge">
+                        <i class="fas fa-calendar-alt"></i> Multiple Date Formats
+                    </div>
+                    <div class="feature-badge">
+                        <i class="fas fa-check-double"></i> Yes/No Auto-Convert
+                    </div>
+                    <div class="feature-badge">
+                        <i class="fas fa-columns"></i> Column Mapping Interface
+                    </div>
                 </div>
 
                 <div class="form-actions">
@@ -329,19 +344,9 @@
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                             <circle cx="12" cy="7" r="4"></circle>
                         </svg>
-                        <span id="btnText">Upload & Import</span>
+                        <span id="btnText">Upload & Continue</span>
                         <span id="btnSpinner" style="display: none;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="spinning">
-                                <line x1="12" y1="2" x2="12" y2="6"></line>
-                                <line x1="12" y1="18" x2="12" y2="22"></line>
-                                <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
-                                <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
-                                <line x1="2" y1="12" x2="6" y2="12"></line>
-                                <line x1="18" y1="12" x2="22" y2="12"></line>
-                                <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
-                                <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
-                            </svg>
-                            Processing...
+                            <i class="fas fa-spinner fa-spin"></i> Processing...
                         </span>
                     </button>
                     <a href="{{ route('secretary.residents.index') }}" class="btn-secondary">Cancel</a>
@@ -451,6 +456,31 @@
 
 .alert-warning .alert-icon svg {
     color: #856404;
+}
+
+.smart-import-features {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 8px;
+}
+
+.feature-badge {
+    background: #e9ecef;
+    color: #495057;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.feature-badge i {
+    color: #667eea;
 }
 
 /* Rest of your existing styles remain the same */
@@ -785,6 +815,10 @@
     gap: 0.5rem;
 }
 
+.preview-placeholder i {
+    font-size: 1rem;
+}
+
 .text-muted {
     display: block;
     margin-top: 8px;
@@ -1011,6 +1045,11 @@ svg {
     .alert-actions {
         flex-direction: column;
     }
+
+    .smart-import-features {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 }
 </style>
 @endpush
@@ -1018,25 +1057,26 @@ svg {
 @push('scripts')
 <script>
 // File input preview
-document.getElementById('csv_file')?.addEventListener('change', function(e) {
+document.getElementById('import_file')?.addEventListener('change', function(e) {
     const file = e.target.files[0];
-    const preview = document.querySelector('.file-input-preview');
-    const placeholder = preview.querySelector('.preview-placeholder');
+    const previewText = document.getElementById('filePreviewText');
+    const previewDiv = document.querySelector('.file-input-preview');
 
     if (file) {
         const fileSize = (file.size / 1024 / 1024).toFixed(2);
-        placeholder.innerHTML = `📄 ${file.name} (${fileSize} MB)`;
-        preview.classList.add('has-file');
+        previewText.innerHTML = `<i class="fas fa-file"></i> ${file.name} (${fileSize} MB)`;
+        previewDiv.classList.add('has-file');
 
+        // Check file size (10MB max)
         if (file.size > 10 * 1024 * 1024) {
             alert('File is too large! Maximum size is 10MB.');
             e.target.value = '';
-            placeholder.innerHTML = 'No file chosen';
-            preview.classList.remove('has-file');
+            previewText.innerHTML = 'No file chosen';
+            previewDiv.classList.remove('has-file');
         }
     } else {
-        placeholder.innerHTML = 'No file chosen';
-        preview.classList.remove('has-file');
+        previewText.innerHTML = 'No file chosen';
+        previewDiv.classList.remove('has-file');
     }
 });
 
@@ -1069,10 +1109,10 @@ function downloadSampleCSV() {
 
     rows.forEach(row => {
         const escapedRow = row.map(cell => {
-            if (cell.includes(',') || cell.includes('"') || cell.includes('\n')) {
+            if (cell && (cell.includes(',') || cell.includes('"') || cell.includes('\n'))) {
                 return `"${cell.replace(/"/g, '""')}"`;
             }
-            return cell;
+            return cell || '';
         }).join(',');
         csvContent += escapedRow + '\n';
     });
@@ -1150,6 +1190,11 @@ function showToast(message, type = 'success') {
         toast.classList.remove('show');
     }, 3000);
 }
+
+// Make functions globally available
+window.downloadSampleCSV = downloadSampleCSV;
+window.copyCSVExample = copyCSVExample;
+window.showToast = showToast;
 </script>
 
 {{-- Session messages --}}

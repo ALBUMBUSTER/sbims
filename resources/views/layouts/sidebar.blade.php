@@ -76,6 +76,18 @@
                             <span class="nav-text">Resident Records</span>
                         </a>
                     </li>
+                    <li class="nav-item {{ request()->routeIs('secretary.blotter.*') ? 'active' : '' }}">
+                        <a href="{{ route('secretary.blotter.index') }}">
+                            <span class="nav-icon"><x-heroicon-o-document-duplicate /></span>
+                            <span class="nav-text">Blotter Cases</span>
+                        </a>
+                    </li>
+                    <li class="nav-item {{ request()->routeIs('secretary.certificates.*') ? 'active' : '' }}">
+                        <a href="{{ route('secretary.certificates.index') }}">
+                            <span class="nav-icon"><x-heroicon-o-document-check /></span>
+                            <span class="nav-text">Certificates</span>
+                        </a>
+                    </li>
                     <li class="nav-item {{ request()->is('admin/logs*') ? 'active' : '' }}">
                         <a href="{{ route('admin.logs.index') }}">
                             <span class="nav-icon"><x-heroicon-o-document-text /></span>

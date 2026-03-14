@@ -45,52 +45,53 @@
             @endif
         </form>
     </div>
+
     <!-- Filter Section with Status Buttons and Civil Status Dropdown -->
     <div class="filter-section">
-    <div class="filter-left">
-        <div class="filter-label">Filter by Status:</div>
-        <div class="filter-buttons">
-            <a href="{{ route('secretary.residents.index', array_merge(request()->except('filter'), ['filter' => 'all'])) }}"
-               class="filter-btn {{ request('filter') == 'all' || !request('filter') ? 'active' : '' }}">
-                <span class="filter-dot all"></span>
-                All
-            </a>
-            <a href="{{ route('secretary.residents.index', array_merge(request()->except('filter'), ['filter' => 'voter'])) }}"
-               class="filter-btn {{ request('filter') == 'voter' ? 'active' : '' }}">
-                <span class="filter-dot voter"></span>
-                Voters
-            </a>
-            <a href="{{ route('secretary.residents.index', array_merge(request()->except('filter'), ['filter' => 'senior'])) }}"
-               class="filter-btn {{ request('filter') == 'senior' ? 'active' : '' }}">
-                <span class="filter-dot senior"></span>
-                Senior Citizens
-            </a>
-            <a href="{{ route('secretary.residents.index', array_merge(request()->except('filter'), ['filter' => 'pwd'])) }}"
-               class="filter-btn {{ request('filter') == 'pwd' ? 'active' : '' }}">
-                <span class="filter-dot pwd"></span>
-                PWD
-            </a>
-            <a href="{{ route('secretary.residents.index', array_merge(request()->except('filter'), ['filter' => '4ps'])) }}"
-               class="filter-btn {{ request('filter') == '4ps' ? 'active' : '' }}">
-                <span class="filter-dot fourps"></span>
-                4Ps Members
-            </a>
+        <div class="filter-left">
+            <div class="filter-label">Filter by Status:</div>
+            <div class="filter-buttons">
+                <a href="{{ route('secretary.residents.index', array_merge(request()->except('filter'), ['filter' => 'all'])) }}"
+                   class="filter-btn {{ request('filter') == 'all' || !request('filter') ? 'active' : '' }}">
+                    <span class="filter-dot all"></span>
+                    All
+                </a>
+                <a href="{{ route('secretary.residents.index', array_merge(request()->except('filter'), ['filter' => 'voter'])) }}"
+                   class="filter-btn {{ request('filter') == 'voter' ? 'active' : '' }}">
+                    <span class="filter-dot voter"></span>
+                    Voters
+                </a>
+                <a href="{{ route('secretary.residents.index', array_merge(request()->except('filter'), ['filter' => 'senior'])) }}"
+                   class="filter-btn {{ request('filter') == 'senior' ? 'active' : '' }}">
+                    <span class="filter-dot senior"></span>
+                    Senior Citizens
+                </a>
+                <a href="{{ route('secretary.residents.index', array_merge(request()->except('filter'), ['filter' => 'pwd'])) }}"
+                   class="filter-btn {{ request('filter') == 'pwd' ? 'active' : '' }}">
+                    <span class="filter-dot pwd"></span>
+                    PWD
+                </a>
+                <a href="{{ route('secretary.residents.index', array_merge(request()->except('filter'), ['filter' => '4ps'])) }}"
+                   class="filter-btn {{ request('filter') == '4ps' ? 'active' : '' }}">
+                    <span class="filter-dot fourps"></span>
+                    4Ps Members
+                </a>
+            </div>
         </div>
-    </div>
 
-    <div class="filter-right">
-        <div class="filter-label">Civil Status:</div>
-        <div class="dropdown-wrapper">
-            <select name="civil_filter" id="civilFilter" class="civil-dropdown" onchange="applyCivilFilter(this.value)">
-                <option value="all" {{ request('civil_filter') == 'all' || !request('civil_filter') ? 'selected' : '' }}>All Civil Status</option>
-                <option value="single" {{ request('civil_filter') == 'single' ? 'selected' : '' }}>Single</option>
-                <option value="married" {{ request('civil_filter') == 'married' ? 'selected' : '' }}>Married</option>
-                <option value="widowed" {{ request('civil_filter') == 'widowed' ? 'selected' : '' }}>Widowed</option>
-                <option value="divorced" {{ request('civil_filter') == 'divorced' ? 'selected' : '' }}>Divorced</option>
-            </select>
-            <i class="fas fa-chevron-down dropdown-icon"></i>
+        <div class="filter-right">
+            <div class="filter-label">Civil Status:</div>
+            <div class="dropdown-wrapper">
+                <select name="civil_filter" id="civilFilter" class="civil-dropdown" onchange="applyCivilFilter(this.value)">
+                    <option value="all" {{ request('civil_filter') == 'all' || !request('civil_filter') ? 'selected' : '' }}>All Civil Status</option>
+                    <option value="single" {{ request('civil_filter') == 'single' ? 'selected' : '' }}>Single</option>
+                    <option value="married" {{ request('civil_filter') == 'married' ? 'selected' : '' }}>Married</option>
+                    <option value="widowed" {{ request('civil_filter') == 'widowed' ? 'selected' : '' }}>Widowed</option>
+                    <option value="divorced" {{ request('civil_filter') == 'divorced' ? 'selected' : '' }}>Divorced</option>
+                </select>
+                <i class="fas fa-chevron-down dropdown-icon"></i>
+            </div>
         </div>
-    </div>
     </div>
 
     <div class="card">
@@ -126,51 +127,50 @@
                             <td>Purok {{ $resident->purok }}</td>
                             <td>{{ $resident->contact_number ?? 'N/A' }}</td>
                             <td>
-    <div class="status-badges">
-        @if(request('filter') == 'all' || !request('filter'))
-            {{-- Show all status badges when filter is 'all' or no filter --}}
-            @if($resident->is_voter) <span class="badge badge-voter" title="Registered Voter">V</span> @endif
-            @if($resident->is_senior) <span class="badge badge-senior" title="Senior Citizen">S</span> @endif
-            @if($resident->is_pwd) <span class="badge badge-pwd" title="PWD">P</span> @endif
-            @if($resident->is_4ps) <span class="badge badge-4ps" title="4Ps Member">4Ps</span> @endif
-        @else
-            {{-- Show only the filtered status badge --}}
-            @if(request('filter') == 'voter' && $resident->is_voter)
-                <span class="badge badge-voter" title="Registered Voter">V</span>
-            @endif
-            @if(request('filter') == 'senior' && $resident->is_senior)
-                <span class="badge badge-senior" title="Senior Citizen">S</span>
-            @endif
-            @if(request('filter') == 'pwd' && $resident->is_pwd)
-                <span class="badge badge-pwd" title="PWD">P</span>
-            @endif
-            @if(request('filter') == '4ps' && $resident->is_4ps)
-                <span class="badge badge-4ps" title="4Ps Member">4Ps</span>
-            @endif
-        @endif
-    </div>
-    </td>
+                                <div class="status-badges">
+                                    @if(request('filter') == 'all' || !request('filter'))
+                                        {{-- Show all status badges when filter is 'all' or no filter --}}
+                                        @if($resident->is_voter) <span class="badge badge-voter" title="Registered Voter">V</span> @endif
+                                        @if($resident->is_senior) <span class="badge badge-senior" title="Senior Citizen">S</span> @endif
+                                        @if($resident->is_pwd) <span class="badge badge-pwd" title="PWD">P</span> @endif
+                                        @if($resident->is_4ps) <span class="badge badge-4ps" title="4Ps Member">4Ps</span> @endif
+                                    @else
+                                        {{-- Show only the filtered status badge --}}
+                                        @if(request('filter') == 'voter' && $resident->is_voter)
+                                            <span class="badge badge-voter" title="Registered Voter">V</span>
+                                        @endif
+                                        @if(request('filter') == 'senior' && $resident->is_senior)
+                                            <span class="badge badge-senior" title="Senior Citizen">S</span>
+                                        @endif
+                                        @if(request('filter') == 'pwd' && $resident->is_pwd)
+                                            <span class="badge badge-pwd" title="PWD">P</span>
+                                        @endif
+                                        @if(request('filter') == '4ps' && $resident->is_4ps)
+                                            <span class="badge badge-4ps" title="4Ps Member">4Ps</span>
+                                        @endif
+                                    @endif
+                                </div>
+                            </td>
                             <td>
-    <div class="action-buttons">
-        <a href="{{ route('secretary.residents.show', $resident) }}" class="btn-icon" title="View">
-            <i class="fas fa-eye"></i>
-        </a>
-        <a href="{{ route('secretary.residents.edit', $resident) }}" class="btn-icon" title="Edit">
-            <i class="fas fa-pencil-alt"></i>
-        </a>
+                                <div class="action-buttons">
+                                    <a href="{{ route('secretary.residents.show', $resident) }}" class="btn-icon" title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ route('secretary.residents.edit', $resident) }}" class="btn-icon" title="Edit">
+                                        <i class="fas fa-pencil-alt"></i>
+                                    </a>
 
-        {{-- Archive Button - Hidden for Clerk --}}
-        @if(auth()->user()->role_id != 4) {{-- Not a clerk --}}
-        <button type="button" class="btn-icon archive-btn" title="Archive" onclick="confirmArchive('{{ $resident->id }}')">
-            <i class="fas fa-archive"></i>
-        </button>
-        <form id="archive-form-{{ $resident->id }}" action="{{ route('secretary.residents.archive', $resident) }}" method="POST" style="display: none;">
-            @csrf
-        </form>
-        @endif
-    </div>
-    </td>
-
+                                    {{-- Archive Button - Hidden for Clerk --}}
+                                    @if(auth()->user()->role_id != 4) {{-- Not a clerk --}}
+                                    <button type="button" class="btn-icon archive-btn" title="Archive" onclick="confirmArchive('{{ $resident->id }}')">
+                                        <i class="fas fa-archive"></i>
+                                    </button>
+                                    <form id="archive-form-{{ $resident->id }}" action="{{ route('secretary.residents.archive', $resident) }}" method="POST" style="display: none;">
+                                        @csrf
+                                    </form>
+                                    @endif
+                                </div>
+                            </td>
                         </tr>
                         @empty
                         <tr>
@@ -241,17 +241,19 @@
             @endif
         </div>
     </div>
-    </div>
+</div>
 
-    {{-- Archive Access Button - Hidden for Clerk --}}
-    @if(auth()->user()->role_id != 4) {{-- Not a clerk --}}
-    <div class="archive-access">
+{{-- Archive Access Button - Hidden for Clerk --}}
+@if(auth()->user()->role_id != 4) {{-- Not a clerk --}}
+<div class="archive-access">
     <a href="{{ route('secretary.residents.archived') }}" class="btn-archive">
         <i class="fas fa-archive"></i>
         View Archive ({{ \App\Models\Resident::onlyTrashed()->count() }})
     </a>
-    </div>
-    <!-- Custom Confirmation Modal -->
+</div>
+@endif
+
+<!-- Custom Confirmation Modal -->
 <div id="confirmModal" class="confirm-modal" style="display: none;">
     <div class="confirm-modal-content">
         <div class="confirm-modal-header">
@@ -269,7 +271,6 @@
         </div>
     </div>
 </div>
-@endif
 @endsection
 
 @push('styles')
@@ -294,7 +295,7 @@
     border-radius: 12px;
     width: 90%;
     max-width: 400px;
-    margin: 0 auto; /* Center horizontally */
+    margin: 0 auto;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
     animation: modalPop 0.3s ease forwards;
     transform: scale(0.9);
@@ -386,6 +387,7 @@
     from { opacity: 0; }
     to { opacity: 1; }
 }
+
 /* Shared styles */
 .container-fluid { padding: 1.5rem; }
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
@@ -477,7 +479,7 @@
     color: #333;
 }
 
-/* Filter Section - NEW */
+/* Filter Section */
 .filter-section {
     margin-bottom: 1.5rem;
     padding: 1rem;
@@ -488,6 +490,21 @@
     align-items: center;
     flex-wrap: wrap;
     gap: 1rem;
+}
+
+.filter-left {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    flex: 1;
+}
+
+.filter-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 250px;
 }
 
 .filter-label {
@@ -536,28 +553,50 @@
     display: inline-block;
 }
 
-.filter-dot.all {
-    background: #64748b;
+.filter-dot.all { background: #64748b; }
+.filter-dot.voter { background: #155724; }
+.filter-dot.senior { background: #004085; }
+.filter-dot.pwd { background: #856404; }
+.filter-dot.fourps { background: #553c9a; }
+
+.filter-btn.active .filter-dot { background: white; }
+
+/* Dropdown Styles */
+.dropdown-wrapper {
+    position: relative;
+    width: 180px;
 }
 
-.filter-dot.voter {
-    background: #155724;
-}
-
-.filter-dot.senior {
-    background: #004085;
-}
-
-.filter-dot.pwd {
-    background: #856404;
-}
-
-.filter-dot.fourps {
-    background: #553c9a;
-}
-
-.filter-btn.active .filter-dot {
+.civil-dropdown {
+    width: 100%;
+    padding: 0.6rem 2rem 0.6rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #333;
     background: white;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    transition: all 0.2s;
+}
+
+.civil-dropdown:hover { border-color: #667eea; }
+.civil-dropdown:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.dropdown-icon {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #667eea;
+    font-size: 12px;
+    pointer-events: none;
 }
 
 /* Buttons (shared) */
@@ -780,6 +819,39 @@
 .toast-icon.success { color: #10b981; }
 .toast-icon.error { color: #dc2626; }
 
+/* Archive Button */
+.archive-btn {
+    color: #8b5cf6;
+}
+.archive-btn:hover {
+    background: #ede9fe;
+    color: #6d28d9;
+}
+
+/* Archive Access Button */
+.archive-access {
+    margin-top: 2rem;
+    text-align: right;
+}
+
+.btn-archive {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: #f8fafc;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: all 0.3s;
+}
+
+.btn-archive:hover {
+    background: #e2e8f0;
+    color: #475569;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .page-actions {
@@ -814,6 +886,15 @@
         justify-content: center;
     }
 
+    .filter-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .dropdown-wrapper {
+        flex: 1;
+    }
+
     .empty-actions {
         flex-direction: column;
         gap: 0.5rem;
@@ -828,231 +909,6 @@
 @keyframes fadeOut {
     from { opacity: 1; transform: translate(-50%, 0); }
     to { opacity: 0; transform: translate(-50%, -10px); }
-}
-/* Civil Status Filter Section */
-.filter-section.civil-status {
-    margin-top: 0.5rem;
-    border-top: 1px dashed #e2e8f0;
-    padding-top: 1rem;
-}
-
-/* Civil Status Filter Dots */
-.filter-dot.single {
-    background: #3b82f6; /* Blue */
-}
-
-.filter-dot.married {
-    background: #10b981; /* Green */
-}
-
-.filter-dot.widowed {
-    background: #8b5cf6; /* Purple */
-}
-
-.filter-dot.divorced {
-    background: #f59e0b; /* Orange */
-}
-/* Filter Section Layout */
-.filter-section {
-    margin-bottom: 1.5rem;
-    padding: 1rem;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 1rem;
-}
-
-.filter-left {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 1rem;
-    flex: 1;
-}
-
-.filter-right {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    min-width: 250px;
-}
-
-.filter-label {
-    font-weight: 600;
-    color: #333;
-    font-size: 0.9rem;
-    white-space: nowrap;
-}
-
-.filter-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.filter-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    font-weight: 500;
-    text-decoration: none;
-    color: #4b5563;
-    background: white;
-    border: 1px solid #e2e8f0;
-    transition: all 0.2s;
-}
-
-.filter-btn:hover {
-    background: #f8fafc;
-    border-color: #667eea;
-}
-
-.filter-btn.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-color: transparent;
-}
-
-.filter-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    display: inline-block;
-}
-
-.filter-dot.all {
-    background: #64748b;
-}
-
-.filter-dot.voter {
-    background: #155724;
-}
-
-.filter-dot.senior {
-    background: #004085;
-}
-
-.filter-dot.pwd {
-    background: #856404;
-}
-
-.filter-dot.fourps {
-    background: #553c9a;
-}
-
-.filter-btn.active .filter-dot {
-    background: white;
-}
-
-/* Dropdown Styles */
-.dropdown-wrapper {
-    position: relative;
-    width: 180px;
-}
-
-.civil-dropdown {
-    width: 100%;
-    padding: 0.6rem 2rem 0.6rem 1rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    color: #333;
-    background: white;
-    cursor: pointer;
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    transition: all 0.2s;
-}
-
-.civil-dropdown:hover {
-    border-color: #667eea;
-}
-
-.civil-dropdown:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.dropdown-icon {
-    position: absolute;
-    right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #667eea;
-    font-size: 12px;
-    pointer-events: none;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .filter-section {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .filter-left {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .filter-buttons {
-        width: 100%;
-    }
-
-    .filter-btn {
-        flex: 1;
-        justify-content: center;
-    }
-
-    .filter-right {
-        width: 100%;
-        justify-content: space-between;
-    }
-
-    .dropdown-wrapper {
-        flex: 1;
-    }
-    /* Archive Button */
-.archive-btn {
-    color: #8b5cf6;
-}
-.archive-btn:hover {
-    background: #ede9fe;
-    color: #6d28d9;
-}
-
-/* Archive Access Button */
-.archive-access {
-    margin-top: 2rem;
-    text-align: right;
-}
-
-.btn-archive {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    background: #f8fafc;
-    color: #64748b;
-    border: 1px solid #e2e8f0;
-    border-radius: 5px;
-    text-decoration: none;
-    transition: all 0.3s;
-}
-
-.btn-archive:hover {
-    background: #e2e8f0;
-    color: #475569;
-}
 }
 </style>
 @endpush

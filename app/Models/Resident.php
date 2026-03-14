@@ -36,7 +36,6 @@ class Resident extends Model
         'emergency_contact_number',
         'profile_photo',
         'archived_at',
-         // Add this
     ];
     protected $dates = ['deleted_at']; // Add this if using older Laravel versions
     protected $casts = [

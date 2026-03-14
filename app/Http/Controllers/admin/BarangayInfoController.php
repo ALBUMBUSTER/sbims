@@ -90,16 +90,14 @@ class BarangayInfoController extends Controller
 
         // Certificate Statistics
         $totalCertificates = Certificate::count();
-        $clearanceCertificates = Certificate::where('certificate_type', 'Barangay Clearance')->count();
+        $clearanceCertificates = Certificate::where('certificate_type', 'Clearance')->count();
         $indigencyCertificates = Certificate::where('certificate_type', 'Indigency')->count();
         $residencyCertificates = Certificate::where('certificate_type', 'Residency')->count();
-        $goodMoralCertificates = Certificate::where('certificate_type', 'Good Moral')->count();
-        $otherCertificates = Certificate::whereNotIn('certificate_type', [
-            'Barangay Clearance', 'Indigency', 'Residency', 'Good Moral'
-        ])->count();
+        $otherCertificates = Certificate::whereNotIn('certificate_type', ['Clearance', 'Indigency', 'Residency',])->count();
 
         $pendingCertificates = Certificate::where('status', 'Pending')->count();
         $releasedCertificates = Certificate::where('status', 'Released')->count();
+        $rejectedCertificates = Certificate::where('status', 'Rejected')->count();
         $monthlyCertificates = Certificate::where('created_at', '>=', $startOfMonth)->count();
 
         // Officials Statistics
@@ -110,8 +108,8 @@ class BarangayInfoController extends Controller
         // For now, we'll set placeholder values for these
         $barangayTreasurer = 'Not set';
         $skChairman = 'Not set';
-        $kagawadsCount = 7; // Standard number
-        $tanodsCount = 10; // Placeholder
+        $kagawadsCount = 'Not set'; // Standard number
+        $tanodsCount = 'Not set'; // Placeholder
 
         // Monthly Transactions
         $monthlyTransactions = $monthlyCertificates + $monthlyBlotters + $newResidentsMonth;
@@ -149,10 +147,10 @@ class BarangayInfoController extends Controller
             'clearance_certificates' => $clearanceCertificates,
             'indigency_certificates' => $indigencyCertificates,
             'residency_certificates' => $residencyCertificates,
-            'good_moral_certificates' => $goodMoralCertificates,
             'other_certificates' => $otherCertificates,
             'pending_certificates' => $pendingCertificates,
             'released_certificates' => $releasedCertificates,
+            'rejected_certificates' => $rejectedCertificates,
             'certificates_month' => $monthlyCertificates,
 
             // Officials stats

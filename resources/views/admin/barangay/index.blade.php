@@ -4,7 +4,7 @@
 
 @push('styles')
 <!-- Remove Font Awesome CDN since it's already in layouts.app -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{{ asset('js/chart.umd.min.js') }}"></script>
 
 <style>
     .barangay-stats-container {
@@ -783,42 +783,50 @@
                         </ul>
                     </div>
 
-                    <!-- Certificates by Type -->
-                    <div class="info-box">
-                        <div class="info-box-header"><i class="fas fa-file-alt"></i> Certificates Issued</div>
-                        <ul class="info-list">
-                            <li class="info-list-item">
-                                <span class="info-list-label"><i class="fas fa-id-card"></i> Barangay Clearance</span>
-                                <span class="info-list-value">{{ number_format($statistics['clearance_certificates'] ?? 0) }}</span>
-                            </li>
-                            <li class="info-list-item">
-                                <span class="info-list-label"><i class="fas fa-hand-holding-heart"></i> Indigency</span>
-                                <span class="info-list-value">{{ number_format($statistics['indigency_certificates'] ?? 0) }}</span>
-                            </li>
-                            <li class="info-list-item">
-                                <span class="info-list-label"><i class="fas fa-map-pin"></i> Residency</span>
-                                <span class="info-list-value">{{ number_format($statistics['residency_certificates'] ?? 0) }}</span>
-                            </li>
-                            <li class="info-list-item">
-                                <span class="info-list-label"><i class="fas fa-star"></i> Good Moral</span>
-                                <span class="info-list-value">{{ number_format($statistics['good_moral_certificates'] ?? 0) }}</span>
-                            </li>
-                            <li class="info-list-item">
-                                <span class="info-list-label"><i class="fas fa-file"></i> Others</span>
-                                <span class="info-list-value">{{ number_format($statistics['other_certificates'] ?? 0) }}</span>
-                            </li>
-                            <li class="info-list-item" style="border-top: 1px dashed #cbd5e0; margin-top: 0.5rem; padding-top: 0.75rem;">
-                                <span class="info-list-label"><i class="fas fa-hourglass-half"></i> Pending</span>
-                                <span class="info-list-value">{{ number_format($statistics['pending_certificates'] ?? 0) }}</span>
-                            </li>
-                            <li class="info-list-item">
-                                <span class="info-list-label"><i class="fas fa-check-double"></i> Released</span>
-                                <span class="info-list-value">{{ number_format($statistics['released_certificates'] ?? 0) }}</span>
-                            </li>
-                        </ul>
-                    </div>
+                   <!-- Certificates by Type -->
+<div class="info-box">
+    <div class="info-box-header"><i class="fas fa-file-alt"></i> Certificates Issued</div>
+    <ul class="info-list">
+        <li class="info-list-item">
+            <span class="info-list-label"><i class="fas fa-id-card"></i> Barangay Clearance</span>
+            <span class="info-list-value">{{ number_format($statistics['clearance_certificates'] ?? 0) }}</span>
+        </li>
+        <li class="info-list-item">
+            <span class="info-list-label"><i class="fas fa-hand-holding-heart"></i> Indigency</span>
+            <span class="info-list-value">{{ number_format($statistics['indigency_certificates'] ?? 0) }}</span>
+        </li>
+        <li class="info-list-item">
+            <span class="info-list-label"><i class="fas fa-map-pin"></i> Residency</span>
+            <span class="info-list-value">{{ number_format($statistics['residency_certificates'] ?? 0) }}</span>
+        </li>
+        {{-- Remove Good Moral and Others --}}
+        {{--
+        <li class="info-list-item">
+            <span class="info-list-label"><i class="fas fa-star"></i> Good Moral</span>
+            <span class="info-list-value">{{ number_format($statistics['good_moral_certificates'] ?? 0) }}</span>
+        </li>
+        <li class="info-list-item">
+            <span class="info-list-label"><i class="fas fa-file"></i> Others</span>
+            <span class="info-list-value">{{ number_format($statistics['other_certificates'] ?? 0) }}</span>
+        </li>
+        --}}
+        <li class="info-list-item" style="border-top: 1px dashed #cbd5e0; margin-top: 0.5rem; padding-top: 0.75rem;">
+            <span class="info-list-label"><i class="fas fa-hourglass-half"></i> Pending</span>
+            <span class="info-list-value">{{ number_format($statistics['pending_certificates'] ?? 0) }}</span>
+        </li>
+        <li class="info-list-item">
+            <span class="info-list-label"><i class="fas fa-check-double"></i> Released</span>
+            <span class="info-list-value">{{ number_format($statistics['released_certificates'] ?? 0) }}</span>
+        </li>
+        <li class="info-list-item">
+            <span class="info-list-label"><i class="fas fa-times-circle"></i> Rejected</span>
+            <span class="info-list-value">{{ number_format($statistics['rejected_certificates'] ?? 0) }}</span>
+        </li>
+    </ul>
+</div>
 
                     <!-- Barangay Officials -->
+                    {{-- "number_format" to set the value to 0 if null --}}
                     <div class="info-box">
                         <div class="info-box-header"><i class="fas fa-id-badge"></i> Barangay Officials</div>
                         <ul class="info-list">
@@ -836,7 +844,7 @@
                             </li>
                             <li class="info-list-item">
                                 <span class="info-list-label"><i class="fas fa-users-between-lines"></i> Kagawads</span>
-                                <span class="info-list-value">{{ number_format($statistics['kagawads_count'] ?? 0) }}</span>
+                                <span class="info-list-value">{{ $statistics['kagawads_count'] ?? 'Not set' }}</span>
                             </li>
                             <li class="info-list-item">
                                 <span class="info-list-label"><i class="fas fa-child"></i> SK Chairman</span>
@@ -844,7 +852,7 @@
                             </li>
                             <li class="info-list-item">
                                 <span class="info-list-label"><i class="fas fa-shield-halved"></i> Barangay Tanods</span>
-                                <span class="info-list-value">{{ number_format($statistics['tanods_count'] ?? 0) }}</span>
+                                <span class="info-list-value">{{ $statistics['tanods_count'] ?? 'Not set' }}</span>
                             </li>
                         </ul>
                     </div>
@@ -895,20 +903,20 @@
         </div>
 
         <!-- Update Note for Statistics -->
-        @if(auth()->user() && (auth()->user()->role_id == 1 || auth()->user()->role_id == 2))
+        {{-- @if(auth()->user() && (auth()->user()->role_id == 1 || auth()->user()->role_id == 2))
         <div class="update-note">
             <span><i class="fas fa-info-circle"></i> <strong>Note:</strong> Statistics are automatically updated from your records.</span>
             <button class="btn-edit-stats" onclick="openStatsModal()">
                 <i class="fas fa-pen-to-square"></i> Edit Statistics Manually
             </button>
         </div>
-        @endif
+        @endif --}}
 
         <!-- Data Visualization Section -->
         <div class="barangay-detail-section">
             <div class="section-header">
                 <h3><i class="fas fa-chart-pie"></i> Barangay Data Visualization</h3>
-                <div class="badge"><i class="fas fa-sync-alt"></i> Real-time data</div>
+                {{-- <div class="badge"><i class="fas fa-sync-alt"></i> Real-time data</div> --}}
             </div>
 
             <!-- Chart Tabs for different views -->
@@ -954,7 +962,7 @@
                 <div class="chart-card" data-chart="demographics">
                     <div class="chart-header">
                         <h4><i class="fas fa-tags"></i> Resident Categories</h4>
-                        <span class="stat-highlight">{{ $statistics['senior_citizens'] ?? 0 }} Seniors</span>
+                        <span class="stat-highlight">{{ $statistics['four_ps'] ?? 0 }} 4ps</span>
                     </div>
                     <div class="chart-container">
                         <canvas id="categoriesChart"></canvas>
@@ -980,33 +988,35 @@
                 </div>
 
                 <!-- Certificate Types Chart -->
-                <div class="chart-card" data-chart="certificates">
-                    <div class="chart-header">
-                        <h4><i class="fas fa-file-alt"></i> Certificates by Type</h4>
-                        <span class="stat-highlight">{{ $statistics['certificates_month'] ?? 0 }} this month</span>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="certificatesChart"></canvas>
-                    </div>
-                    <div class="chart-legend">
-                        <div class="legend-item">
-                            <div class="legend-color" style="background: #4299e1;"></div>
-                            <span>Clearance: {{ number_format($statistics['clearance_certificates'] ?? 0) }}</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-color" style="background: #48bb78;"></div>
-                            <span>Indigency: {{ number_format($statistics['indigency_certificates'] ?? 0) }}</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-color" style="background: #ecc94b;"></div>
-                            <span>Residency: {{ number_format($statistics['residency_certificates'] ?? 0) }}</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-color" style="background: #9f7aea;"></div>
-                            <span>Good Moral: {{ number_format($statistics['good_moral_certificates'] ?? 0) }}</span>
-                        </div>
-                    </div>
-                </div>
+<div class="chart-card" data-chart="certificates">
+    <div class="chart-header">
+        <h4><i class="fas fa-file-alt"></i> Certificates by Type</h4>
+        <span class="stat-highlight">{{ $statistics['certificates_month'] ?? 0 }} this month</span>
+    </div>
+    <div class="chart-container">
+        <canvas id="certificatesChart"></canvas>
+    </div>
+    <div class="chart-legend">
+        <div class="legend-item">
+            <div class="legend-color" style="background: #4299e1;"></div>
+            <span>Clearance: {{ number_format($statistics['clearance_certificates'] ?? 0) }}</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #48bb78;"></div>
+            <span>Indigency: {{ number_format($statistics['indigency_certificates'] ?? 0) }}</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #ecc94b;"></div>
+            <span>Residency: {{ number_format($statistics['residency_certificates'] ?? 0) }}</span>
+        </div>
+        {{-- Remove Good Moral
+        <div class="legend-item">
+            <div class="legend-color" style="background: #9f7aea;"></div>
+            <span>Good Moral: {{ number_format($statistics['good_moral_certificates'] ?? 0) }}</span>
+        </div>
+        --}}
+    </div>
+</div>
 
                 <!-- Blotter Status Chart -->
                 <div class="chart-card" data-chart="blotters">
@@ -1038,7 +1048,7 @@
                 </div>
 
                 <!-- Monthly Trends Chart (Line Chart) -->
-                <div class="chart-card wide" data-chart="all">
+                {{-- <div class="chart-card wide" data-chart="all">
                     <div class="chart-header">
                         <h4><i class="fas fa-chart-line"></i> Monthly Trends</h4>
                         <span class="stat-highlight">{{ $statistics['monthly_transactions'] ?? 0 }} total transactions</span>
@@ -1060,7 +1070,7 @@
                             <span>Blotter Cases</span>
                         </div>
                     </div>
-                </div>
+                </div> --}}
 
                 <!-- Purok Distribution Chart (Bar Chart) -->
                 <div class="chart-card wide" data-chart="purok">
@@ -1404,9 +1414,9 @@
         charts.certificates = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: ['Clearance', 'Indigency', 'Residency', 'Good Moral', 'Others'],
+                labels: ['Clearance', 'Indigency', 'Residency',],
                 datasets: [{
-                    data: [stats.clearance, stats.indigency, stats.residency, stats.moral, stats.other],
+                    data: [stats.clearance, stats.indigency, stats.residency],
                     backgroundColor: ['#4299e1', '#48bb78', '#ecc94b', '#9f7aea', '#f56565'],
                     borderWidth: 0,
                     borderRadius: 5

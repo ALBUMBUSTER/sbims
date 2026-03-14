@@ -3,60 +3,67 @@
 @section('title', 'Archived Blotter Cases')
 
 @section('content')
-<div class="container-fluid">
-    <div class="page-header">
-        <div class="page-title">
-            <h1>Archived Blotter Cases</h1>
-            <p>Restore or permanently delete archived cases</p>
-        </div>
-        <div class="page-actions">
-            <a href="{{ route('secretary.blotter.index') }}" class="btn-secondary">
-                <i class="fas fa-arrow-left icon-small"></i>
-                Back to Blotters
-            </a>
-        </div>
-    </div>
-
-    <!-- Search -->
-    <div class="filters-section">
-        <form action="{{ route('secretary.blotter.archived') }}" method="GET" class="filters-form">
-            <div class="search-wrapper">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text"
-                       name="search"
-                       placeholder="Search archived cases..."
-                       value="{{ request('search') }}"
-                       class="search-input">
+<div class="main-container">
+    <main class="content">
+        <div class="page-header">
+            <div class="page-title">
+                <h1><i class="fas fa-archive" style="color: #667eea;"></i> Archived Blotter Cases</h1>
+                <p>Restore or permanently delete archived cases</p>
             </div>
-            <button type="submit" class="btn-filter">Search</button>
-            <a href="{{ route('secretary.blotter.archived') }}" class="btn-clear">Clear</a>
-        </form>
-    </div>
+            <div class="page-actions">
+                <a href="{{ route('secretary.blotter.index') }}" class="btn btn-outline">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Blotters
+                </a>
+            </div>
+        </div>
 
-    <!-- Custom Confirmation Modal -->
-    <div id="confirmModal" class="confirm-modal" style="display: none;">
-        <div class="confirm-modal-content">
-            <div class="confirm-modal-header">
-                <div class="confirm-icon">
-                    <i class="fas fa-exclamation-triangle"></i>
+        <!-- Search -->
+        <div class="filter-container">
+            <form action="{{ route('secretary.blotter.archived') }}" method="GET" class="filter-form">
+                <div class="search-wrapper">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text"
+                           name="search"
+                           placeholder="Search archived cases..."
+                           value="{{ request('search') }}"
+                           class="search-input">
+                    <button type="submit" class="btn btn-primary">Search</button>
+                    <a href="{{ route('secretary.blotter.archived') }}" class="btn btn-secondary">Clear</a>
                 </div>
-                <h3>Confirm Action</h3>
-            </div>
-            <div class="confirm-modal-body">
-                <p id="confirmMessage">Are you sure?</p>
-            </div>
-            <div class="confirm-modal-footer">
-                <button type="button" class="btn-cancel" onclick="closeConfirmModal()">Cancel</button>
-                <button type="button" class="btn-confirm" id="confirmActionBtn">Confirm</button>
+            </form>
+        </div>
+
+        <!-- Custom Confirmation Modal -->
+        <div id="confirmModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3 id="modalTitle">Confirm Action</h3>
+                </div>
+                <div class="modal-body">
+                    <p id="confirmMessage">Are you sure?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeConfirmModal()">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmActionBtn">Confirm</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Archived Cases Table -->
-    <div class="card">
-        <div class="card-body">
+        <!-- Archived Cases Table -->
+        <div class="data-table">
+            <div class="table-header">
+                <h3><i class="fas fa-archive" style="color: #667eea;"></i> Archived Cases</h3>
+                <div class="table-info">
+                    <span class="badge">Total: {{ $archived->total() }}</span>
+                </div>
+            </div>
+
             <div class="table-responsive">
-                <table class="data-table">
+                <table class="table">
                     <thead>
                         <tr>
                             <th>Case ID</th>
@@ -75,8 +82,9 @@
                                 <span class="case-id">{{ $case->case_id }}</span>
                             </td>
                             <td>
-                                <div class="resident-info">
-                                    <span class="resident-name">{{ $case->complainant->first_name ?? '' }} {{ $case->complainant->last_name ?? '' }}</span>
+                                <div class="user-info">
+                                    <span class="user-avatar">{{ substr($case->complainant->first_name ?? 'U', 0, 1) }}{{ substr($case->complainant->last_name ?? 'N', 0, 1) }}</span>
+                                    <span>{{ $case->complainant->first_name ?? '' }} {{ $case->complainant->last_name ?? '' }}</span>
                                 </div>
                             </td>
                             <td>{{ $case->respondent_name }}</td>
@@ -93,16 +101,17 @@
                                 <div class="action-buttons">
                                     <button type="button" class="btn-icon restore-btn" title="Restore"
                                         onclick="confirmRestore('{{ $case->id }}')">
-                                        <i class="fas fa-undo"></i>
+                                        <i class="fas fa-undo-alt"></i>
                                     </button>
                                     <form id="restore-form-{{ $case->id }}" action="{{ route('secretary.blotter.restore', $case->id) }}" method="POST" style="display: none;">
                                         @csrf
                                     </form>
 
-                                    @if(auth()->user()->role_id <= 2) {{-- Admin or Secretary --}}
+                                    {{-- Delete button visible for Admin, Secretary, and Captain (role_id 1, 2, 3) --}}
+                                    @if(in_array(auth()->user()->role_id, [1, 2, 3]))
                                     <button type="button" class="btn-icon delete-btn" title="Delete Permanently"
                                         onclick="confirmForceDelete('{{ $case->id }}')">
-                                        <i class="fas fa-trash"></i>
+                                        <i class="fas fa-trash-alt"></i>
                                     </button>
                                     <form id="force-delete-form-{{ $case->id }}" action="{{ route('secretary.blotter.force-delete', $case->id) }}" method="POST" style="display: none;">
                                         @csrf
@@ -116,7 +125,7 @@
                         <tr>
                             <td colspan="7" class="text-center">
                                 <div class="empty-state">
-                                    <i class="fas fa-archive empty-icon"></i>
+                                    <i class="fas fa-archive"></i>
                                     <h3>No archived cases found</h3>
                                     <p>Archived blotter cases will appear here.</p>
                                 </div>
@@ -133,85 +142,355 @@
             </div>
             @endif
         </div>
-    </div>
+    </main>
 </div>
 @endsection
 
 @push('styles')
 <style>
-/* Add these styles to your existing styles */
-.restore-btn {
-    color: #10b981;
-}
-.restore-btn:hover {
-    background: #d1fae5;
-    color: #065f46;
+.main-container {
+    display: flex;
+    min-height: calc(100vh - 70px);
+    background: #f8fafc;
 }
 
-.confirm-modal {
+.content {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    background: white;
+    padding: 1.5rem 2rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.page-title h1 {
+    color: #333;
+    margin-bottom: 0.5rem;
+    font-size: 1.8rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.page-title p {
+    color: #666;
+    font-size: 0.95rem;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-outline {
+    background: white;
+    border: 2px solid #667eea;
+    color: #667eea;
+}
+
+.btn-outline:hover {
+    background: #667eea;
+    color: white;
+}
+
+.btn-primary {
+    background: #667eea;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #5a67d8;
+}
+
+.btn-secondary {
+    background: #e2e8f0;
+    color: #4a5568;
+}
+
+.btn-secondary:hover {
+    background: #cbd5e0;
+}
+
+.btn-danger {
+    background: #dc2626;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #b91c1c;
+}
+
+.filter-container {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.search-wrapper {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    position: relative;
+}
+
+.search-icon {
+    position: absolute;
+    left: 1rem;
+    color: #999;
+    z-index: 1;
+}
+
+.search-input {
+    flex: 1;
+    padding: 0.8rem 1rem 0.8rem 2.8rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.data-table {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+
+.table-header {
+    padding: 1.2rem 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.table-header h3 {
+    margin: 0;
+    color: #333;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.table-info .badge {
+    background: #e2e8f0;
+    color: #4a5568;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th {
+    text-align: left;
+    padding: 1rem 1.5rem;
+    background: #f8fafc;
+    color: #4a5568;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.table td {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    color: #333;
+    vertical-align: middle;
+}
+
+.table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+.case-id {
+    font-family: monospace;
+    font-weight: 600;
+    color: #667eea;
+    background: #eef2ff;
+    padding: 0.3rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.incident-type {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    background: #e9ecef;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    color: #4a5568;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.status-pending { background: #fff3cd; color: #856404; }
+.status-investigating { background: #cce5ff; color: #004085; }
+.status-hearings { background: #e2d5f1; color: #553c9a; }
+.status-settled { background: #d4edda; color: #155724; }
+.status-dropped { background: #fee2e2; color: #991b1b; }
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-icon {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 6px;
+    background: #f8fafc;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-icon:hover {
+    background: #e2e8f0;
+    transform: translateY(-1px);
+}
+
+.restore-btn { color: #10b981; }
+.restore-btn:hover { background: #d1fae5; color: #065f46; }
+
+.delete-btn { color: #dc2626; }
+.delete-btn:hover { background: #fee2e2; color: #b91c1c; }
+
+/* Modal */
+.modal {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0,0,0,0.5);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 9999;
-    animation: fadeIn 0.3s ease forwards;
+    animation: fadeIn 0.3s ease;
 }
 
-.confirm-modal-content {
+.modal-content {
     background: white;
     border-radius: 12px;
     width: 90%;
     max-width: 400px;
-    margin: 0 auto;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-    animation: modalPop 0.3s ease forwards;
-    transform: scale(0.9);
-    opacity: 0;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    animation: slideIn 0.3s ease;
 }
 
-@keyframes modalPop {
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-30px);
+        opacity: 0;
+    }
     to {
-        transform: scale(1);
+        transform: translateY(0);
         opacity: 1;
     }
 }
 
-.confirm-modal-header {
-    padding: 1.5rem 1.5rem 0.5rem 1.5rem;
+.modal-header {
+    padding: 1.5rem 1.5rem 0.5rem;
     text-align: center;
 }
 
-.confirm-icon {
+.modal-icon {
     font-size: 3rem;
     color: #f59e0b;
     margin-bottom: 0.5rem;
 }
 
-.confirm-modal-header h3 {
+.modal-header h3 {
     color: #333;
     font-size: 1.3rem;
     margin: 0;
     font-weight: 600;
 }
 
-.confirm-modal-body {
+.modal-body {
     padding: 1rem 1.5rem;
     text-align: center;
 }
 
-.confirm-modal-body p {
+.modal-body p {
     color: #666;
     font-size: 1rem;
     line-height: 1.5;
     margin: 0;
 }
 
-.confirm-modal-footer {
+.modal-footer {
     padding: 1.5rem;
     display: flex;
     gap: 1rem;
@@ -219,58 +498,82 @@
     border-top: 1px solid #e2e8f0;
 }
 
-.btn-cancel {
-    padding: 0.75rem 1.5rem;
-    background: #f3f4f6;
-    color: #4b5563;
-    border: none;
-    border-radius: 5px;
-    font-size: 0.95rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s;
-    flex: 1;
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #666;
 }
 
-.btn-cancel:hover {
-    background: #e5e7eb;
+.empty-state i {
+    font-size: 3rem;
+    color: #e2e8f0;
+    margin-bottom: 1rem;
 }
 
-.btn-confirm {
-    padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    border-radius: 5px;
-    font-size: 0.95rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s;
-    flex: 1;
+.empty-state h3 {
+    color: #333;
+    margin-bottom: 0.5rem;
 }
 
-.btn-confirm:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+.empty-state p {
+    color: #999;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+/* Pagination */
+.pagination-wrapper {
+    padding: 1.5rem;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .content {
+        padding: 1rem;
+    }
+
+    .page-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+
+    .search-wrapper {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-icon {
+        left: 1rem;
+        top: 1.2rem;
+    }
+
+    .search-input {
+        padding-left: 2.5rem;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .btn-icon {
+        width: 100%;
+    }
 }
 </style>
 @endpush
 
 @push('scripts')
 <script>
-// Confirmation modal variables
 let currentAction = null;
 let currentFormId = null;
 
 function confirmRestore(id) {
     currentAction = 'restore';
     currentFormId = id;
+    document.getElementById('modalTitle').textContent = 'Restore Case';
     document.getElementById('confirmMessage').textContent = 'Are you sure you want to restore this archived case?';
     document.getElementById('confirmModal').style.display = 'flex';
     document.body.style.overflow = 'hidden';
@@ -279,6 +582,7 @@ function confirmRestore(id) {
 function confirmForceDelete(id) {
     currentAction = 'forceDelete';
     currentFormId = id;
+    document.getElementById('modalTitle').textContent = 'Permanently Delete Case';
     document.getElementById('confirmMessage').textContent = 'Are you sure you want to permanently delete this case? This action cannot be undone.';
     document.getElementById('confirmModal').style.display = 'flex';
     document.body.style.overflow = 'hidden';

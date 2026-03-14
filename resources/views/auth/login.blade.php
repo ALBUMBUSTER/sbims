@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>SBIMS-PRO - Login</title>
-    <!-- Font Awesome 6 (Free) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         * {
             margin: 0;
@@ -578,7 +577,7 @@
         <div class="login-container">
             <div class="login-header">
                 <div class="logo">
-                    <img src="{{ asset('assets/img/logo1.png') }}" alt="Barangay Libertad Logo" class="logo-img">
+                    <img src="{{ asset('assets/img/logo..png') }}" alt="Barangay Libertad Logo" class="logo-img">
                 </div>
                 <h1>SBIMS-PRO</h1>
                 <p>Brgy. Libertad, Isabel, Leyte</p>
@@ -624,14 +623,14 @@
         <i class="fas fa-key"></i> Forgot password?
     </a>
 </div>
-
-            <div class="login-footer">
+            {{-- enable if need additional ui --}}
+            {{-- <div class="login-footer">
                 <p>
                     <i class="fas fa-copyright"></i>
                     2026 Barangay Libertad. All rights reserved.
                     <i class="fas fa-heart" style="color: #ef4444;"></i>
                 </p>
-            </div>
+            </div> --}}
         </div>
     </div>
 

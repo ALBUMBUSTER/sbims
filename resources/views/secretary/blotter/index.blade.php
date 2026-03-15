@@ -12,20 +12,20 @@
 </div>
 
 <!-- Custom Confirmation Modal -->
-<div id="confirmModal" class="modal" style="display: none;">
-    <div class="modal-content">
-        <div class="modal-header">
-            <div class="modal-icon">
+<div id="confirmModal" class="confirm-modal" style="display: none;">
+    <div class="confirm-modal-content">
+        <div class="confirm-modal-header">
+            <div class="confirm-icon">
                 <i class="fas fa-exclamation-triangle"></i>
             </div>
-            <h3 id="modalTitle">Confirm Action</h3>
+            <h3 id="modalTitle">Confirm Archive</h3>
         </div>
-        <div class="modal-body">
-            <p id="confirmMessage">Are you sure?</p>
+        <div class="confirm-modal-body">
+            <p id="confirmMessage">Are you sure you want to archive this blotter case? It will be moved to the archive.</p>
         </div>
-        <div class="modal-footer">
+        <div class="confirm-modal-footer">
             <button type="button" class="btn-cancel" onclick="closeConfirmModal()">Cancel</button>
-            <button type="button" class="btn-confirm" id="confirmActionBtn">Confirm</button>
+            <button type="button" class="btn-confirm" id="confirmActionBtn">Yes, Archive</button>
         </div>
     </div>
 </div>
@@ -152,7 +152,7 @@
                                 <span class="incident-type">{{ $blotter->incident_type }}</span>
                             </td>
                             <td>{{ $blotter->incident_date ? $blotter->incident_date->format('M d, Y') : 'N/A' }}</td>
-                            <td>{{ $blotter->incident_location }}</td>
+                            <td>{{ Str::limit($blotter->incident_location, 15) }}</td>
                             <td>
                                 <span class="status-badge status-{{ strtolower($blotter->status) }}">
                                     {{ $blotter->status }}
@@ -168,17 +168,17 @@
                                     </a>
 
                                     {{-- Archive Button - Hidden for Clerk --}}
-                                    @if(auth()->user()->role_id != 4) {{-- Not a clerk --}}
-                                    <button type="button" class="btn-icon archive-btn" title="Archive"
-                                        onclick="confirmArchive('{{ $blotter->id }}')">
-                                        <i class="fas fa-archive"></i>
-                                    </button>
-                                    <form id="archive-form-{{ $blotter->id }}"
-                                          action="{{ route('secretary.blotter.archive', $blotter) }}"
-                                          method="POST" style="display: none;">
-                                        @csrf
-                                    </form>
-                                    @endif
+@if(auth()->user()->role_id != 4) {{-- Not a clerk --}}
+<button type="button" class="btn-icon archive-btn" title="Archive"
+    onclick="confirmArchive('{{ $blotter->id }}')">
+    <i class="fas fa-archive"></i>
+</button>
+<form id="archive-form-{{ $blotter->id }}"
+      action="{{ route('secretary.blotter.archive', $blotter) }}"
+      method="POST" style="display: none;">
+    @csrf
+</form>
+@endif
                                 </div>
                             </td>
                         </tr>
@@ -202,10 +202,47 @@
             </div>
 
             @if($blotters->hasPages())
-            <div class="pagination-wrapper">
-                {{ $blotters->links() }}
-            </div>
+<div class="pagination-container">
+    <div class="pagination-info">
+        Showing <span>{{ $blotters->firstItem() }}</span> to <span>{{ $blotters->lastItem() }}</span> of <span>{{ $blotters->total() }}</span> results
+    </div>
+
+    <div class="pagination-links">
+        {{-- Previous Page Link --}}
+        @if($blotters->onFirstPage())
+            <span class="pagination-link disabled"><i class="fas fa-chevron-left"></i> Previous</span>
+        @else
+            <a href="{{ $blotters->previousPageUrl() }}" class="pagination-link"><i class="fas fa-chevron-left"></i> Previous</a>
+        @endif
+
+        {{-- Pagination Elements --}}
+        @foreach($blotters->links()->elements as $element)
+            {{-- "Three Dots" Separator --}}
+            @if(is_string($element))
+                <span class="pagination-link dots">{{ $element }}</span>
             @endif
+
+            {{-- Array Of Links --}}
+            @if(is_array($element))
+                @foreach($element as $page => $url)
+                    @if($page == $blotters->currentPage())
+                        <span class="pagination-link active">{{ $page }}</span>
+                    @else
+                        <a href="{{ $url }}" class="pagination-link">{{ $page }}</a>
+                    @endif
+                @endforeach
+            @endif
+        @endforeach
+
+        {{-- Next Page Link --}}
+        @if($blotters->hasMorePages())
+            <a href="{{ $blotters->nextPageUrl() }}" class="pagination-link">Next <i class="fas fa-chevron-right"></i></a>
+        @else
+            <span class="pagination-link disabled">Next <i class="fas fa-chevron-right"></i></span>
+        @endif
+    </div>
+</div>
+@endif
         </div>
     </div>
 
@@ -599,125 +636,118 @@
         font-size: 16px;
     }
 
-    /* Modal Styles */
-    .modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        animation: fadeIn 0.3s ease;
-    }
+    /* Confirm Modal Styles (matching residents) */
+.confirm-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeIn 0.3s ease forwards;
+}
 
-    .modal-content {
-        background: white;
-        border-radius: 12px;
-        width: 90%;
-        max-width: 400px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-        animation: slideIn 0.3s ease;
-    }
+.confirm-modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+    margin: 0 auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    animation: modalPop 0.3s ease forwards;
+    transform: scale(0.9);
+    opacity: 0;
+}
 
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
+@keyframes modalPop {
+    to {
+        transform: scale(1);
+        opacity: 1;
     }
+}
 
-    @keyframes slideIn {
-        from {
-            transform: translateY(-30px);
-            opacity: 0;
-        }
-        to {
-            transform: translateY(0);
-            opacity: 1;
-        }
-    }
+.confirm-modal-header {
+    padding: 1.5rem 1.5rem 0.5rem 1.5rem;
+    text-align: center;
+}
 
-    .modal-header {
-        padding: 1.5rem 1.5rem 0.5rem;
-        text-align: center;
-    }
+.confirm-icon {
+    font-size: 3rem;
+    color: #f59e0b;
+    margin-bottom: 0.5rem;
+}
 
-    .modal-icon {
-        font-size: 3rem;
-        color: #f59e0b;
-        margin-bottom: 0.5rem;
-    }
+.confirm-modal-header h3 {
+    color: #333;
+    font-size: 1.3rem;
+    margin: 0;
+    font-weight: 600;
+}
 
-    .modal-header h3 {
-        color: #333;
-        font-size: 1.3rem;
-        margin: 0;
-        font-weight: 600;
-    }
+.confirm-modal-body {
+    padding: 1rem 1.5rem;
+    text-align: center;
+}
 
-    .modal-body {
-        padding: 1rem 1.5rem;
-        text-align: center;
-    }
+.confirm-modal-body p {
+    color: #666;
+    font-size: 1rem;
+    line-height: 1.5;
+    margin: 0;
+}
 
-    .modal-body p {
-        color: #666;
-        font-size: 1rem;
-        line-height: 1.5;
-        margin: 0;
-    }
+.confirm-modal-footer {
+    padding: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    border-top: 1px solid #e2e8f0;
+}
 
-    .modal-footer {
-        padding: 1.5rem;
-        display: flex;
-        gap: 1rem;
-        justify-content: center;
-        border-top: 1px solid #e2e8f0;
-    }
+.btn-cancel {
+    padding: 0.75rem 1.5rem;
+    background: #f3f4f6;
+    color: #4b5563;
+    border: none;
+    border-radius: 5px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    flex: 1;
+}
 
-    .btn-cancel {
-        padding: 0.75rem 1.5rem;
-        background: #f3f4f6;
-        color: #4b5563;
-        border: none;
-        border-radius: 5px;
-        font-size: 0.95rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.3s;
-        flex: 1;
-    }
+.btn-cancel:hover {
+    background: #e5e7eb;
+}
 
-    .btn-cancel:hover {
-        background: #e5e7eb;
-    }
+.btn-confirm {
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    flex: 1;
+}
 
-    .btn-confirm {
-        padding: 0.75rem 1.5rem;
-        background: #e53e3e; /* Soft red for confirm button */
-        color: white;
-        border: none;
-        border-radius: 5px;
-        font-size: 0.95rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.3s;
-        flex: 1;
-    }
+.btn-confirm:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
 
-    .btn-confirm:hover {
-        background: #c53030; /* Darker red on hover */
-    }
-
-    .btn-confirm.archive {
-        background: #e53e3e; /* Soft red for archive */
-    }
-
-    .btn-confirm.archive:hover {
-        background: #c53030;
-    }
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
 
     /* Toast Notification */
     .toast {
@@ -782,9 +812,257 @@
             transform: translate(-50%, -10px);
         }
     }
+    /* Confirm Modal Styles (matching residents) */
+.confirm-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeIn 0.3s ease forwards;
+}
+
+.confirm-modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+    margin: 0 auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    animation: modalPop 0.3s ease forwards;
+    transform: scale(0.9);
+    opacity: 0;
+}
+
+@keyframes modalPop {
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.confirm-modal-header {
+    padding: 1.5rem 1.5rem 0.5rem 1.5rem;
+    text-align: center;
+}
+
+.confirm-icon {
+    font-size: 3rem;
+    color: #f59e0b;
+    margin-bottom: 0.5rem;
+}
+
+.confirm-modal-header h3 {
+    color: #333;
+    font-size: 1.3rem;
+    margin: 0;
+    font-weight: 600;
+}
+
+.confirm-modal-body {
+    padding: 1rem 1.5rem;
+    text-align: center;
+}
+
+.confirm-modal-body p {
+    color: #666;
+    font-size: 1rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.confirm-modal-footer {
+    padding: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    border-top: 1px solid #e2e8f0;
+}
+
+.btn-cancel {
+    padding: 0.75rem 1.5rem;
+    background: #f3f4f6;
+    color: #4b5563;
+    border: none;
+    border-radius: 5px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    flex: 1;
+}
+
+.btn-cancel:hover {
+    background: #e5e7eb;
+}
+
+.btn-confirm {
+    padding: 0.75rem 1.5rem;
+    background: #f59e0b; /* Orange for certificate */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    flex: 1;
+}
+
+.btn-confirm:hover {
+    background: #d97706;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+/* Pagination styles (copy from residents) */
+.pagination-container {
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+@media (min-width: 640px) {
+    .pagination-container {
+        flex-direction: row;
+        justify-content: space-between;
+    }
+}
+
+.pagination-info {
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.pagination-info span {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.pagination-links {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+}
+
+.pagination-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 0.75rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #4b5563;
+    background: white;
+    border: 1px solid #e2e8f0;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.pagination-link:hover:not(.disabled):not(.active) {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #1e293b;
+}
+
+.pagination-link.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: transparent;
+}
+
+.pagination-link.disabled {
+    background: #f1f5f9;
+    color: #94a3b8;
+    border-color: #e2e8f0;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.pagination-link.dots {
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    cursor: default;
+}
 </style>
 @endpush
+<script>
+console.log('=== BLOTTER DEBUG START ===');
+console.log('1. Script loaded at:', new Date().toISOString());
 
+// Check what's available immediately
+(function() {
+    console.log('2. Elements on page load:');
+    console.log('   - confirmModal:', document.getElementById('confirmModal'));
+    console.log('   - modalTitle:', document.getElementById('modalTitle'));
+    console.log('   - confirmMessage:', document.getElementById('confirmMessage'));
+    console.log('   - confirmActionBtn:', document.getElementById('confirmActionBtn'));
+})();
+
+// Override the function completely
+window.confirmArchive = function(id) {
+    console.log('✓ confirmArchive CALLED with ID:', id);
+    console.log('   - Caller:', new Error().stack);
+
+    // Show an alert first to confirm the function is called
+    alert('DEBUG: Archive button clicked for ID: ' + id);
+
+    // Try to show modal
+    const modal = document.getElementById('confirmModal');
+    console.log('   - Modal element found:', modal);
+
+    if (modal) {
+        console.log('   - Current modal display:', modal.style.display);
+        modal.style.display = 'flex';
+        modal.style.zIndex = '10000';
+        console.log('   - Set modal display to flex');
+
+        // Update text
+        const titleEl = document.getElementById('modalTitle');
+        const msgEl = document.getElementById('confirmMessage');
+
+        if (titleEl) {
+            titleEl.textContent = 'Archive Blotter Case';
+            console.log('   - Updated title');
+        } else {
+            console.error('   - Title element not found!');
+        }
+
+        if (msgEl) {
+            msgEl.textContent = 'Are you sure you want to archive this blotter case?';
+            console.log('   - Updated message');
+        } else {
+            console.error('   - Message element not found!');
+        }
+
+        document.body.style.overflow = 'hidden';
+    } else {
+        console.error('   - MODAL NOT FOUND!');
+        alert('Error: Modal not found! Check console.');
+    }
+
+    return false;
+};
+
+// Check if any other scripts might override
+console.log('3. Other functions check:');
+console.log('   - window.confirmArchive is now:', typeof window.confirmArchive);
+console.log('=== BLOTTER DEBUG END ===');
+</script>
 @push('scripts')
 <script>
 // Toast notification function
@@ -815,43 +1093,38 @@ function showToast(message, type = 'success') {
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-// Modal variables
-let currentAction = null;
-let currentId = null;
-
 // Confirm archive
 function confirmArchive(id) {
     currentAction = 'archive';
     currentId = id;
-    document.getElementById('modalTitle').textContent = 'Archive Blotter Case';
-    document.getElementById('confirmMessage').textContent = 'Are you sure you want to archive this blotter case? It will be moved to the archive.';
 
-    // Set button color for archive
-    const confirmBtn = document.getElementById('confirmActionBtn');
-    confirmBtn.classList.add('archive');
-    confirmBtn.textContent = 'Yes, Archive';
+    const modal = document.getElementById('confirmModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const confirmMessage = document.getElementById('confirmMessage');
 
-    document.getElementById('confirmModal').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+    if (modalTitle) modalTitle.textContent = 'Archive Blotter Case';
+    if (confirmMessage) confirmMessage.textContent = 'Are you sure you want to archive this blotter case? It will be moved to the archive.';
+
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
 }
 
 // Close modal
 function closeConfirmModal() {
-    document.getElementById('confirmModal').style.display = 'none';
-    document.body.style.overflow = '';
-
-    // Reset button
-    const confirmBtn = document.getElementById('confirmActionBtn');
-    confirmBtn.classList.remove('archive');
-    confirmBtn.textContent = 'Confirm';
-
+    const modal = document.getElementById('confirmModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
     currentAction = null;
     currentId = null;
 }
 
 // Execute action
 function executeAction() {
-    if (currentAction === 'archive') {
+    if (currentAction === 'archive' && currentId) {
         document.getElementById('archive-form-' + currentId).submit();
     }
     closeConfirmModal();

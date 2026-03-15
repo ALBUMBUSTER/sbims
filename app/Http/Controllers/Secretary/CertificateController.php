@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Secretary;
 use App\Http\Controllers\Controller;
 use App\Models\Certificate;
 use App\Models\Resident;
+use App\Models\User;
 use App\Models\ActivityLog;
+use App\Helpers\NotificationHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -91,6 +93,34 @@ class CertificateController extends Controller
         $resident = Resident::find($request->resident_id);
         $residentName = $resident ? $resident->first_name . ' ' . $resident->last_name : 'Unknown';
 
+        // ========== NOTIFICATIONS ==========
+        // Notify all secretaries (if current user is not a secretary)
+        if (Auth::user()->role_id != 3) {
+            NotificationHelper::toSecretaries(
+                'New Certificate Request',
+                'A new ' . $request->certificate_type . ' certificate has been requested for ' . $residentName,
+                'info',
+                route('secretary.certificates.show', $certificate->id)
+            );
+        }
+
+        // Notify all captains (for awareness)
+        NotificationHelper::toCaptains(
+            'New Certificate Request',
+            'A new ' . $request->certificate_type . ' certificate request needs attention',
+            'info',
+            route('captain.certificates.show', $certificate->id)
+        );
+
+        // Notify all admins (for monitoring)
+        NotificationHelper::toAdmins(
+            'Certificate Created',
+            'Certificate #' . $certificate->certificate_id . ' was created for ' . $residentName,
+            'info',
+            route('secretary.certificates.show', $certificate->id)
+        );
+        // ========== END NOTIFICATIONS ==========
+
         ActivityLog::create([
             'user_id' => Auth::id(),
             'action' => 'CREATE_CERTIFICATE',
@@ -150,6 +180,66 @@ class CertificateController extends Controller
         $resident = $certificate->resident;
         $residentName = $resident ? $resident->first_name . ' ' . $resident->last_name : 'Unknown';
 
+        // ========== NOTIFICATIONS FOR STATUS CHANGE ==========
+        if ($oldStatus !== $validated['status']) {
+            $statusMessages = [
+                'Approved' => 'has been approved',
+                'Released' => 'has been released',
+                'Rejected' => 'has been rejected',
+            ];
+
+            $message = $statusMessages[$validated['status']] ?? 'status changed to ' . $validated['status'];
+
+            // Notify relevant roles based on new status
+            switch($validated['status']) {
+                case 'Approved':
+                    // Notify captain who approved (if different)
+                    if (Auth::user()->role_id != 2) {
+                        NotificationHelper::toCaptains(
+                            'Certificate Approved',
+                            'Certificate #' . $certificate->certificate_id . ' was approved',
+                            'success',
+                            route('captain.certificates.show', $certificate->id)
+                        );
+                    }
+                    // Notify secretaries
+                    NotificationHelper::toSecretaries(
+                        'Certificate Approved',
+                        'Certificate #' . $certificate->certificate_id . ' for ' . $residentName . ' has been approved',
+                        'success',
+                        route('secretary.certificates.show', $certificate->id)
+                    );
+                    break;
+
+                case 'Released':
+                    NotificationHelper::toSecretaries(
+                        'Certificate Released',
+                        'Certificate #' . $certificate->certificate_id . ' for ' . $residentName . ' has been released',
+                        'success',
+                        route('secretary.certificates.show', $certificate->id)
+                    );
+                    break;
+
+                case 'Rejected':
+                    NotificationHelper::toSecretaries(
+                        'Certificate Rejected',
+                        'Certificate #' . $certificate->certificate_id . ' for ' . $residentName . ' was rejected',
+                        'danger',
+                        route('secretary.certificates.show', $certificate->id)
+                    );
+                    break;
+            }
+
+            // Always notify admins
+            NotificationHelper::toAdmins(
+                'Certificate ' . $validated['status'],
+                'Certificate #' . $certificate->certificate_id . ' ' . $message,
+                $validated['status'] == 'Rejected' ? 'danger' : 'info',
+                route('secretary.certificates.show', $certificate->id)
+            );
+        }
+        // ========== END NOTIFICATIONS ==========
+
         $description = 'Updated certificate ' . $certificate->certificate_id . ' for ' . $residentName;
         if ($oldStatus !== $validated['status']) {
             $description .= ' - Status changed from ' . $oldStatus . ' to ' . $validated['status'];
@@ -193,6 +283,34 @@ class CertificateController extends Controller
 
         $resident = $certificate->resident;
         $residentName = $resident ? $resident->first_name . ' ' . $resident->last_name : 'Unknown';
+
+        // ========== NOTIFICATIONS ==========
+        $statusMessages = [
+            'Approved' => 'has been approved',
+            'Released' => 'has been released',
+            'Rejected' => 'has been rejected',
+        ];
+
+        $message = $statusMessages[$request->status] ?? 'status changed to ' . $request->status;
+
+        // Notify based on who processed it
+        if (Auth::user()->role_id == 2) { // Captain processing
+            NotificationHelper::toSecretaries(
+                'Certificate ' . $request->status,
+                'Certificate #' . $certificate->certificate_id . ' for ' . $residentName . ' ' . $message . ' by Captain',
+                $request->status == 'Rejected' ? 'danger' : 'success',
+                route('secretary.certificates.show', $certificate->id)
+            );
+        }
+
+        // Notify admins
+        NotificationHelper::toAdmins(
+            'Certificate ' . $request->status,
+            'Certificate #' . $certificate->certificate_id . ' ' . $message . ' by ' . Auth::user()->name,
+            $request->status == 'Rejected' ? 'danger' : 'info',
+            route('secretary.certificates.show', $certificate->id)
+        );
+        // ========== END NOTIFICATIONS ==========
 
         ActivityLog::create([
             'user_id' => Auth::id(),
@@ -293,38 +411,38 @@ class CertificateController extends Controller
     }
 
     /**
- * Permanently delete certificate (Force Delete)
- */
-public function forceDelete(Request $request, $id)
-{
-    // Check if user is authenticated
-    if (!Auth::check()) {
-        return redirect()->route('login')
-            ->with('error', 'You must be logged in.');
-    }
+     * Permanently delete certificate (Force Delete)
+     */
+    public function forceDelete(Request $request, $id)
+    {
+        // Check if user is authenticated
+        if (!Auth::check()) {
+            return redirect()->route('login')
+                ->with('error', 'You must be logged in.');
+        }
 
-    // Only Admin can permanently delete (role_id = 1)
-    if (Auth::user()->role_id != 1) {
+        // Only Admin can permanently delete (role_id = 1)
+        if (Auth::user()->role_id != 1) {
+            return redirect()->route('secretary.certificates.archived')
+                ->with('error', 'You do not have permission to permanently delete certificates.');
+        }
+
+        $certificate = Certificate::onlyTrashed()->findOrFail($id);
+        $certificateId = $certificate->certificate_id;
+
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'FORCE_DELETE_CERTIFICATE',
+            'description' => 'Permanently deleted certificate ' . $certificateId,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
+        $certificate->forceDelete();
+
         return redirect()->route('secretary.certificates.archived')
-            ->with('error', 'You do not have permission to permanently delete certificates.');
+            ->with('success', 'Certificate permanently deleted.');
     }
-
-    $certificate = Certificate::onlyTrashed()->findOrFail($id);
-    $certificateId = $certificate->certificate_id;
-
-    ActivityLog::create([
-        'user_id' => Auth::id(),
-        'action' => 'FORCE_DELETE_CERTIFICATE',
-        'description' => 'Permanently deleted certificate ' . $certificateId,
-        'ip_address' => $request->ip(),
-        'user_agent' => $request->userAgent()
-    ]);
-
-    $certificate->forceDelete();
-
-    return redirect()->route('secretary.certificates.archived')
-        ->with('success', 'Certificate permanently deleted.');
-}
 
     public function print(Certificate $certificate)
     {

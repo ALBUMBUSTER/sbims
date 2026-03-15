@@ -38,6 +38,11 @@ class Notification extends Model
         return $query->where('is_read', true);
     }
 
+    public function scopeForUser($query, $userId)
+    {
+        return $query->where('user_id', $userId);
+    }
+
     public function markAsRead()
     {
         $this->update(['is_read' => true]);

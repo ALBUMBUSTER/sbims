@@ -567,8 +567,6 @@
 
 @push('scripts')
 <script>
-let currentAction = null;
-let currentFormId = null;
 
 function confirmRestore(id) {
     currentAction = 'restore';

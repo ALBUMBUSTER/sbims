@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Certificate;
 use App\Models\Blotter;
 use App\Models\Resident;
+use App\Models\User;
 use App\Models\ActivityLog;
+use App\Helpers\NotificationHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -110,7 +112,7 @@ class CaptainController extends Controller
         return view('captain.approvals.index', compact('pendingCertificates', 'pendingBlotters'));
     }
 
-   /**
+    /**
  * Approve a certificate
  */
 public function approveCertificate(Request $request, Certificate $certificate)
@@ -121,13 +123,67 @@ public function approveCertificate(Request $request, Certificate $certificate)
 
     // Update certificate with existing columns only
     $certificate->update([
-        'status' => 'Approved', // Your enum has 'Approved'
+        'status' => 'Approved',
         'approved_by' => Auth::id(),
         'approved_at' => now(),
-        'issued_by' => Auth::id(), // Your table has issued_by
-        'issued_date' => now(), // Your table has issued_date
-        // Note: No 'remarks' column, so we don't update it
+        'issued_by' => Auth::id(),
+        'issued_date' => now(),
     ]);
+
+    // ========== FIXED NOTIFICATIONS ==========
+    // Notify the secretary who created it (if exists and not the current user)
+    if ($certificate->created_by && $certificate->created_by != Auth::id()) {
+        NotificationHelper::toUser(
+            $certificate->created_by,
+            'Certificate Approved',
+            'Certificate #' . $certificate->certificate_number . ' has been approved',
+            'success',
+            route('secretary.certificates.show', $certificate->id)
+        );
+    }
+
+    // Notify all secretaries (EXCLUDING current user)
+    $secretaries = User::where('role_id', 3)
+        ->where('id', '!=', Auth::id())
+        ->get();
+    foreach ($secretaries as $secretary) {
+        NotificationHelper::toUser(
+            $secretary->id,
+            'Certificate Approved',
+            'Certificate #' . $certificate->certificate_number . ' has been approved by Captain',
+            'success',
+            route('secretary.certificates.show', $certificate->id)
+        );
+    }
+
+    // Notify all clerks (EXCLUDING current user)
+    $clerks = User::where('role_id', 4)
+        ->where('id', '!=', Auth::id())
+        ->get();
+    foreach ($clerks as $clerk) {
+        NotificationHelper::toUser(
+            $clerk->id,
+            'Certificate Ready',
+            'Certificate #' . $certificate->certificate_number . ' is approved and ready for release',
+            'success',
+            route('clerk.certificates.show', $certificate->id)
+        );
+    }
+
+    // Notify all admins (EXCLUDING current user)
+    $admins = User::where('role_id', 1)
+        ->where('id', '!=', Auth::id())
+        ->get();
+    foreach ($admins as $admin) {
+        NotificationHelper::toUser(
+            $admin->id,
+            'Certificate Approved',
+            'Certificate #' . $certificate->certificate_number . ' was approved by Captain ' . Auth::user()->name,
+            'success',
+            route('secretary.certificates.show', $certificate->id)
+        );
+    }
+    // ========== END FIXED NOTIFICATIONS ==========
 
     // Store the remarks in activity log instead
     ActivityLog::create([
@@ -141,33 +197,61 @@ public function approveCertificate(Request $request, Certificate $certificate)
     return redirect()->back()->with('success', 'Certificate approved successfully.');
 }
 
-/**
- * Reject a certificate
- */
-public function rejectCertificate(Request $request, Certificate $certificate)
-{
-    $request->validate([
-        'rejection_reason' => 'required|string|max:500'
-    ]);
+    /**
+     * Reject a certificate
+     */
+    public function rejectCertificate(Request $request, Certificate $certificate)
+    {
+        $request->validate([
+            'rejection_reason' => 'required|string|max:500'
+        ]);
 
-    // Update certificate with existing columns only
-    $certificate->update([
-        'status' => 'Rejected', // Your enum has 'Rejected'
-        'rejected_at' => now(),
-        'rejection_reason' => $request->rejection_reason, // Your table has this column
-        // Note: No 'rejected_by' column, so we don't update it
-    ]);
+        // Update certificate with existing columns only
+        $certificate->update([
+            'status' => 'Rejected',
+            'rejected_at' => now(),
+            'rejection_reason' => $request->rejection_reason,
+        ]);
 
-    ActivityLog::create([
-        'user_id' => Auth::id(),
-        'action' => 'REJECT_CERTIFICATE',
-        'description' => 'Rejected certificate #' . $certificate->certificate_number . ' for ' . ($certificate->resident->full_name ?? 'Unknown') . '. Reason: ' . $request->rejection_reason,
-        'ip_address' => $request->ip(),
-        'user_agent' => $request->userAgent()
-    ]);
+        // ========== NOTIFICATIONS ==========
+        // Notify the secretary who created it
+        if ($certificate->created_by) {
+            NotificationHelper::toUser(
+                $certificate->created_by,
+                'Certificate Rejected',
+                'Certificate #' . $certificate->certificate_number . ' was rejected. Reason: ' . $request->rejection_reason,
+                'danger',
+                route('secretary.certificates.show', $certificate->id)
+            );
+        }
 
-    return redirect()->back()->with('success', 'Certificate rejected successfully.');
-}
+        // Notify all secretaries
+        NotificationHelper::toSecretaries(
+            'Certificate Rejected',
+            'Certificate #' . $certificate->certificate_number . ' was rejected by Captain',
+            'danger',
+            route('secretary.certificates.show', $certificate->id)
+        );
+
+        // Notify all admins
+        NotificationHelper::toAdmins(
+            'Certificate Rejected',
+            'Certificate #' . $certificate->certificate_number . ' was rejected by Captain ' . Auth::user()->name,
+            'danger',
+            route('secretary.certificates.show', $certificate->id)
+        );
+        // ========== END NOTIFICATIONS ==========
+
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'REJECT_CERTIFICATE',
+            'description' => 'Rejected certificate #' . $certificate->certificate_number . ' for ' . ($certificate->resident->full_name ?? 'Unknown') . '. Reason: ' . $request->rejection_reason,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
+        return redirect()->back()->with('success', 'Certificate rejected successfully.');
+    }
 
     /**
      * Mark certificate as released
@@ -179,6 +263,35 @@ public function rejectCertificate(Request $request, Certificate $certificate)
             'released_at' => now(),
             'released_by' => Auth::id()
         ]);
+
+        // ========== NOTIFICATIONS ==========
+        // Notify the secretary who created it
+        if ($certificate->created_by) {
+            NotificationHelper::toUser(
+                $certificate->created_by,
+                'Certificate Released',
+                'Certificate #' . $certificate->certificate_number . ' has been released',
+                'success',
+                route('secretary.certificates.show', $certificate->id)
+            );
+        }
+
+        // Notify all secretaries
+        NotificationHelper::toSecretaries(
+            'Certificate Released',
+            'Certificate #' . $certificate->certificate_number . ' has been released',
+            'success',
+            route('secretary.certificates.show', $certificate->id)
+        );
+
+        // Notify all admins
+        NotificationHelper::toAdmins(
+            'Certificate Released',
+            'Certificate #' . $certificate->certificate_number . ' was released',
+            'success',
+            route('secretary.certificates.show', $certificate->id)
+        );
+        // ========== END NOTIFICATIONS ==========
 
         ActivityLog::create([
             'user_id' => Auth::id(),
@@ -305,6 +418,34 @@ public function rejectCertificate(Request $request, Certificate $certificate)
         }
 
         $blotter->update($updateData);
+
+        // ========== NOTIFICATIONS ==========
+        $statusMessages = [
+            'Investigating' => 'is now under investigation',
+            'Hearings' => 'is scheduled for hearing',
+            'Settled' => 'has been settled',
+            'Unsolved' => 'has been marked as unsolved',
+            'Dismissed' => 'has been dismissed',
+        ];
+
+        $message = $statusMessages[$request->status] ?? 'status changed to ' . $request->status;
+
+        // Notify secretaries
+        NotificationHelper::toSecretaries(
+            'Blotter Case Updated',
+            'Case #' . $blotter->case_id . ' ' . $message,
+            $request->status == 'Settled' ? 'success' : 'info',
+            route('secretary.blotter.show', $blotter->id)
+        );
+
+        // Notify admins
+        NotificationHelper::toAdmins(
+            'Blotter Case ' . $request->status,
+            'Case #' . $blotter->case_id . ' ' . $message . ' by Captain',
+            $request->status == 'Settled' ? 'success' : 'info',
+            route('secretary.blotter.show', $blotter->id)
+        );
+        // ========== END NOTIFICATIONS ==========
 
         ActivityLog::create([
             'user_id' => Auth::id(),

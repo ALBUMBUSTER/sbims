@@ -671,11 +671,6 @@ function showToast(message, type = 'success') {
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
-
-// Modal variables
-let currentAction = null;
-let currentId = null;
-
 // Confirm restore
 function confirmRestore(id) {
     currentAction = 'restore';

@@ -1,12 +1,12 @@
 // Main JavaScript functions
 document.addEventListener('DOMContentLoaded', function() {
     // Notification bell functionality
-    const notificationIcon = document.querySelector('.notification-icon');
-    if (notificationIcon) {
-        notificationIcon.addEventListener('click', function() {
-            alert('You have new notifications!');
-        });
-    }
+    // const notificationIcon = document.querySelector('.notification-icon');
+    // if (notificationIcon) {
+    //     notificationIcon.addEventListener('click', function() {
+    //         alert('You have new notifications!');
+    //     });
+    // }
 
     // Auto-hide alerts
     const alerts = document.querySelectorAll('.alert');

@@ -9,6 +9,7 @@ use App\Models\Blotter;
 use App\Models\Certificate;
 use App\Models\User;
 use App\Models\ActivityLog;
+use App\Helpers\NotificationHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -101,15 +102,14 @@ class BarangayInfoController extends Controller
         $monthlyCertificates = Certificate::where('created_at', '>=', $startOfMonth)->count();
 
         // Officials Statistics
-        // Note: You'll need to create an Officials model or adjust based on your actual structure
         $totalOfficials = User::whereIn('role_id', [2, 3, 4])->count(); // Captain, Secretary, etc.
         $activeOfficials = User::whereIn('role_id', [2, 3, 4])->where('is_active', true)->count();
 
         // For now, we'll set placeholder values for these
         $barangayTreasurer = 'Not set';
         $skChairman = 'Not set';
-        $kagawadsCount = 'Not set'; // Standard number
-        $tanodsCount = 'Not set'; // Placeholder
+        $kagawadsCount = 'Not set';
+        $tanodsCount = 'Not set';
 
         // Monthly Transactions
         $monthlyTransactions = $monthlyCertificates + $monthlyBlotters + $newResidentsMonth;
@@ -208,6 +208,15 @@ class BarangayInfoController extends Controller
         $barangayInfo->fill($validated);
         $barangayInfo->save();
 
+        // ========== NOTIFICATIONS ==========
+        NotificationHelper::toAdmins(
+            'Barangay Info Updated',
+            'Barangay information was updated by ' . Auth::user()->name,
+            'info',
+            route('admin.barangay.index')
+        );
+        // ========== END NOTIFICATIONS ==========
+
         // Log the action
         ActivityLog::create([
             'user_id' => Auth::id(),
@@ -247,6 +256,15 @@ class BarangayInfoController extends Controller
 
         // Store in session
         session(['manual_stats' => $manualStats]);
+
+        // ========== NOTIFICATIONS ==========
+        NotificationHelper::toAdmins(
+            'Statistics Updated',
+            'Barangay statistics were manually updated by ' . Auth::user()->name,
+            'info',
+            route('admin.barangay.index')
+        );
+        // ========== END NOTIFICATIONS ==========
 
         // Log the action
         ActivityLog::create([

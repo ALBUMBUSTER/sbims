@@ -215,26 +215,6 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('resident')->name('resident.')->group(function () {
         Route::get('/certificates/track/{certificate_number}', [App\Http\Controllers\Secretary\CertificateController::class, 'track'])->name('certificates.track');
     });
-
-    Route::get('/test-notification-creation', function() {
-        // Get first admin user
-        $admin = App\Models\User::where('role_id', 1)->first();
-
-        if (!$admin) {
-            return 'No admin user found!';
-        }
-
-        $notification = App\Models\Notification::create([
-            'user_id' => $admin->id,
-            'title' => 'Test Notification',
-            'message' => 'This is a test notification from ' . now(),
-            'type' => 'info',
-            'link' => '#',
-            'is_read' => false
-        ]);
-
-        return 'Test notification created with ID: ' . $notification->id . ' for admin: ' . $admin->email;
-    })->middleware('auth');
 });
 // Password Recovery Routes (public)
 Route::prefix('password')->name('password.')->group(function () {
@@ -263,4 +243,5 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
     Route::post('/notifications/clear-all', [NotificationController::class, 'clearAll'])->name('notifications.clear-all');
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+
 });

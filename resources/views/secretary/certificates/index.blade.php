@@ -216,10 +216,47 @@
             </div>
 
             @if($certificates->hasPages())
-            <div class="pagination-wrapper">
-                {{ $certificates->links() }}
-            </div>
+<div class="pagination-container">
+    <div class="pagination-info">
+        Showing <span>{{ $certificates->firstItem() }}</span> to <span>{{ $certificates->lastItem() }}</span> of <span>{{ $certificates->total() }}</span> results
+    </div>
+
+    <div class="pagination-links">
+        {{-- Previous Page Link --}}
+        @if($certificates->onFirstPage())
+            <span class="pagination-link disabled"><i class="fas fa-chevron-left"></i> Previous</span>
+        @else
+            <a href="{{ $certificates->previousPageUrl() }}" class="pagination-link"><i class="fas fa-chevron-left"></i> Previous</a>
+        @endif
+
+        {{-- Pagination Elements --}}
+        @foreach($certificates->links()->elements as $element)
+            {{-- "Three Dots" Separator --}}
+            @if(is_string($element))
+                <span class="pagination-link dots">{{ $element }}</span>
             @endif
+
+            {{-- Array Of Links --}}
+            @if(is_array($element))
+                @foreach($element as $page => $url)
+                    @if($page == $certificates->currentPage())
+                        <span class="pagination-link active">{{ $page }}</span>
+                    @else
+                        <a href="{{ $url }}" class="pagination-link">{{ $page }}</a>
+                    @endif
+                @endforeach
+            @endif
+        @endforeach
+
+        {{-- Next Page Link --}}
+        @if($certificates->hasMorePages())
+            <a href="{{ $certificates->nextPageUrl() }}" class="pagination-link">Next <i class="fas fa-chevron-right"></i></a>
+        @else
+            <span class="pagination-link disabled">Next <i class="fas fa-chevron-right"></i></span>
+        @endif
+    </div>
+</div>
+@endif
         </div>
     </div>
 
@@ -237,6 +274,192 @@
 
 @push('styles')
 <style>
+    /* Confirm Modal Styles (matching residents) */
+.confirm-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeIn 0.3s ease forwards;
+}
+
+.confirm-modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+    margin: 0 auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    animation: modalPop 0.3s ease forwards;
+    transform: scale(0.9);
+    opacity: 0;
+}
+
+@keyframes modalPop {
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.confirm-modal-header {
+    padding: 1.5rem 1.5rem 0.5rem 1.5rem;
+    text-align: center;
+}
+
+.confirm-icon {
+    font-size: 3rem;
+    color: #f59e0b;
+    margin-bottom: 0.5rem;
+}
+
+.confirm-modal-header h3 {
+    color: #333;
+    font-size: 1.3rem;
+    margin: 0;
+    font-weight: 600;
+}
+
+.confirm-modal-body {
+    padding: 1rem 1.5rem;
+    text-align: center;
+}
+
+.confirm-modal-body p {
+    color: #666;
+    font-size: 1rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.confirm-modal-footer {
+    padding: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    border-top: 1px solid #e2e8f0;
+}
+
+.btn-cancel {
+    padding: 0.75rem 1.5rem;
+    background: #f3f4f6;
+    color: #4b5563;
+    border: none;
+    border-radius: 5px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    flex: 1;
+}
+
+.btn-cancel:hover {
+    background: #e5e7eb;
+}
+
+.btn-confirm {
+    padding: 0.75rem 1.5rem;
+    background: #f59e0b; /* Orange for certificate */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    flex: 1;
+}
+
+.btn-confirm:hover {
+    background: #d97706;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+/* Pagination styles (copy from residents) */
+.pagination-container {
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+@media (min-width: 640px) {
+    .pagination-container {
+        flex-direction: row;
+        justify-content: space-between;
+    }
+}
+
+.pagination-info {
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.pagination-info span {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.pagination-links {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+}
+
+.pagination-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 0.75rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #4b5563;
+    background: white;
+    border: 1px solid #e2e8f0;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.pagination-link:hover:not(.disabled):not(.active) {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #1e293b;
+}
+
+.pagination-link.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: transparent;
+}
+
+.pagination-link.disabled {
+    background: #f1f5f9;
+    color: #94a3b8;
+    border-color: #e2e8f0;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.pagination-link.dots {
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    cursor: default;
+}
     /* Archive Access Button */
     .archive-access {
         margin-top: 2rem;
@@ -835,10 +1058,6 @@ function showToast(message, type = 'success') {
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
-
-// Modal variables
-let currentAction = null;
-let currentId = null;
 
 // Confirm archive
 function confirmArchive(id) {

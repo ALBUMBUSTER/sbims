@@ -161,14 +161,14 @@
                                     </a>
 
                                     {{-- Archive Button - Hidden for Clerk --}}
-                                    @if(auth()->user()->role_id != 4) {{-- Not a clerk --}}
-                                    <button type="button" class="btn-icon archive-btn" title="Archive" onclick="confirmArchive('{{ $resident->id }}')">
-                                        <i class="fas fa-archive"></i>
-                                    </button>
-                                    <form id="archive-form-{{ $resident->id }}" action="{{ route('secretary.residents.archive', $resident) }}" method="POST" style="display: none;">
-                                        @csrf
-                                    </form>
-                                    @endif
+@if(auth()->user()->role_id != 4) {{-- Not a clerk --}}
+<button type="button" class="btn-icon archive-btn" title="Archive" onclick="confirmArchive('{{ $resident->id }}')">
+    <i class="fas fa-archive"></i>
+</button>
+<form id="archive-form-{{ $resident->id }}" action="{{ route('secretary.residents.archive', $resident) }}" method="POST" style="display: none;">
+    @csrf
+</form>
+@endif
                                 </div>
                             </td>
                         </tr>
@@ -260,10 +260,10 @@
             <div class="confirm-icon">
                 <i class="fas fa-exclamation-triangle"></i>
             </div>
-            <h3>Confirm Archive</h3>
+            <h3 id="modalTitle">Confirm Archive</h3>  {{-- Added id="modalTitle" --}}
         </div>
         <div class="confirm-modal-body">
-            <p>Are you sure you want to archive this resident? They will be moved to the archive.</p>
+            <p id="confirmMessage">Are you sure you want to archive this resident? They will be moved to the archive.</p>  {{-- Added id="confirmMessage" --}}
         </div>
         <div class="confirm-modal-footer">
             <button type="button" class="btn-cancel" onclick="closeConfirmModal()">Cancel</button>
@@ -948,8 +948,30 @@ let currentArchiveId = null;
 
 // Archive confirmation function with custom modal
 function confirmArchive(residentId) {
+    console.log('Archive clicked for ID:', residentId); // Debug log
+
     currentArchiveId = residentId;
-    document.getElementById('confirmModal').style.display = 'flex';
+
+    // Check if modal elements exist
+    const modal = document.getElementById('confirmModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const confirmMessage = document.getElementById('confirmMessage');
+    const confirmBtn = document.getElementById('confirmArchiveBtn');
+
+    console.log('Modal found:', !!modal);
+    console.log('Modal title found:', !!modalTitle);
+    console.log('Confirm message found:', !!confirmMessage);
+    console.log('Confirm button found:', !!confirmBtn);
+
+    if (!modal) {
+        alert('Error: Modal not found!');
+        return;
+    }
+
+    if (modalTitle) modalTitle.textContent = 'Archive Resident';
+    if (confirmMessage) confirmMessage.textContent = 'Are you sure you want to archive this resident? They will be moved to the archive.';
+
+    modal.style.display = 'flex';
     document.body.style.overflow = 'hidden'; // Prevent background scrolling
 }
 
@@ -962,39 +984,35 @@ function closeConfirmModal() {
 
 // Execute archive
 function executeArchive() {
+    console.log('Execute archive called, currentArchiveId:', currentArchiveId);
+
     if (currentArchiveId) {
-        document.getElementById('archive-form-' + currentArchiveId).submit();
+        const form = document.getElementById('archive-form-' + currentArchiveId);
+        console.log('Form found:', !!form);
+
+        if (form) {
+            form.submit();
+        } else {
+            alert('Error: Archive form not found!');
+        }
+    } else {
+        alert('Error: No resident selected for archiving');
     }
     closeConfirmModal();
 }
 
-// Civil status filter function
-function applyCivilFilter(value) {
-    const url = new URL(window.location.href);
-    const params = new URLSearchParams(url.search);
-
-    if (value === 'all') {
-        params.delete('civil_filter');
-    } else {
-        params.set('civil_filter', value);
-    }
-
-    // Preserve existing search and filter parameters
-    if (params.has('search') && params.get('search') === '') {
-        params.delete('search');
-    }
-
-    window.location.href = url.pathname + '?' + params.toString();
-}
-
+// Add event listener when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    // Add event listener for confirm button
+    console.log('DOM loaded - setting up event listeners');
+
     const confirmBtn = document.getElementById('confirmArchiveBtn');
     if (confirmBtn) {
+        console.log('Confirm button found, adding click listener');
         confirmBtn.addEventListener('click', executeArchive);
+    } else {
+        console.error('Confirm button NOT found!');
     }
 
-    // Close modal when clicking outside
     const modal = document.getElementById('confirmModal');
     if (modal) {
         modal.addEventListener('click', function(e) {
@@ -1004,7 +1022,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Close modal with Escape key
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && document.getElementById('confirmModal').style.display === 'flex') {
             closeConfirmModal();

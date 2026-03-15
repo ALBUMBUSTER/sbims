@@ -18,12 +18,19 @@ class ShareNotifications
         // Check if user is logged in
         if (Auth::check()) {
             // Get unread notifications count for the logged in user
-            $unreadNotificationsCount = Notification::forUser(Auth::id())
+            $unreadNotificationsCount = Notification::where('user_id', Auth::id())
                 ->unread()
                 ->count();
 
+            // Get recent notifications for dropdown
+            $recentNotifications = Notification::where('user_id', Auth::id())
+                ->latest()
+                ->take(5)
+                ->get();
+
             // Share with all views
             View::share('unreadNotificationsCount', $unreadNotificationsCount);
+            View::share('recentNotifications', $recentNotifications);
         }
 
         return $next($request);

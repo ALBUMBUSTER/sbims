@@ -138,13 +138,23 @@
         <div class="chart-card">
             <div class="chart-header">
                 <h3><i class="fas fa-venus-mars"></i> Gender Distribution</h3>
-                <div class="chart-legend">
-                    <span><span class="legend-dot male"></span> Male: {{ $statistics['residents']['by_gender']['male'] ?? 0 }}</span>
-                    <span><span class="legend-dot female"></span> Female: {{ $statistics['residents']['by_gender']['female'] ?? 0 }}</span>
-                </div>
             </div>
             <div class="chart-body">
                 <canvas id="genderChart" width="400" height="200"></canvas>
+            </div>
+            <div class="chart-mini-table">
+                <div class="chart-stat-item">
+                    <span class="stat-label"><span class="legend-dot male"></span> Male:</span>
+                    <span class="stat-value">{{ $statistics['residents']['by_gender']['male'] ?? 0 }}</span>
+                </div>
+                <div class="chart-stat-item">
+                    <span class="stat-label"><span class="legend-dot female"></span> Female:</span>
+                    <span class="stat-value">{{ $statistics['residents']['by_gender']['female'] ?? 0 }}</span>
+                </div>
+                <div class="chart-stat-item">
+                    <span class="stat-label"><span class="legend-dot other"></span> Other:</span>
+                    <span class="stat-value">{{ $statistics['residents']['by_gender']['other'] ?? 0 }}</span>
+                </div>
             </div>
         </div>
 
@@ -222,7 +232,8 @@
             </div>
         </div>
 
-        <!-- Monthly Comparison Line Chart -->
+        <!-- Monthly Comparison Line Chart (Commented out) -->
+        {{--
         <div class="chart-card full-width">
             <div class="chart-header">
                 <h3><i class="fas fa-chart-line"></i> Monthly Comparison for {{ $statistics['year'] ?? date('Y') }}</h3>
@@ -238,6 +249,7 @@
                 </div>
             </div>
         </div>
+        --}}
     </div>
 
     <!-- Summary Statistics Cards -->
@@ -602,12 +614,6 @@
     font-size: 0.9rem;
 }
 
-.chart-legend {
-    display: flex;
-    gap: 0.8rem;
-    font-size: 0.7rem;
-}
-
 .chart-total {
     font-weight: 600;
     color: #667eea;
@@ -623,35 +629,54 @@
     height: 200px;
 }
 
+/* ==================== */
+/* Chart Mini Table     */
+/* ==================== */
 .chart-mini-table {
     padding: 0 1rem 1rem 1rem;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 0.4rem;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.5rem;
+    border-top: 1px dashed #e2e8f0;
+    margin-top: 0.5rem;
+    padding-top: 1rem;
 }
 
 .chart-stat-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.2rem 0.4rem;
+    padding: 0.4rem 0.6rem;
     background: #f8fafc;
-    border-radius: 5px;
-    font-size: 0.7rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.chart-stat-item:hover {
+    background: #f1f5f9;
+    transform: translateY(-1px);
 }
 
 .chart-stat-item .stat-label {
-    color: #666;
+    color: #4a5568;
     font-weight: 500;
     display: flex;
     align-items: center;
-    gap: 0.3rem;
+    gap: 0.4rem;
+    font-size: 0.75rem;
 }
 
 .chart-stat-item .stat-value {
-    color: #333;
+    color: #2d3748;
     font-weight: 600;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
+    background: white;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    min-width: 65px;
+    text-align: center;
 }
 
 /* ==================== */
@@ -659,13 +684,14 @@
 /* ==================== */
 .legend-dot {
     display: inline-block;
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
 }
 
 .legend-dot.male { background: #3b82f6; }
 .legend-dot.female { background: #ec4899; }
+.legend-dot.other { background: #8b5cf6; }
 .legend-dot.pending { background: #f59e0b; }
 .legend-dot.approved { background: #10b981; }
 .legend-dot.released { background: #3b82f6; }
@@ -823,6 +849,7 @@
 }
 </style>
 @endpush
+
 @push('scripts')
 <script src="{{ asset('js/chart.umd.min.js') }}"></script>
 <script>
@@ -835,7 +862,8 @@ document.addEventListener('DOMContentLoaded', function() {
             new_this_year: {{ $statistics['residents']['new_this_year'] ?? 0 }},
             by_gender: {
                 male: {{ $statistics['residents']['by_gender']['male'] ?? 0 }},
-                female: {{ $statistics['residents']['by_gender']['female'] ?? 0 }}
+                female: {{ $statistics['residents']['by_gender']['female'] ?? 0 }},
+                other: {{ $statistics['residents']['by_gender']['other'] ?? 0 }}
             },
             monthly: @json($statistics['residents']['monthly'] ?? [])
         },
@@ -868,13 +896,24 @@ document.addEventListener('DOMContentLoaded', function() {
      * Gender Distribution Pie Chart
      */
     if (document.getElementById('genderChart')) {
+        const genderLabels = ['Male', 'Female'];
+        const genderData = [statistics.residents.by_gender.male, statistics.residents.by_gender.female];
+        const genderColors = ['#3b82f6', '#ec4899'];
+
+        // Add Other if it exists
+        if (statistics.residents.by_gender.other > 0) {
+            genderLabels.push('Other');
+            genderData.push(statistics.residents.by_gender.other);
+            genderColors.push('#8b5cf6');
+        }
+
         new Chart(document.getElementById('genderChart'), {
             type: 'pie',
             data: {
-                labels: ['Male', 'Female'],
+                labels: genderLabels,
                 datasets: [{
-                    data: [statistics.residents.by_gender.male, statistics.residents.by_gender.female],
-                    backgroundColor: ['#3b82f6', '#ec4899'],
+                    data: genderData,
+                    backgroundColor: genderColors,
                     borderWidth: 0
                 }]
             },
@@ -882,18 +921,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.label || '';
-                                const value = context.raw || 0;
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                                return `${label}: ${value} (${percentage}%)`;
-                            }
-                        }
-                    }
+                    legend: { display: false }
                 }
             }
         });
@@ -922,38 +950,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.label || '';
-                                const value = context.raw || 0;
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                                return `${label}: ${value} (${percentage}%)`;
-                            }
-                        }
-                    }
+                    legend: { display: false }
                 }
             }
         });
     }
 
-    /**
-     * Blotter Status Pie Chart
-     */
+    // Blotter Status Pie Chart
     if (document.getElementById('blotterStatusChart')) {
+        // Safely access data with fallbacks
+        const blotterStatus = statistics.blotters?.by_status || {};
+
+        // Get values with fallbacks to 0
+        const pending = blotterStatus.pending ?? 0;
+        const ongoing = blotterStatus.ongoing ?? 0;
+        const settled = blotterStatus.settled ?? 0;
+        const referred = blotterStatus.referred ?? 0;
+
+        // Create chart
         new Chart(document.getElementById('blotterStatusChart'), {
             type: 'pie',
             data: {
                 labels: ['Pending', 'Ongoing', 'Settled', 'Referred'],
                 datasets: [{
-                    data: [
-                        statistics.blotters.by_status.pending,
-                        statistics.blotters.by_status.ongoing,
-                        statistics.blotters.by_status.settled,
-                        statistics.blotters.by_status.referred
-                    ],
+                    data: [pending, ongoing, settled, referred],
                     backgroundColor: ['#f59e0b', '#8b5cf6', '#10b981', '#ef4444'],
                     borderWidth: 0
                 }]
@@ -962,129 +982,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.label || '';
-                                const value = context.raw || 0;
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                                return `${label}: ${value} (${percentage}%)`;
-                            }
-                        }
-                    }
+                    legend: { display: false }
                 }
             }
         });
     }
 
-    /**
-     * Monthly Comparison Line Chart
-     */
-    if (document.getElementById('monthlyComparisonChart')) {
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-        // Ensure we have 12 months of data (pad with zeros if needed)
-        const residentsData = Array(12).fill(0);
-        const certificatesData = Array(12).fill(0);
-        const blottersData = Array(12).fill(0);
-
-        // Fill in available data
-        if (Array.isArray(statistics.residents.monthly)) {
-            statistics.residents.monthly.forEach((value, index) => {
-                if (index < 12) residentsData[index] = value;
-            });
-        }
-        if (Array.isArray(statistics.certificates.monthly)) {
-            statistics.certificates.monthly.forEach((value, index) => {
-                if (index < 12) certificatesData[index] = value;
-            });
-        }
-        if (Array.isArray(statistics.blotters.monthly)) {
-            statistics.blotters.monthly.forEach((value, index) => {
-                if (index < 12) blottersData[index] = value;
-            });
-        }
-
-        new Chart(document.getElementById('monthlyComparisonChart'), {
-            type: 'line',
-            data: {
-                labels: months,
-                datasets: [
-                    {
-                        label: 'Residents',
-                        data: residentsData,
-                        borderColor: '#667eea',
-                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                        tension: 0.4,
-                        fill: true,
-                        pointBackgroundColor: '#667eea',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointRadius: 3,
-                        pointHoverRadius: 5
-                    },
-                    {
-                        label: 'Certificates',
-                        data: certificatesData,
-                        borderColor: '#f59e0b',
-                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                        tension: 0.4,
-                        fill: true,
-                        pointBackgroundColor: '#f59e0b',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointRadius: 3,
-                        pointHoverRadius: 5
-                    },
-                    {
-                        label: 'Blotters',
-                        data: blottersData,
-                        borderColor: '#ef4444',
-                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                        tension: 0.4,
-                        fill: true,
-                        pointBackgroundColor: '#ef4444',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointRadius: 3,
-                        pointHoverRadius: 5
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: '#e2e8f0' },
-                        ticks: {
-                            stepSize: 1,
-                            font: { size: 9 }
-                        }
-                    },
-                    x: {
-                        grid: { display: false },
-                        ticks: { font: { size: 9 } }
-                    }
-                }
-            }
-        });
-    }
-
-    // Note: Mini trend charts are commented out in the HTML
-    // If you want to enable them, uncomment the HTML section and these chart initializations
+    // Monthly Comparison Line Chart (Commented out)
+    // if (document.getElementById('monthlyComparisonChart')) {
+    //     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    //     // ... chart configuration
+    // }
 });
 </script>
 @endpush

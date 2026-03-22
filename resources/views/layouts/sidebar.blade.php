@@ -88,6 +88,12 @@
                             <span class="nav-text">Certificates</span>
                         </a>
                     </li>
+                    <li class="nav-item {{ request()->routeIs('secretary.reports.*') ? 'active' : '' }}">
+                        <a href="{{ route('secretary.reports.index') }}">
+                            <span class="nav-icon"><x-heroicon-o-chart-bar /></span>
+                            <span class="nav-text">Reports</span>
+                        </a>
+                    </li>
                     <li class="nav-item {{ request()->is('admin/logs*') ? 'active' : '' }}">
                         <a href="{{ route('admin.logs.index') }}">
                             <span class="nav-icon"><x-heroicon-o-document-text /></span>

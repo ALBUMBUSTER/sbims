@@ -28,13 +28,6 @@ class Backup extends Model
     // Disable updated_at since your table doesn't have it
     const UPDATED_AT = null;
 
-    public function creator()
-    {
-        // Remove this or modify it since created_by doesn't exist
-        // return $this->belongsTo(User::class, 'created_by');
-        return null;
-    }
-
     public function getFormattedSizeAttribute()
     {
         $bytes = $this->size;
@@ -47,41 +40,65 @@ class Backup extends Model
         return round($bytes, 2) . ' ' . $units[$i];
     }
 
+    /**
+     * Check if backup file exists
+     */
     public function fileExists()
     {
-        return Storage::disk('backups')->exists($this->path);
+        $fullPath = $this->getFilePath();
+        return file_exists($fullPath);
     }
 
+    /**
+     * Get full path to backup file
+     */
     public function getFilePath()
     {
-        return Storage::disk('backups')->path($this->path);
+        // The path is stored as 'backups/filename.sql' in database
+        // But the actual file is in storage_path('app/backups/filename.sql')
+        return storage_path('app/' . $this->path);
     }
 
+    /**
+     * Get file size
+     */
     public function getFileSize()
     {
         if ($this->fileExists()) {
-            return Storage::disk('backups')->size($this->path);
+            return filesize($this->getFilePath());
         }
         return 0;
     }
 
+    /**
+     * Get table count
+     */
     public function getTableCount()
     {
         return count($this->tables_backed_up ?? []);
     }
 
+    /**
+     * Check if full backup
+     */
     public function isFullBackup()
     {
         return $this->type === 'full';
     }
 
+    /**
+     * Check if database backup
+     */
     public function isDatabaseBackup()
     {
         return $this->type === 'database';
     }
 
+    /**
+     * Get backup location (alias for getFilePath)
+     */
     public function getBackupLocation()
     {
-        return storage_path('app/backups/' . $this->filename);
+        return $this->getFilePath();
     }
 }

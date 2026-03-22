@@ -1020,16 +1020,20 @@ function validateBlotterForm() {
     }
 
     // Validate incident date is not in future
-    const incidentDate = new Date(document.getElementById('incident_date').value);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const incidentDateInput = document.getElementById('incident_date').value;
+const incidentDate = new Date(incidentDateInput);
+const today = new Date();
 
-    if (incidentDate > today) {
-        showError('Incident date cannot be in the future.');
-        document.getElementById('incident_date').focus();
-        return false;
-    }
+// Reset to midnight for accurate day comparison
+incidentDate.setHours(0, 0, 0, 0);
+today.setHours(0, 0, 0, 0);
 
+// Check if incident date is in the future
+if (incidentDate > today) {
+    showError('Incident date cannot be in the future.');
+    document.getElementById('incident_date').focus();
+    return false;
+}
     // Validate incident date is not too far in past (5 years max)
     const fiveYearsAgo = new Date();
     fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);

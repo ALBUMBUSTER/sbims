@@ -67,66 +67,43 @@
 
     <!-- Key Statistics Cards -->
     <div class="stats-grid">
-        <!-- Total Cases Card -->
         <div class="stat-card total">
-            <div class="stat-icon">
-                <x-heroicon-o-scale />
-            </div>
+            <div class="stat-icon"><x-heroicon-o-scale /></div>
             <div class="stat-content">
                 <span class="stat-label">Total Cases</span>
                 <span class="stat-value">{{ $statistics['total'] }}</span>
             </div>
         </div>
-
-        <!-- Pending Cases Card -->
         <div class="stat-card pending">
-            <div class="stat-icon">
-                <x-heroicon-o-clock />
-            </div>
+            <div class="stat-icon"><x-heroicon-o-clock /></div>
             <div class="stat-content">
                 <span class="stat-label">Pending</span>
                 <span class="stat-value">{{ $statistics['by_status']['pending'] }}</span>
             </div>
         </div>
-
-        <!-- Ongoing Cases Card -->
         <div class="stat-card ongoing">
-            <div class="stat-icon">
-                <x-heroicon-o-arrow-path />
-            </div>
+            <div class="stat-icon"><x-heroicon-o-arrow-path /></div>
             <div class="stat-content">
                 <span class="stat-label">Ongoing</span>
                 <span class="stat-value">{{ $statistics['by_status']['ongoing'] }}</span>
             </div>
         </div>
-
-        <!-- Settled Cases Card -->
         <div class="stat-card settled">
-            <div class="stat-icon">
-                <x-heroicon-o-check-circle />
-            </div>
+            <div class="stat-icon"><x-heroicon-o-check-circle /></div>
             <div class="stat-content">
                 <span class="stat-label">Settled</span>
                 <span class="stat-value">{{ $statistics['by_status']['settled'] }}</span>
             </div>
         </div>
-
-        <!-- Referred Cases Card -->
         <div class="stat-card referred">
-            <div class="stat-icon">
-                <x-heroicon-o-arrow-right-circle />
-            </div>
+            <div class="stat-icon"><x-heroicon-o-arrow-right-circle /></div>
             <div class="stat-content">
                 <span class="stat-label">Referred</span>
                 <span class="stat-value">{{ $statistics['by_status']['referred'] ?? 0 }}</span>
             </div>
         </div>
-
-        <!-- Resolution Rate Card -->
         <div class="stat-card resolution">
-            <div class="stat-icon">
-                <x-heroicon-o-chart-bar />
-            </div>
+            <div class="stat-icon"><x-heroicon-o-chart-bar /></div>
             <div class="stat-content">
                 <span class="stat-label">Resolution Rate</span>
                 <span class="stat-value">{{ $statistics['resolution_rate'] }}%</span>
@@ -175,23 +152,26 @@
             </div>
             <div class="chart-mini-table">
                 @foreach($statistics['by_type'] as $type)
+                @php
+                    $dotColors = ['#667eea', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899', '#3b82f6'];
+                    $colorIndex = $loop->index % count($dotColors);
+                @endphp
                 <div class="chart-stat-item">
-                    <span class="stat-label">{{ $type->incident_type }}:</span>
+                    <span class="stat-label"><span class="legend-dot" style="background: {{ $dotColors[$colorIndex] }};"></span> {{ $type->incident_type }}:</span>
                     <span class="stat-value">{{ $type->total }} ({{ round(($type->total / $statistics['total']) * 100, 1) }}%)</span>
                 </div>
                 @endforeach
             </div>
         </div>
 
-        <!-- Monthly Trend Line Chart -->
-        <div class="chart-card full-width">
+        <!-- Monthly Trend Line Chart (Commented out) -->
+        {{-- <div class="chart-card full-width">
             <div class="chart-header">
                 <h3><i class="fas fa-chart-line"></i> Monthly Case Trend (Last 6 Months)</h3>
             </div>
             <div class="chart-body">
                 <canvas id="monthlyTrendChart" width="800" height="250"></canvas>
             </div>
-            <!-- Monthly Statistics with Progress Bars -->
             <div class="trend-stats">
                 @foreach($statistics['monthly_trend'] as $trend)
                 <div class="trend-stat-item">
@@ -204,7 +184,7 @@
                 </div>
                 @endforeach
             </div>
-        </div>
+        </div> --}}
     </div>
 
     <!-- Detailed Data Tables -->
@@ -298,7 +278,7 @@
         </div>
     </div>
 
-    <!-- Blotters List (Commented out - enable if needed) -->
+    <!-- Blotters List (Commented out) -->
     {{-- @if($blotters->count() > 0)
     <div class="card">
         <div class="card-header">
@@ -387,9 +367,7 @@
 /* ==================== */
 /* Container & Layout   */
 /* ==================== */
-.container-fluid {
-    padding: 1.2rem;
-}
+.container-fluid { padding: 1.2rem; }
 
 /* ==================== */
 /* Page Header          */
@@ -402,13 +380,11 @@
     flex-wrap: wrap;
     gap: 1rem;
 }
-
 .page-title h1 {
     color: #333;
     margin-bottom: 0.4rem;
     font-size: 1.4rem;
 }
-
 .page-title p {
     color: #666;
     font-size: 0.8rem;
@@ -423,7 +399,6 @@
     align-items: center;
     gap: 0.5rem;
 }
-
 .page-actions form {
     margin: 0;
     padding: 0;
@@ -433,9 +408,7 @@
 /* ==================== */
 /* Buttons              */
 /* ==================== */
-.btn-primary,
-.btn-secondary,
-.btn-view {
+.btn-primary, .btn-secondary, .btn-view {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -447,37 +420,31 @@
     height: 40px;
     line-height: 1;
     box-sizing: border-box;
-    vertical-align: middle;
     white-space: nowrap;
     text-decoration: none;
     border: none;
     cursor: pointer;
     transition: all 0.3s;
 }
-
 .btn-primary {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
 }
-
 .btn-primary:hover {
     opacity: 0.9;
     transform: translateY(-1px);
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
-
 .btn-secondary {
     background: white;
     color: #667eea;
     border: 1px solid #667eea;
 }
-
 .btn-secondary:hover {
     background: #eef2ff;
     transform: translateY(-1px);
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
-
 .btn-view {
     padding: 0.3rem 0.8rem;
     height: 32px;
@@ -485,11 +452,7 @@
     color: #4b5563;
     font-size: 0.75rem;
 }
-
-.btn-view:hover {
-    background: #e5e7eb;
-}
-
+.btn-view:hover { background: #e5e7eb; }
 .icon-small {
     width: 16px;
     height: 16px;
@@ -507,19 +470,16 @@
     margin-bottom: 1.5rem;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
-
 .filters-form {
     display: flex;
     gap: 0.8rem;
     flex-wrap: wrap;
     align-items: flex-end;
 }
-
 .filter-group {
     flex: 1;
     min-width: 140px;
 }
-
 .filter-group label {
     display: block;
     margin-bottom: 0.4rem;
@@ -527,7 +487,6 @@
     font-size: 0.75rem;
     font-weight: 500;
 }
-
 .filter-input {
     width: 100%;
     padding: 0.5rem;
@@ -535,13 +494,11 @@
     border-radius: 5px;
     font-size: 0.8rem;
 }
-
 .filter-actions {
     display: flex;
     gap: 0.4rem;
     align-items: center;
 }
-
 .btn-filter {
     padding: 0.5rem 1.2rem;
     background: #667eea;
@@ -554,11 +511,7 @@
     display: inline-flex;
     align-items: center;
 }
-
-.btn-filter:hover {
-    background: #5a67d8;
-}
-
+.btn-filter:hover { background: #5a67d8; }
 .btn-clear {
     padding: 0.5rem 1.2rem;
     background: #e2e8f0;
@@ -570,10 +523,7 @@
     display: inline-flex;
     align-items: center;
 }
-
-.btn-clear:hover {
-    background: #cbd5e0;
-}
+.btn-clear:hover { background: #cbd5e0; }
 
 /* ==================== */
 /* Statistics Cards     */
@@ -584,7 +534,6 @@
     gap: 1rem;
     margin-bottom: 1.5rem;
 }
-
 .stat-card {
     background: white;
     border-radius: 10px;
@@ -593,14 +542,12 @@
     align-items: center;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
-
 .stat-card.total .stat-icon { background: #667eea; }
 .stat-card.pending .stat-icon { background: #f59e0b; }
 .stat-card.ongoing .stat-icon { background: #8b5cf6; }
 .stat-card.settled .stat-icon { background: #10b981; }
 .stat-card.referred .stat-icon { background: #ef4444; }
 .stat-card.resolution .stat-icon { background: #3b82f6; }
-
 .stat-icon {
     width: 40px;
     height: 40px;
@@ -610,24 +557,18 @@
     justify-content: center;
     margin-right: 0.8rem;
 }
-
 .stat-icon svg {
     width: 20px;
     height: 20px;
     color: white;
 }
-
-.stat-content {
-    flex: 1;
-}
-
+.stat-content { flex: 1; }
 .stat-label {
     display: block;
     color: #666;
     font-size: 0.7rem;
     margin-bottom: 0.2rem;
 }
-
 .stat-value {
     display: block;
     color: #333;
@@ -644,18 +585,13 @@
     gap: 1rem;
     margin-bottom: 1.5rem;
 }
-
 .chart-card {
     background: white;
     border-radius: 10px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     overflow: hidden;
 }
-
-.chart-card.full-width {
-    grid-column: span 2;
-}
-
+.chart-card.full-width { grid-column: span 2; }
 .chart-header {
     padding: 0.8rem 1rem;
     background: #f8f9fa;
@@ -666,7 +602,6 @@
     flex-wrap: wrap;
     gap: 0.5rem;
 }
-
 .chart-header h3 {
     margin: 0;
     font-size: 0.85rem;
@@ -675,12 +610,7 @@
     align-items: center;
     gap: 0.4rem;
 }
-
-.chart-header h3 i {
-    color: #667eea;
-    font-size: 0.9rem;
-}
-
+.chart-header h3 i { color: #667eea; font-size: 0.9rem; }
 .chart-total {
     font-weight: 600;
     color: #667eea;
@@ -689,42 +619,56 @@
     border-radius: 20px;
     font-size: 0.7rem;
 }
-
 .chart-body {
     padding: 1rem;
     position: relative;
     height: 200px;
 }
 
+/* ==================== */
+/* Chart Mini Table     */
+/* ==================== */
 .chart-mini-table {
     padding: 0 1rem 1rem 1rem;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 0.4rem;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.5rem;
+    border-top: 1px dashed #e2e8f0;
+    margin-top: 0.5rem;
+    padding-top: 1rem;
 }
-
 .chart-stat-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.2rem 0.4rem;
+    padding: 0.4rem 0.6rem;
     background: #f8fafc;
-    border-radius: 5px;
-    font-size: 0.7rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    transition: all 0.2s ease;
 }
-
+.chart-stat-item:hover {
+    background: #f1f5f9;
+    transform: translateY(-1px);
+}
 .chart-stat-item .stat-label {
-    color: #666;
+    color: #4a5568;
     font-weight: 500;
     display: flex;
     align-items: center;
-    gap: 0.3rem;
+    gap: 0.4rem;
+    font-size: 0.75rem;
 }
-
 .chart-stat-item .stat-value {
-    color: #333;
+    color: #2d3748;
     font-weight: 600;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
+    background: white;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    min-width: 65px;
+    text-align: center;
 }
 
 /* ==================== */
@@ -732,11 +676,10 @@
 /* ==================== */
 .legend-dot {
     display: inline-block;
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
 }
-
 .legend-dot.pending { background: #f59e0b; }
 .legend-dot.ongoing { background: #8b5cf6; }
 .legend-dot.settled { background: #10b981; }
@@ -751,7 +694,6 @@
     flex-direction: column;
     gap: 0.4rem;
 }
-
 .trend-stat-item {
     display: grid;
     grid-template-columns: 80px 1fr 50px;
@@ -759,31 +701,20 @@
     gap: 0.8rem;
     font-size: 0.7rem;
 }
-
-.trend-label {
-    font-weight: 600;
-    color: #333;
-}
-
-.trend-value {
-    color: #667eea;
-    font-weight: 500;
-}
-
+.trend-label { font-weight: 600; color: #333; }
+.trend-value { color: #667eea; font-weight: 500; }
 .trend-bar {
     height: 16px;
     background: #e2e8f0;
     border-radius: 8px;
     overflow: hidden;
 }
-
 .trend-bar-fill {
     height: 100%;
     background: linear-gradient(90deg, #667eea, #764ba2);
     border-radius: 8px;
     transition: width 0.3s;
 }
-
 .trend-percentage {
     font-weight: 600;
     color: #333;
@@ -796,18 +727,19 @@
 /* ==================== */
 .details-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
     margin-bottom: 1.5rem;
 }
-
 .detail-card {
     background: white;
     border-radius: 10px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: 300px;
 }
-
 .detail-header {
     padding: 0.7rem;
     background: #f8f9fa;
@@ -816,21 +748,20 @@
     align-items: center;
     gap: 0.4rem;
 }
-
 .detail-icon {
     width: 16px;
     height: 16px;
     color: #667eea;
 }
-
 .detail-header h3 {
     color: #333;
     font-size: 0.8rem;
     margin: 0;
 }
-
 .detail-body {
     padding: 0.7rem;
+    flex: 1;
+    overflow-y: auto;
 }
 
 /* ==================== */
@@ -839,24 +770,27 @@
 .mini-table {
     width: 100%;
     border-collapse: collapse;
+    font-size: 0.75rem;
 }
-
 .mini-table th {
     text-align: left;
-    padding: 0.4rem;
+    padding: 0.5rem 0.4rem;
     background: #f8f9fa;
     color: #555;
-    font-size: 0.65rem;
-    font-weight: 600;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.mini-table td {
-    padding: 0.4rem;
-    border-bottom: 1px solid #e2e8f0;
-    color: #333;
     font-size: 0.7rem;
+    font-weight: 600;
+    border-bottom: 2px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+    z-index: 1;
 }
+.mini-table td {
+    padding: 0.5rem 0.4rem;
+    border-bottom: 1px solid #edf2f7;
+    color: #4a5568;
+}
+.mini-table tr:last-child td { border-bottom: none; }
+.mini-table tbody tr:hover { background: #f7fafc; }
 
 /* ==================== */
 /* Stats Mini Grid      */
@@ -865,26 +799,17 @@
     display: grid;
     gap: 0.5rem;
 }
-
 .stat-mini-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.3rem 0.5rem;
+    padding: 0.4rem 0.6rem;
     background: #f8fafc;
     border-radius: 5px;
     font-size: 0.7rem;
 }
-
-.stat-mini-label {
-    color: #666;
-    font-weight: 500;
-}
-
-.stat-mini-value {
-    color: #333;
-    font-weight: 600;
-}
+.stat-mini-label { color: #666; font-weight: 500; }
+.stat-mini-value { color: #333; font-weight: 600; }
 
 /* ==================== */
 /* Status Badges        */
@@ -898,39 +823,15 @@
     min-width: 70px;
     text-align: center;
 }
-
-.status-pending {
-    background: #fef3c7;
-    color: #92400e;
-}
-
-.status-investigating, .status-ongoing {
-    background: #dbeafe;
-    color: #1e40af;
-}
-
-.status-hearings {
-    background: #ede9fe;
-    color: #6d28d9;
-}
-
-.status-settled {
-    background: #d1fae5;
-    color: #065f46;
-}
-
-.status-referred {
-    background: #fee2e2;
-    color: #991b1b;
-}
-
-.status-default {
-    background: #f3f4f6;
-    color: #4b5563;
-}
+.status-pending { background: #fef3c7; color: #92400e; }
+.status-investigating, .status-ongoing { background: #dbeafe; color: #1e40af; }
+.status-hearings { background: #ede9fe; color: #6d28d9; }
+.status-settled { background: #d1fae5; color: #065f46; }
+.status-referred { background: #fee2e2; color: #991b1b; }
+.status-default { background: #f3f4f6; color: #4b5563; }
 
 /* ==================== */
-/* Card                 */
+/* Card & Table Styles  */
 /* ==================== */
 .card {
     background: white;
@@ -939,7 +840,6 @@
     overflow: hidden;
     margin-top: 1.5rem;
 }
-
 .card-header {
     padding: 1rem;
     background: #f8f9fa;
@@ -948,35 +848,15 @@
     justify-content: space-between;
     align-items: center;
 }
-
-.card-header h3 {
-    color: #333;
-    font-size: 0.9rem;
-    margin: 0;
-}
-
-.record-count {
-    color: #666;
-    font-size: 0.7rem;
-}
-
-.card-body {
-    padding: 1rem;
-}
-
-/* ==================== */
-/* Data Table           */
-/* ==================== */
-.table-responsive {
-    overflow-x: auto;
-}
-
+.card-header h3 { color: #333; font-size: 0.9rem; margin: 0; }
+.record-count { color: #666; font-size: 0.7rem; }
+.card-body { padding: 1rem; }
+.table-responsive { overflow-x: auto; }
 .data-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.75rem;
 }
-
 .data-table th {
     text-align: left;
     padding: 0.7rem;
@@ -985,16 +865,11 @@
     font-weight: 600;
     border-bottom: 2px solid #e2e8f0;
 }
-
 .data-table td {
     padding: 0.7rem;
     border-bottom: 1px solid #e2e8f0;
     color: #333;
 }
-
-/* ==================== */
-/* Case ID              */
-/* ==================== */
 .case-id {
     font-family: monospace;
     font-weight: 600;
@@ -1013,14 +888,12 @@
     display: flex;
     justify-content: center;
 }
-
 .pagination-wrapper .pagination {
     display: flex;
     gap: 0.3rem;
     list-style: none;
     padding: 0;
 }
-
 .pagination-wrapper .page-item .page-link {
     padding: 0.3rem 0.6rem;
     border: 1px solid #e2e8f0;
@@ -1029,7 +902,6 @@
     text-decoration: none;
     font-size: 0.7rem;
 }
-
 .pagination-wrapper .page-item.active .page-link {
     background: #667eea;
     color: white;
@@ -1047,20 +919,17 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     margin-top: 1.5rem;
 }
-
 .empty-icon {
     width: 48px;
     height: 48px;
     color: #a0aec0;
     margin-bottom: 0.8rem;
 }
-
 .empty-state h3 {
     color: #4a5568;
     font-size: 1rem;
     margin-bottom: 0.4rem;
 }
-
 .empty-state p {
     color: #718096;
     font-size: 0.8rem;
@@ -1071,66 +940,28 @@
 /* Responsive Design    */
 /* ==================== */
 @media (max-width: 1024px) {
-    .charts-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .chart-card.full-width {
-        grid-column: span 1;
-    }
+    .charts-grid { grid-template-columns: 1fr; }
+    .chart-card.full-width { grid-column: span 1; }
+    .details-grid { grid-template-columns: repeat(2, 1fr); }
 }
-
 @media (max-width: 768px) {
     .page-actions {
         width: 100%;
         flex-direction: column;
         align-items: stretch;
     }
-
-    .page-actions form {
-        width: 100%;
-    }
-
-    .btn-primary,
-    .btn-secondary {
-        width: 100%;
-        justify-content: center;
-    }
-
-    .stats-grid {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .trend-stat-item {
-        grid-template-columns: 80px 1fr 45px;
-        gap: 0.4rem;
-    }
+    .page-actions form { width: 100%; }
+    .btn-primary, .btn-secondary { width: 100%; justify-content: center; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .details-grid { grid-template-columns: 1fr; }
 }
-
 @media (max-width: 640px) {
-    .page-header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .page-actions {
-        width: 100%;
-    }
+    .page-header { flex-direction: column; align-items: flex-start; }
+    .page-actions { width: 100%; }
 }
-
 @media (max-width: 480px) {
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .trend-stat-item {
-        grid-template-columns: 1fr;
-        gap: 0.2rem;
-    }
-
-    .chart-mini-table {
-        grid-template-columns: 1fr;
-    }
+    .stats-grid { grid-template-columns: 1fr; }
+    .chart-mini-table { grid-template-columns: 1fr; }
 }
 </style>
 @endpush
@@ -1141,7 +972,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     /**
      * Case Status Distribution Pie Chart
-     * Shows breakdown of cases by status (Pending, Ongoing, Settled, Referred)
      */
     new Chart(document.getElementById('statusChart'), {
         type: 'pie',
@@ -1161,26 +991,12 @@ document.addEventListener('DOMContentLoaded', function() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.raw || 0;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                            return `${label}: ${value} (${percentage}%)`;
-                        }
-                    }
-                }
-            }
+            plugins: { legend: { display: false } }
         }
     });
 
     /**
      * Incident Type Distribution Pie Chart
-     * Shows distribution of cases by incident type
      */
     new Chart(document.getElementById('incidentTypeChart'), {
         type: 'pie',
@@ -1195,74 +1011,48 @@ document.addEventListener('DOMContentLoaded', function() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.raw || 0;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                            return `${label}: ${value} (${percentage}%)`;
-                        }
-                    }
-                }
-            }
+            plugins: { legend: { display: false } }
         }
     });
 
     /**
-     * Monthly Trend Line Chart
-     * Shows case trends over the last 6 months
+     * Monthly Trend Line Chart (Commented out)
      */
-    new Chart(document.getElementById('monthlyTrendChart'), {
-        type: 'line',
-        data: {
-            labels: [@foreach($statistics['monthly_trend'] as $trend) '{{ date('M', mktime(0, 0, 0, $trend->month, 1)) }}', @endforeach],
-            datasets: [{
-                label: 'Number of Cases',
-                data: [@foreach($statistics['monthly_trend'] as $trend) {{ $trend->total }}, @endforeach],
-                borderColor: '#667eea',
-                backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                tension: 0.4,
-                fill: true,
-                pointBackgroundColor: '#667eea',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointRadius: 4,
-                pointHoverRadius: 6
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return `Cases: ${context.raw}`;
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: { color: '#e2e8f0' },
-                    ticks: {
-                        stepSize: 1,
-                        font: { size: 9 }
-                    }
-                },
-                x: {
-                    grid: { display: false },
-                    ticks: { font: { size: 9 } }
-                }
-            }
-        }
-    });
+    // new Chart(document.getElementById('monthlyTrendChart'), {
+    //     type: 'line',
+    //     data: {
+    //         labels: [@foreach($statistics['monthly_trend'] as $trend) '{{ date('M', mktime(0, 0, 0, $trend->month, 1)) }}', @endforeach],
+    //         datasets: [{
+    //             label: 'Number of Cases',
+    //             data: [@foreach($statistics['monthly_trend'] as $trend) {{ $trend->total }}, @endforeach],
+    //             borderColor: '#667eea',
+    //             backgroundColor: 'rgba(102, 126, 234, 0.1)',
+    //             tension: 0.4,
+    //             fill: true,
+    //             pointBackgroundColor: '#667eea',
+    //             pointBorderColor: '#fff',
+    //             pointBorderWidth: 2,
+    //             pointRadius: 4,
+    //             pointHoverRadius: 6
+    //         }]
+    //     },
+    //     options: {
+    //         responsive: true,
+    //         maintainAspectRatio: false,
+    //         plugins: { legend: { display: false } },
+    //         scales: {
+    //             y: {
+    //                 beginAtZero: true,
+    //                 grid: { color: '#e2e8f0' },
+    //                 ticks: { stepSize: 1, font: { size: 9 } }
+    //             },
+    //             x: {
+    //                 grid: { display: false },
+    //                 ticks: { font: { size: 9 } }
+    //             }
+    //         }
+    //     }
+    // });
 });
 </script>
 @endpush

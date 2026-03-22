@@ -76,63 +76,61 @@ class CertificateController extends Controller
         return view('secretary.certificates.create', compact('residents'));
     }
 
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'resident_id' => 'required|exists:residents,id',
-            'certificate_type' => 'required|in:Clearance,Indigency,Residency',
-            'purpose' => 'required|string',
-            'transaction_fee' => 'nullable|numeric|min:0|max:999999.99',
-        ]);
+public function store(Request $request)
+{
+    $validated = $request->validate([
+        'resident_id' => 'required|exists:residents,id',
+        'certificate_type' => 'required|in:Clearance,Indigency,Residency',
+        'purpose' => 'required|string',
+        'transaction_fee' => 'nullable|numeric|min:0|max:999999.99',
+    ]);
 
-        $validated['certificate_id'] = $this->generateCertificateNumber();
-        $validated['status'] = 'Pending';
+    $validated['certificate_id'] = $this->generateCertificateNumber();
+    $validated['status'] = 'Pending';
 
-        $certificate = Certificate::create($validated);
+    $certificate = Certificate::create($validated);
 
-        $resident = Resident::find($request->resident_id);
-        $residentName = $resident ? $resident->first_name . ' ' . $resident->last_name : 'Unknown';
+    $resident = Resident::find($request->resident_id);
+    $residentName = $resident ? $resident->first_name . ' ' . $resident->last_name : 'Unknown';
 
-        // ========== NOTIFICATIONS ==========
-        // Notify all secretaries (if current user is not a secretary)
-        if (Auth::user()->role_id != 3) {
-            NotificationHelper::toSecretaries(
-                'New Certificate Request',
-                'A new ' . $request->certificate_type . ' certificate has been requested for ' . $residentName,
-                'info',
-                route('secretary.certificates.show', $certificate->id)
-            );
-        }
+    // ========== REAL-TIME NOTIFICATIONS ==========
+    // Notify captains
+    NotificationHelper::toCaptains(
+        'New Certificate Request',
+        $certificate->certificate_type . ' certificate requested for ' . $residentName,
+        'info',
+        route('captain.certificates.show', $certificate->id)
+    );
 
-        // Notify all captains (for awareness)
-        NotificationHelper::toCaptains(
-            'New Certificate Request',
-            'A new ' . $request->certificate_type . ' certificate request needs attention',
-            'info',
-            route('captain.certificates.show', $certificate->id)
-        );
+    // Notify secretaries
+    NotificationHelper::toSecretaries(
+        'New Certificate Request',
+        'Certificate #' . $certificate->certificate_id . ' requested for ' . $residentName,
+        'info',
+        route('secretary.certificates.show', $certificate->id)
+    );
 
-        // Notify all admins (for monitoring)
-        NotificationHelper::toAdmins(
-            'Certificate Created',
-            'Certificate #' . $certificate->certificate_id . ' was created for ' . $residentName,
-            'info',
-            route('secretary.certificates.show', $certificate->id)
-        );
-        // ========== END NOTIFICATIONS ==========
+    // Notify admins
+    NotificationHelper::toAdmins(
+        'New Certificate Request',
+        $certificate->certificate_type . ' certificate requested by ' . Auth::user()->name,
+        'info',
+        route('secretary.certificates.show', $certificate->id)
+    );
+    // ========== END NOTIFICATIONS ==========
 
-        ActivityLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'CREATE_CERTIFICATE',
-            'description' => 'Created ' . $request->certificate_type . ' certificate for ' . $residentName .
-                            ' (Certificate #: ' . $certificate->certificate_id . ')',
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent()
-        ]);
+    ActivityLog::create([
+        'user_id' => Auth::id(),
+        'action' => 'CREATE_CERTIFICATE',
+        'description' => 'Created ' . $request->certificate_type . ' certificate for ' . $residentName .
+                        ' (Certificate #: ' . $certificate->certificate_id . ')',
+        'ip_address' => $request->ip(),
+        'user_agent' => $request->userAgent()
+    ]);
 
-        return redirect()->route('secretary.certificates.index')
-            ->with('success', 'Certificate created successfully.');
-    }
+    return redirect()->route('secretary.certificates.index')
+        ->with('success', 'Certificate created successfully.');
+}
 
     public function show(Certificate $certificate)
     {
@@ -146,116 +144,93 @@ class CertificateController extends Controller
         return view('secretary.certificates.edit', compact('certificate', 'residents'));
     }
 
-    public function update(Request $request, Certificate $certificate)
-    {
-        $validated = $request->validate([
-            'resident_id' => 'required|exists:residents,id',
-            'certificate_type' => 'required|in:Clearance,Indigency,Residency',
-            'purpose' => 'required|string',
-            'transaction_fee' => 'nullable|numeric|min:0|max:999999.99',
-            'status' => 'required|in:Pending,Approved,Released,Rejected',
-            'rejection_reason' => 'nullable|required_if:status,Rejected|string',
-        ]);
+public function update(Request $request, Certificate $certificate)
+{
+    $validated = $request->validate([
+        'resident_id' => 'required|exists:residents,id',
+        'certificate_type' => 'required|in:Clearance,Indigency,Residency',
+        'purpose' => 'required|string',
+        'transaction_fee' => 'nullable|numeric|min:0|max:999999.99',
+        'status' => 'required|in:Pending,Approved,Released,Rejected',
+        'rejection_reason' => 'nullable|required_if:status,Rejected|string',
+    ]);
 
-        $oldStatus = $certificate->status;
+    $oldStatus = $certificate->status;
 
-        // Handle status-specific fields
-        if ($validated['status'] === 'Approved' && $oldStatus !== 'Approved') {
-            $validated['approved_at'] = now();
-            $validated['approved_by'] = Auth::id();
-        }
-
-        if ($validated['status'] === 'Released' && $oldStatus !== 'Released') {
-            $validated['released_at'] = now();
-            $validated['issued_date'] = now();
-            $validated['issued_by'] = Auth::id();
-        }
-
-        if ($validated['status'] === 'Rejected') {
-            $validated['rejected_at'] = now();
-        }
-
-        $certificate->update($validated);
-
-        $resident = $certificate->resident;
-        $residentName = $resident ? $resident->first_name . ' ' . $resident->last_name : 'Unknown';
-
-        // ========== NOTIFICATIONS FOR STATUS CHANGE ==========
-        if ($oldStatus !== $validated['status']) {
-            $statusMessages = [
-                'Approved' => 'has been approved',
-                'Released' => 'has been released',
-                'Rejected' => 'has been rejected',
-            ];
-
-            $message = $statusMessages[$validated['status']] ?? 'status changed to ' . $validated['status'];
-
-            // Notify relevant roles based on new status
-            switch($validated['status']) {
-                case 'Approved':
-                    // Notify captain who approved (if different)
-                    if (Auth::user()->role_id != 2) {
-                        NotificationHelper::toCaptains(
-                            'Certificate Approved',
-                            'Certificate #' . $certificate->certificate_id . ' was approved',
-                            'success',
-                            route('captain.certificates.show', $certificate->id)
-                        );
-                    }
-                    // Notify secretaries
-                    NotificationHelper::toSecretaries(
-                        'Certificate Approved',
-                        'Certificate #' . $certificate->certificate_id . ' for ' . $residentName . ' has been approved',
-                        'success',
-                        route('secretary.certificates.show', $certificate->id)
-                    );
-                    break;
-
-                case 'Released':
-                    NotificationHelper::toSecretaries(
-                        'Certificate Released',
-                        'Certificate #' . $certificate->certificate_id . ' for ' . $residentName . ' has been released',
-                        'success',
-                        route('secretary.certificates.show', $certificate->id)
-                    );
-                    break;
-
-                case 'Rejected':
-                    NotificationHelper::toSecretaries(
-                        'Certificate Rejected',
-                        'Certificate #' . $certificate->certificate_id . ' for ' . $residentName . ' was rejected',
-                        'danger',
-                        route('secretary.certificates.show', $certificate->id)
-                    );
-                    break;
-            }
-
-            // Always notify admins
-            NotificationHelper::toAdmins(
-                'Certificate ' . $validated['status'],
-                'Certificate #' . $certificate->certificate_id . ' ' . $message,
-                $validated['status'] == 'Rejected' ? 'danger' : 'info',
-                route('secretary.certificates.show', $certificate->id)
-            );
-        }
-        // ========== END NOTIFICATIONS ==========
-
-        $description = 'Updated certificate ' . $certificate->certificate_id . ' for ' . $residentName;
-        if ($oldStatus !== $validated['status']) {
-            $description .= ' - Status changed from ' . $oldStatus . ' to ' . $validated['status'];
-        }
-
-        ActivityLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'UPDATE_CERTIFICATE',
-            'description' => $description,
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent()
-        ]);
-
-        return redirect()->route('secretary.certificates.show', $certificate)
-            ->with('success', 'Certificate updated successfully.');
+    // Handle status-specific fields
+    if ($validated['status'] === 'Approved' && $oldStatus !== 'Approved') {
+        $validated['approved_at'] = now();
+        $validated['approved_by'] = Auth::id();
     }
+
+    if ($validated['status'] === 'Released' && $oldStatus !== 'Released') {
+        $validated['released_at'] = now();
+        $validated['issued_date'] = now();
+        $validated['issued_by'] = Auth::id();
+    }
+
+    if ($validated['status'] === 'Rejected') {
+        $validated['rejected_at'] = now();
+    }
+
+    $certificate->update($validated);
+
+    $resident = $certificate->resident;
+    $residentName = $resident ? $resident->first_name . ' ' . $resident->last_name : 'Unknown';
+
+    // ========== REAL-TIME NOTIFICATIONS FOR STATUS CHANGE ==========
+    if ($oldStatus !== $validated['status']) {
+        $statusMessages = [
+            'Approved' => 'has been approved',
+            'Released' => 'has been released',
+            'Rejected' => 'has been rejected',
+        ];
+
+        $message = $statusMessages[$validated['status']] ?? 'status changed to ' . $validated['status'];
+        $type = $validated['status'] == 'Rejected' ? 'danger' : 'success';
+
+        // Notify captains
+        NotificationHelper::toCaptains(
+            'Certificate ' . $validated['status'],
+            'Certificate #' . $certificate->certificate_id . ' for ' . $residentName . ' ' . $message,
+            $type,
+            route('captain.certificates.show', $certificate->id)
+        );
+
+        // Notify secretaries
+        NotificationHelper::toSecretaries(
+            'Certificate ' . $validated['status'],
+            'Certificate #' . $certificate->certificate_id . ' ' . $message,
+            $type,
+            route('secretary.certificates.show', $certificate->id)
+        );
+
+        // Notify admins
+        NotificationHelper::toAdmins(
+            'Certificate ' . $validated['status'],
+            'Certificate #' . $certificate->certificate_id . ' for ' . $residentName . ' ' . $message,
+            $type,
+            route('secretary.certificates.show', $certificate->id)
+        );
+    }
+    // ========== END NOTIFICATIONS ==========
+
+    $description = 'Updated certificate ' . $certificate->certificate_id . ' for ' . $residentName;
+    if ($oldStatus !== $validated['status']) {
+        $description .= ' - Status changed from ' . $oldStatus . ' to ' . $validated['status'];
+    }
+
+    ActivityLog::create([
+        'user_id' => Auth::id(),
+        'action' => 'UPDATE_CERTIFICATE',
+        'description' => $description,
+        'ip_address' => $request->ip(),
+        'user_agent' => $request->userAgent()
+    ]);
+
+    return redirect()->route('secretary.certificates.show', $certificate)
+        ->with('success', 'Certificate updated successfully.');
+}
 
     public function process(Request $request, Certificate $certificate)
     {

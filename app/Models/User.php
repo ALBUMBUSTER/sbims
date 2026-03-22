@@ -30,7 +30,7 @@ class User extends Authenticatable
     ];
 
     protected $casts = [
-        'email_verified_at' => 'datetime',
+        // 'email_verified_at' => 'datetime',
         'is_active' => 'boolean',
         'last_login' => 'datetime',
         'role_id' => 'integer'

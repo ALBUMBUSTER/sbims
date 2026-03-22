@@ -126,6 +126,8 @@ class ResidentController extends Controller
             return 'Male';
         } elseif (in_array($gender, ['f', 'female', 'babae'])) {
             return 'Female';
+        } elseif (in_array($gender, ['o', 'other', 'prefer not to say'])) {
+            return 'Other';
         }
 
         return ucfirst($gender);
@@ -233,7 +235,7 @@ class ResidentController extends Controller
                 'last_name' => 'required|string|max:50',
                 'middle_name' => 'nullable|string|max:50',
                 'birthdate' => 'required|date',
-                'gender' => 'required|in:Male,Female',
+                'gender' => 'required|in:Male,Female,Other',
                 'civil_status' => 'required|in:Single,Married,Widowed,Divorced',
                 'contact_number' => 'nullable|string|max:15',
                 'email' => 'nullable|email|max:100',
@@ -324,7 +326,7 @@ class ResidentController extends Controller
                 'last_name' => 'required|string|max:50',
                 'middle_name' => 'nullable|string|max:50',
                 'birthdate' => 'required|date',
-                'gender' => 'required|in:Male,Female',
+                'gender' => 'required|in:Male,Female,Other',
                 'civil_status' => 'required|in:Single,Married,Widowed,Divorced',
                 'contact_number' => 'nullable|string|max:15',
                 'email' => 'nullable|email|max:100',
@@ -534,7 +536,7 @@ class ResidentController extends Controller
             'middle_name' => ['middle name', 'middlename', 'middle initial', 'mname', 'middle'],
             'suffix' => ['suffix', 'name suffix', 'extension', 'ext'],
             'birthdate' => ['birthdate', 'birth date', 'date of birth', 'dob', 'birthday', 'birth'],
-            'gender' => ['gender', 'sex', 'male/female'],
+            'gender' => ['gender', 'sex','male','female','other','m','f','o'],
             'civil_status' => ['civil status', 'marital status', 'status', 'civil'],
             'purok' => ['purok', 'zone', 'area', 'sitio'],
             'contact_number' => ['contact number', 'contact', 'phone', 'mobile', 'telephone', 'cellphone', 'cp number'],
@@ -727,8 +729,8 @@ class ResidentController extends Controller
                 }
                 break;
             case 'gender':
-                if (!in_array($value, ['Male', 'Female'])) {
-                    return 'Gender must be Male or Female';
+                if (!in_array($value, ['Male', 'Female', 'Other'])) {
+                    return 'Gender must be Male, Female, or Other';
                 }
                 break;
             case 'civil_status':
@@ -834,7 +836,7 @@ class ResidentController extends Controller
                         'first_name' => 'required|string|max:50',
                         'last_name' => 'required|string|max:50',
                         'birthdate' => 'required|date',
-                        'gender' => 'required|in:Male,Female',
+                        'gender' => 'required|in:Male,Female,Other',
                         'email' => 'nullable|email|unique:residents,email',
                     ]);
 

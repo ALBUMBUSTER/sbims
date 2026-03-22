@@ -138,6 +138,7 @@
                             <option value="">Select Gender</option>
                             <option value="Male" {{ old('gender') == 'Male' ? 'selected' : '' }}>Male</option>
                             <option value="Female" {{ old('gender') == 'Female' ? 'selected' : '' }}>Female</option>
+                            <option value="Other" {{ old('gender') == 'Other' ? 'selected' : '' }}>Other</option>
                         </select>
                         @error('gender')
                             <span class="error-message">{{ $message }}</span>
@@ -180,7 +181,7 @@
 
                     <!-- Email -->
                     <div class="form-group">
-                        <label for="email">Email Address</label>
+                        <label for="email">Email Address(Optional)</label>
                         <input type="email"
                                id="email"
                                name="email"

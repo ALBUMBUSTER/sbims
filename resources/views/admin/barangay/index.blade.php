@@ -625,6 +625,16 @@
             </div>
         @endif
 
+        <!-- Update Note for Statistics - MOVED TO TOP -->
+        {{-- @if(auth()->user() && (auth()->user()->role_id == 1 || auth()->user()->role_id == 2))
+        <div class="update-note">
+            <span><i class="fas fa-info-circle"></i> <strong>Note:</strong> Statistics are automatically updated from your records.</span>
+            <button class="btn-edit-stats" onclick="openStatsModal()">
+                <i class="fas fa-pen-to-square"></i> Edit Statistics Manually
+            </button>
+        </div>
+        @endif --}}
+
         <!-- Barangay Statistics Dashboard -->
         <div class="barangay-stats-container">
             <div class="stats-grid">
@@ -765,12 +775,12 @@
                                 <span class="info-list-value">{{ number_format($statistics['pending_blotters'] ?? 0) }}</span>
                             </li>
                             <li class="info-list-item">
-                                <span class="info-list-label"><i class="fas fa-search"></i> Investigating</span>
-                                <span class="info-list-value">{{ number_format($statistics['investigating_blotters'] ?? 0) }}</span>
+                                <span class="info-list-label"><i class="fas fa-search"></i> Ongoing</span>
+                                <span class="info-list-value">{{ number_format($statistics['ongoing_blotters'] ?? 0) }}</span>
                             </li>
                             <li class="info-list-item">
-                                <span class="info-list-label"><i class="fas fa-gavel"></i> Hearings</span>
-                                <span class="info-list-value">{{ number_format($statistics['hearing_blotters'] ?? 0) }}</span>
+                                <span class="info-list-label"><i class="fas fa-gavel"></i> Referred</span>
+                                <span class="info-list-value">{{ number_format($statistics['referred_blotters'] ?? 0) }}</span>
                             </li>
                             <li class="info-list-item">
                                 <span class="info-list-label"><i class="fas fa-check-circle"></i> Settled</span>
@@ -783,52 +793,47 @@
                         </ul>
                     </div>
 
-                   <!-- Certificates by Type -->
-<div class="info-box">
-    <div class="info-box-header"><i class="fas fa-file-alt"></i> Certificates Issued</div>
-    <ul class="info-list">
-        <li class="info-list-item">
-            <span class="info-list-label"><i class="fas fa-id-card"></i> Barangay Clearance</span>
-            <span class="info-list-value">{{ number_format($statistics['clearance_certificates'] ?? 0) }}</span>
-        </li>
-        <li class="info-list-item">
-            <span class="info-list-label"><i class="fas fa-hand-holding-heart"></i> Indigency</span>
-            <span class="info-list-value">{{ number_format($statistics['indigency_certificates'] ?? 0) }}</span>
-        </li>
-        <li class="info-list-item">
-            <span class="info-list-label"><i class="fas fa-map-pin"></i> Residency</span>
-            <span class="info-list-value">{{ number_format($statistics['residency_certificates'] ?? 0) }}</span>
-        </li>
-        {{-- Remove Good Moral and Others --}}
-        {{--
-        <li class="info-list-item">
-            <span class="info-list-label"><i class="fas fa-star"></i> Good Moral</span>
-            <span class="info-list-value">{{ number_format($statistics['good_moral_certificates'] ?? 0) }}</span>
-        </li>
-        <li class="info-list-item">
-            <span class="info-list-label"><i class="fas fa-file"></i> Others</span>
-            <span class="info-list-value">{{ number_format($statistics['other_certificates'] ?? 0) }}</span>
-        </li>
-        --}}
-        <li class="info-list-item" style="border-top: 1px dashed #cbd5e0; margin-top: 0.5rem; padding-top: 0.75rem;">
-            <span class="info-list-label"><i class="fas fa-hourglass-half"></i> Pending</span>
-            <span class="info-list-value">{{ number_format($statistics['pending_certificates'] ?? 0) }}</span>
-        </li>
-        <li class="info-list-item">
-            <span class="info-list-label"><i class="fas fa-check-double"></i> Released</span>
-            <span class="info-list-value">{{ number_format($statistics['released_certificates'] ?? 0) }}</span>
-        </li>
-        <li class="info-list-item">
-            <span class="info-list-label"><i class="fas fa-times-circle"></i> Rejected</span>
-            <span class="info-list-value">{{ number_format($statistics['rejected_certificates'] ?? 0) }}</span>
-        </li>
-    </ul>
-</div>
-
-                    <!-- Barangay Officials -->
-                    {{-- "number_format" to set the value to 0 if null --}}
+                    <!-- Certificates by Type -->
                     <div class="info-box">
-                        <div class="info-box-header"><i class="fas fa-id-badge"></i> Barangay Officials</div>
+                        <div class="info-box-header"><i class="fas fa-file-alt"></i> Certificates Issued</div>
+                        <ul class="info-list">
+                            <li class="info-list-item">
+                                <span class="info-list-label"><i class="fas fa-id-card"></i> Barangay Clearance</span>
+                                <span class="info-list-value">{{ number_format($statistics['clearance_certificates'] ?? 0) }}</span>
+                            </li>
+                            <li class="info-list-item">
+                                <span class="info-list-label"><i class="fas fa-hand-holding-heart"></i> Indigency</span>
+                                <span class="info-list-value">{{ number_format($statistics['indigency_certificates'] ?? 0) }}</span>
+                            </li>
+                            <li class="info-list-item">
+                                <span class="info-list-label"><i class="fas fa-map-pin"></i> Residency</span>
+                                <span class="info-list-value">{{ number_format($statistics['residency_certificates'] ?? 0) }}</span>
+                            </li>
+                            <li class="info-list-item" style="border-top: 1px dashed #cbd5e0; margin-top: 0.5rem; padding-top: 0.75rem;">
+                                <span class="info-list-label"><i class="fas fa-hourglass-half"></i> Pending</span>
+                                <span class="info-list-value">{{ number_format($statistics['pending_certificates'] ?? 0) }}</span>
+                            </li>
+                            <li class="info-list-item">
+                                <span class="info-list-label"><i class="fas fa-check-double"></i> Released</span>
+                                <span class="info-list-value">{{ number_format($statistics['released_certificates'] ?? 0) }}</span>
+                            </li>
+                            <li class="info-list-item">
+                                <span class="info-list-label"><i class="fas fa-times-circle"></i> Rejected</span>
+                                <span class="info-list-value">{{ number_format($statistics['rejected_certificates'] ?? 0) }}</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Barangay Officials - WITH EDIT BUTTON -->
+                    <div class="info-box">
+                        <div class="info-box-header" style="display: flex; justify-content: space-between; align-items: center;">
+                            <span><i class="fas fa-id-badge"></i> Barangay Officials</span>
+                            @if(auth()->user() && (auth()->user()->role_id == 1 || auth()->user()->role_id == 2))
+                            <button class="btn-edit-stats" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;" onclick="openOfficialsModal()">
+                                 <i class="fas fa-edit" style="color: white;"></i> Edit
+                            </button>
+                            @endif
+                        </div>
                         <ul class="info-list">
                             <li class="info-list-item">
                                 <span class="info-list-label"><i class="fas fa-crown"></i> Barangay Captain</span>
@@ -901,16 +906,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Update Note for Statistics -->
-        {{-- @if(auth()->user() && (auth()->user()->role_id == 1 || auth()->user()->role_id == 2))
-        <div class="update-note">
-            <span><i class="fas fa-info-circle"></i> <strong>Note:</strong> Statistics are automatically updated from your records.</span>
-            <button class="btn-edit-stats" onclick="openStatsModal()">
-                <i class="fas fa-pen-to-square"></i> Edit Statistics Manually
-            </button>
-        </div>
-        @endif --}}
 
         <!-- Data Visualization Section -->
         <div class="barangay-detail-section">
@@ -988,66 +983,60 @@
                 </div>
 
                 <!-- Certificate Types Chart -->
-<div class="chart-card" data-chart="certificates">
-    <div class="chart-header">
-        <h4><i class="fas fa-file-alt"></i> Certificates by Type</h4>
-        <span class="stat-highlight">{{ $statistics['certificates_month'] ?? 0 }} this month</span>
-    </div>
-    <div class="chart-container">
-        <canvas id="certificatesChart"></canvas>
-    </div>
-    <div class="chart-legend">
-        <div class="legend-item">
-            <div class="legend-color" style="background: #4299e1;"></div>
-            <span>Clearance: {{ number_format($statistics['clearance_certificates'] ?? 0) }}</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background: #48bb78;"></div>
-            <span>Indigency: {{ number_format($statistics['indigency_certificates'] ?? 0) }}</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background: #ecc94b;"></div>
-            <span>Residency: {{ number_format($statistics['residency_certificates'] ?? 0) }}</span>
-        </div>
-        {{-- Remove Good Moral
-        <div class="legend-item">
-            <div class="legend-color" style="background: #9f7aea;"></div>
-            <span>Good Moral: {{ number_format($statistics['good_moral_certificates'] ?? 0) }}</span>
-        </div>
-        --}}
-    </div>
-</div>
+                <div class="chart-card" data-chart="certificates">
+                    <div class="chart-header">
+                        <h4><i class="fas fa-file-alt"></i> Certificates by Type</h4>
+                        <span class="stat-highlight">{{ $statistics['certificates_month'] ?? 0 }} this month</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="certificatesChart"></canvas>
+                    </div>
+                    <div class="chart-legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #4299e1;"></div>
+                            <span>Clearance: {{ number_format($statistics['clearance_certificates'] ?? 0) }}</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #48bb78;"></div>
+                            <span>Indigency: {{ number_format($statistics['indigency_certificates'] ?? 0) }}</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #ecc94b;"></div>
+                            <span>Residency: {{ number_format($statistics['residency_certificates'] ?? 0) }}</span>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Blotter Status Chart -->
                 <div class="chart-card" data-chart="blotters">
                     <div class="chart-header">
                         <h4><i class="fas fa-scale-balanced"></i> Blotter Cases by Status</h4>
-                        <span class="stat-highlight">{{ $statistics['monthly_blotters'] ?? 0 }} new this month</span>
+                        <span class="stat-highlight">{{ $statistics['blotters']['filed_this_year'] ?? 0 }} filed this year</span>
                     </div>
                     <div class="chart-container">
                         <canvas id="blotterChart"></canvas>
                     </div>
                     <div class="chart-legend">
                         <div class="legend-item">
-                            <div class="legend-color" style="background: #f56565;"></div>
+                            <div class="legend-color" style="background: #f59e0b;"></div>
                             <span>Pending: {{ number_format($statistics['pending_blotters'] ?? 0) }}</span>
                         </div>
                         <div class="legend-item">
-                            <div class="legend-color" style="background: #ecc94b;"></div>
-                            <span>Investigating: {{ number_format($statistics['investigating_blotters'] ?? 0) }}</span>
+                            <div class="legend-color" style="background: #8b5cf6;"></div>
+                            <span>Ongoing: {{ number_format($statistics['ongoing_blotters'] ?? 0) }}</span>
                         </div>
                         <div class="legend-item">
-                            <div class="legend-color" style="background: #9f7aea;"></div>
-                            <span>Hearings: {{ number_format($statistics['hearing_blotters'] ?? 0) }}</span>
+                            <div class="legend-color" style="background: #ef4444;"></div>
+                            <span>Referred: {{ number_format($statistics['referred_blotters'] ?? 0) }}</span>
                         </div>
                         <div class="legend-item">
-                            <div class="legend-color" style="background: #48bb78;"></div>
+                            <div class="legend-color" style="background: #10b981;"></div>
                             <span>Settled: {{ number_format($statistics['settled_blotters'] ?? 0) }}</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Monthly Trends Chart (Line Chart) -->
+                <!-- Monthly Trends Chart (Line Chart) - COMMENTED OUT -->
                 {{-- <div class="chart-card wide" data-chart="all">
                     <div class="chart-header">
                         <h4><i class="fas fa-chart-line"></i> Monthly Trends</h4>
@@ -1085,129 +1074,8 @@
             </div>
         </div>
 
-        <!-- Update Form -->
-        <!-- <div class="barangay-form-container">
-            <div class="form-header">
-                <h2><i class="fas fa-edit"></i> Update Barangay Information</h2>
-                <p>Fill in the details below to update barangay contact information</p>
-            </div>
-
-            <form action="{{ route('admin.barangay.update') }}" method="POST" enctype="multipart/form-data">
-                @csrf
-                @method('PUT')
-
-                <div class="form-group">
-                    <label for="barangay_name" class="required-field"><i class="fas fa-building"></i> Barangay Name</label>
-                    <input type="text"
-                           id="barangay_name"
-                           name="barangay_name"
-                           value="{{ old('barangay_name', $barangayInfo->barangay_name ?? '') }}"
-                           required
-                           placeholder="Enter barangay name">
-                    @error('barangay_name')
-                        <div class="error-message">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                <div class="form-group">
-                    <label for="barangay_captain"><i class="fas fa-crown"></i> Barangay Captain</label>
-                    <input type="text"
-                           id="barangay_captain"
-                           name="barangay_captain"
-                           value="{{ old('barangay_captain', $barangayInfo->barangay_captain ?? '') }}"
-                           placeholder="Enter barangay captain's name">
-                    @error('barangay_captain')
-                        <div class="error-message">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                <div class="form-group">
-                    <label for="barangay_secretary"><i class="fas fa-pen-fancy"></i> Barangay Secretary</label>
-                    <input type="text"
-                           id="barangay_secretary"
-                           name="barangay_secretary"
-                           value="{{ old('barangay_secretary', $barangayInfo->barangay_secretary ?? '') }}"
-                           placeholder="Enter barangay secretary's name">
-                    @error('barangay_secretary')
-                        <div class="error-message">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                <div class="form-group">
-                    <label for="contact_number"><i class="fas fa-phone"></i> Contact Number</label>
-                    <input type="text"
-                           id="contact_number"
-                           name="contact_number"
-                           value="{{ old('contact_number', $barangayInfo->contact_number ?? '') }}"
-                           placeholder="e.g., 09123456789">
-                    @error('contact_number')
-                        <div class="error-message">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                <div class="form-group">
-                    <label for="address" class="required-field"><i class="fas fa-map-marker-alt"></i> Complete Address</label>
-                    <textarea id="address"
-                              name="address"
-                              required
-                              placeholder="Enter complete address (e.g., Libertad, Isabel, Leyte)">{{ old('address', $barangayInfo->address ?? '') }}</textarea>
-                    @error('address')
-                        <div class="error-message">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                <div class="form-group">
-                    <label for="email"><i class="fas fa-envelope"></i> Email Address</label>
-                    <input type="email"
-                           id="email"
-                           name="email"
-                           value="{{ old('email', $barangayInfo->email ?? '') }}"
-                           placeholder="Enter email address">
-                    @error('email')
-                        <div class="error-message">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                <div class="form-group">
-                    <label for="logo"><i class="fas fa-image"></i> Barangay Logo</label>
-                    <input type="file"
-                           id="logo"
-                           name="logo"
-                           accept="image/*">
-                    @error('logo')
-                        <div class="error-message">{{ $message }}</div>
-                    @enderror
-
-                    @if(!empty($barangayInfo->logo_path))
-                    <div class="current-logo" id="currentLogoContainer">
-                        <div class="current-logo-label"><i class="fas fa-image"></i> Current Logo:</div>
-                        <div class="logo-preview">
-                            <img src="{{ Storage::url($barangayInfo->logo_path) }}"
-                                 alt="Current Barangay Logo"
-                                 id="currentLogoPreview">
-                        </div>
-                    </div>
-                    @endif
-
-                    <div class="logo-preview" id="newLogoPreview" style="display: none;">
-                        <div class="current-logo-label"><i class="fas fa-image"></i> New Logo Preview:</div>
-                        <img id="logoPreviewImage"
-                             src="#"
-                             alt="New Logo Preview"
-                             style="max-width: 150px;">
-                    </div>
-                </div>
-
-                <div class="form-actions">
-                    <button type="reset" class="btn btn-outline btn-reset">
-                        <i class="fas fa-undo-alt"></i> Reset
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Update Information
-                    </button>
-                </div>
-            </form>
-        </div> -->
+        <!-- Update Form - COMMENTED OUT -->
+        <!-- <div class="barangay-form-container"> ... </div> -->
     </main>
 </div>
 
@@ -1262,6 +1130,68 @@
 </div>
 @endif
 
+<!-- Officials Edit Modal -->
+@if(auth()->user() && (auth()->user()->role_id == 1 || auth()->user()->role_id == 2))
+<div class="modal" id="officialsModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h4><i class="fas fa-id-badge"></i> Edit Barangay Officials</h4>
+            <button class="modal-close" onclick="closeOfficialsModal()">&times;</button>
+        </div>
+        <form action="{{ route('admin.barangay.update-officials') }}" method="POST">
+            @csrf
+            {{-- @method('POST') --}}
+            <div class="stat-input-group">
+                <label for="barangay_captain"><i class="fas fa-crown"></i> Barangay Captain</label>
+                <input type="text" id="barangay_captain" name="barangay_captain"
+                       value="{{ old('barangay_captain', $barangayInfo->barangay_captain ?? '') }}"
+                       placeholder="Enter barangay captain's name">
+            </div>
+
+            <div class="stat-input-group">
+                <label for="barangay_secretary"><i class="fas fa-pen-fancy"></i> Barangay Secretary</label>
+                <input type="text" id="barangay_secretary" name="barangay_secretary"
+                       value="{{ old('barangay_secretary', $barangayInfo->barangay_secretary ?? '') }}"
+                       placeholder="Enter barangay secretary's name">
+            </div>
+
+            <div class="stat-input-group">
+                <label for="barangay_treasurer"><i class="fas fa-coins"></i> Barangay Treasurer</label>
+                <input type="text" id="barangay_treasurer" name="barangay_treasurer"
+                       value="{{ old('barangay_treasurer', session('officials_data.barangay_treasurer', '')) }}"
+                       placeholder="Enter barangay treasurer's name">
+            </div>
+
+            <div class="stat-input-group">
+                <label for="kagawads_count"><i class="fas fa-users-between-lines"></i> Number of Kagawads</label>
+                <input type="number" id="kagawads_count" name="kagawads_count" min="0" max="20"
+                       value="{{ old('kagawads_count', session('officials_data.kagawads_count', '')) }}"
+                       placeholder="e.g., 7">
+            </div>
+
+            <div class="stat-input-group">
+                <label for="sk_chairman"><i class="fas fa-child"></i> SK Chairman</label>
+                <input type="text" id="sk_chairman" name="sk_chairman"
+                       value="{{ old('sk_chairman', session('officials_data.sk_chairman', '')) }}"
+                       placeholder="Enter SK chairman's name">
+            </div>
+
+            <div class="stat-input-group">
+                <label for="tanods_count"><i class="fas fa-shield-halved"></i> Number of Barangay Tanods</label>
+                <input type="number" id="tanods_count" name="tanods_count" min="0" max="50"
+                       value="{{ old('tanods_count', session('officials_data.tanods_count', '')) }}"
+                       placeholder="e.g., 10">
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-outline btn-reset" onclick="closeOfficialsModal()"><i class="fas fa-times"></i> Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Officials</button>
+            </div>
+        </form>
+    </div>
+</div>
+@endif
+
 @endsection
 
 @push('scripts')
@@ -1297,7 +1227,7 @@
         createCategoriesChart(stats);
         createCertificatesChart(stats);
         createBlotterChart(stats);
-        createTrendsChart(stats);
+        // createTrendsChart(stats); // COMMENTED OUT - trends chart not used
         createPurokChart(stats);
     }
 
@@ -1313,6 +1243,7 @@
         };
 
         return {
+            // Resident statistics
             male: getStat('male_residents'),
             female: getStat('female_residents'),
             senior: getStat('senior_citizens'),
@@ -1325,10 +1256,12 @@
             residency: getStat('residency_certificates'),
             moral: getStat('good_moral_certificates'),
             other: getStat('other_certificates'),
+            // BLOTTER STATS
             pending: getStat('pending_blotters'),
-            investigating: getStat('investigating_blotters'),
-            hearings: getStat('hearing_blotters'),
+            ongoing: getStat('ongoing_blotters'),
+            referred: getStat('referred_blotters'),
             settled: getStat('settled_blotters'),
+            // Total statistics
             newRes: getStat('new_residents_month'),
             monthCerts: getStat('monthly_certificates'),
             monthBlotters: getStat('monthly_blotters'),
@@ -1458,9 +1391,9 @@
         charts.blotter = new Chart(ctx, {
             type: 'pie',
             data: {
-                labels: ['Pending', 'Investigating', 'Hearings', 'Settled'],
+                labels: ['Pending', 'Ongoing', 'Referred', 'Settled'],
                 datasets: [{
-                    data: [stats.pending, stats.investigating, stats.hearings, stats.settled],
+                    data: [stats.pending, stats.ongoing, stats.referred, stats.settled],
                     backgroundColor: ['#f56565', '#ecc94b', '#9f7aea', '#48bb78'],
                     borderWidth: 0
                 }]
@@ -1474,7 +1407,7 @@
                         callbacks: {
                             label: function(context) {
                                 const value = context.raw;
-                                const total = stats.pending + stats.investigating + stats.hearings + stats.settled;
+                                const total = stats.pending + stats.ongoing + stats.referred + stats.settled;
                                 const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
                                 return `${context.label}: ${value.toLocaleString()} (${percentage}%)`;
                             }
@@ -1662,7 +1595,7 @@
         // });
     }
 
-    // Modal functions
+    // Stats Modal functions
     function openStatsModal() {
         const modal = document.getElementById('statsModal');
         if (modal) modal.classList.add('active');
@@ -1673,9 +1606,22 @@
         if (modal) modal.classList.remove('active');
     }
 
+    // Officials Modal functions
+    function openOfficialsModal() {
+        const modal = document.getElementById('officialsModal');
+        if (modal) modal.classList.add('active');
+    }
+
+    function closeOfficialsModal() {
+        const modal = document.getElementById('officialsModal');
+        if (modal) modal.classList.remove('active');
+    }
+
     // Make functions globally available
     window.switchChartView = switchChartView;
     window.openStatsModal = openStatsModal;
     window.closeStatsModal = closeStatsModal;
+    window.openOfficialsModal = openOfficialsModal;
+    window.closeOfficialsModal = closeOfficialsModal;
 </script>
 @endpush

@@ -152,7 +152,7 @@
                         @if($isClerk)
                             {{-- Clerk sees read-only status --}}
                             <input type="text"
-                                   id="status"
+                                   id="status"  
                                    value="{{ $currentStatus }}"
                                    class="form-control"
                                    readonly>
@@ -167,7 +167,6 @@
                                 <option value="Investigating" {{ $currentStatus == 'Investigating' ? 'selected' : '' }}>Investigating</option>
                                 <option value="Hearings" {{ $currentStatus == 'Hearings' ? 'selected' : '' }}>Hearings</option>
                                 <option value="Settled" {{ $currentStatus == 'Settled' ? 'selected' : '' }}>Settled</option>
-                                <option value="Unsolved" {{ $currentStatus == 'Unsolved' ? 'selected' : '' }}>Unsolved</option>
                                 <option value="Dismissed" {{ $currentStatus == 'Dismissed' ? 'selected' : '' }}>Dismissed</option>
                             </select>
                         @endif

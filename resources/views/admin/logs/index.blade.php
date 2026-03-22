@@ -4,47 +4,133 @@
 
 @push('styles')
 <style>
+    /* ===== RESET & CONTAINER FIXES ===== */
+    .main-container {
+        display: flex;
+        min-height: calc(100vh - 70px);
+        background: #f8fafc;
+        width: 100%;
+        overflow-x: hidden;
+    }
+
+    .content {
+        flex: 1;
+        padding: 1rem;
+        overflow-y: auto;
+        overflow-x: hidden;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* ===== PAGE HEADER ===== */
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        background: white;
+        padding: 1.25rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        flex-wrap: wrap;
+        gap: 1rem;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .page-title h1 {
+        color: #333;
+        margin-bottom: 0.25rem;
+        font-size: 1.5rem;
+        font-weight: 700;
+    }
+
+    .page-title p {
+        color: #666;
+        font-size: 0.875rem;
+    }
+
+    .page-actions {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .export-btn {
+        background: #10b981;
+        color: white;
+        border: none;
+        padding: 0.6rem 1.2rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .export-btn:hover {
+        background: #0da271;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+    }
+
+    /* ===== STATS CARDS ===== */
     .logs-stats-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        width: 100%;
     }
 
     .log-stat-card {
         background: white;
         border-radius: 10px;
-        padding: 1.5rem;
+        padding: 1.25rem;
         box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         text-align: center;
+        min-width: 0;
     }
 
     .log-stat-card h4 {
         color: #666;
-        font-size: 0.9rem;
+        font-size: 0.8rem;
         margin-bottom: 0.5rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .log-stat-value {
-        font-size: 2rem;
+        font-size: 1.75rem;
         font-weight: bold;
         color: #667eea;
+        line-height: 1.2;
     }
 
     .log-stat-label {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         color: #999;
         margin-top: 0.5rem;
     }
 
+    /* ===== FILTER SECTION ===== */
     .filter-container {
         background: white;
         border-radius: 10px;
         padding: 1.5rem;
         box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         margin-bottom: 2rem;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .filter-title {
@@ -64,13 +150,14 @@
 
     .filter-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1.5rem;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
         margin-bottom: 1.5rem;
     }
 
     .filter-group {
         margin-bottom: 0;
+        min-width: 0;
     }
 
     .filter-group label {
@@ -78,7 +165,10 @@
         margin-bottom: 0.5rem;
         font-weight: 500;
         color: #555;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .filter-group select,
@@ -89,10 +179,7 @@
         border-radius: 5px;
         font-size: 0.9rem;
         background: #f8fafc;
-    }
-
-    .filter-group input[type="date"] {
-        padding: 0.5rem;
+        box-sizing: border-box;
     }
 
     .filter-actions {
@@ -101,12 +188,13 @@
         justify-content: flex-end;
         padding-top: 1rem;
         border-top: 1px solid #e2e8f0;
+        flex-wrap: wrap;
     }
 
     .filter-actions button {
-        padding: 0.7rem 1.5rem;
+        padding: 0.6rem 1.2rem;
         border-radius: 8px;
-        font-size: 0.95rem;
+        font-size: 0.9rem;
         font-weight: 500;
         cursor: pointer;
         transition: all 0.2s ease;
@@ -114,10 +202,7 @@
         align-items: center;
         gap: 0.5rem;
         border: 2px solid transparent;
-    }
-
-    .filter-actions button i {
-        font-size: 1rem;
+        white-space: nowrap;
     }
 
     .filter-actions button[type="button"] {
@@ -145,23 +230,137 @@
         box-shadow: 0 4px 6px -1px rgba(102, 126, 234, 0.3);
     }
 
-    .filter-actions button[type="submit"]:active {
-        transform: translateY(0);
-        box-shadow: none;
+    /* ===== DATA TABLE ===== */
+    .data-table {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        width: 100%;
+        overflow: hidden;
     }
 
-    .log-row {
-        transition: background-color 0.2s, opacity 0.3s;
+    .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.25rem;
+        border-bottom: 1px solid #e2e8f0;
+        flex-wrap: wrap;
+        gap: 1rem;
     }
 
-    .log-row:hover {
-        background-color: #f8fafc;
+    .table-header h3 {
+        margin: 0;
+        color: #333;
+        font-size: 1rem;
     }
 
+    .table-header-actions {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .delete-btn {
+        background: #ef4444;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .delete-btn:hover:not(:disabled) {
+        background: #dc2626;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);
+    }
+
+    .delete-btn:disabled {
+        background: #fca5a5;
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+    /* ===== TABLE CONTAINER WITH SCROLL ===== */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        width: 100%;
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e0 #f1f5f9;
+    }
+
+    .table-responsive::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    .table-responsive::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 10px;
+    }
+
+    .table-responsive::-webkit-scrollbar-thumb {
+        background: #cbd5e0;
+        border-radius: 10px;
+    }
+
+    .table-responsive::-webkit-scrollbar-thumb:hover {
+        background: #a0aec0;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 1000px; /* Table will scroll at this width */
+    }
+
+    th {
+        text-align: left;
+        padding: 1rem;
+        background: #f8fafc;
+        color: #475569;
+        font-weight: 600;
+        font-size: 0.8rem;
+        border-bottom: 2px solid #e2e8f0;
+        white-space: nowrap;
+    }
+
+    td {
+        padding: 1rem;
+        border-bottom: 1px solid #e2e8f0;
+        color: #333;
+        font-size: 0.9rem;
+        vertical-align: middle;
+    }
+
+    .checkbox-column {
+        width: 40px;
+        text-align: center;
+    }
+
+    .select-all-checkbox,
+    .log-checkbox {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+        accent-color: #667eea;
+    }
+
+    /* ===== USER INFO STYLES ===== */
     .user-info {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.75rem;
+        min-width: 0;
     }
 
     .user-avatar {
@@ -175,29 +374,38 @@
         justify-content: center;
         font-weight: 600;
         font-size: 0.8rem;
+        flex-shrink: 0;
     }
 
     .user-details {
         display: flex;
         flex-direction: column;
+        min-width: 0;
     }
 
     .user-name {
         font-weight: 500;
         color: #333;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .user-role {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         color: #666;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .action-badge {
-        padding: 0.3rem 0.8rem;
+        padding: 0.25rem 0.6rem;
         border-radius: 20px;
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         font-weight: 500;
         display: inline-block;
+        white-space: nowrap;
     }
 
     .action-login { background: #d1fae5; color: #065f46; }
@@ -207,6 +415,7 @@
     .action-delete { background: #fee2e2; color: #dc2626; }
     .action-other { background: #f1f5f9; color: #64748b; }
 
+    /* ===== PAGINATION ===== */
     .pagination-container {
         padding: 1.5rem;
         border-top: 1px solid #e2e8f0;
@@ -218,14 +427,14 @@
 
     .pagination-info {
         color: #666;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         text-align: center;
     }
 
     .pagination {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.25rem;
         list-style: none;
         padding: 0;
         margin: 0;
@@ -233,20 +442,16 @@
         justify-content: center;
     }
 
-    .pagination li {
-        display: inline-flex;
-    }
-
     .pagination li a,
     .pagination li span {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-width: 40px;
-        height: 40px;
-        padding: 0 0.9rem;
-        border-radius: 12px;
-        font-size: 0.95rem;
+        min-width: 36px;
+        height: 36px;
+        padding: 0 0.75rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
         text-decoration: none;
         border: 1px solid #e2e8f0;
         background: #ffffff;
@@ -265,7 +470,6 @@
         background: #667eea;
         color: #ffffff;
         border-color: #667eea;
-        font-weight: 600;
     }
 
     .pagination li.disabled span {
@@ -275,145 +479,15 @@
         cursor: not-allowed;
     }
 
-    .pagination li:first-child a,
-    .pagination li:first-child span,
-    .pagination li:last-child a,
-    .pagination li:last-child span {
-        padding: 0 1.2rem;
-    }
-
+    /* ===== EMPTY STATE ===== */
     .no-logs {
         text-align: center;
-        padding: 3rem;
+        padding: 2rem;
         color: #666;
         font-style: italic;
     }
 
-    .export-btn {
-        background: #10b981;
-        color: white;
-        border: none;
-        padding: 0.7rem 1.5rem;
-        border-radius: 8px;
-        font-size: 0.95rem;
-        font-weight: 500;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        text-decoration: none;
-        transition: all 0.2s ease;
-    }
-
-    .export-btn:hover {
-        background: #0da271;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
-    }
-
-    .export-btn:active {
-        transform: translateY(0);
-        box-shadow: none;
-    }
-
-    .export-btn i {
-        font-size: 1rem;
-    }
-
-    .data-table {
-        background: white;
-        border-radius: 10px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        overflow-x: auto;
-    }
-
-    .table-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1.5rem;
-        border-bottom: 1px solid #e2e8f0;
-    }
-
-    .table-header h3 {
-        margin: 0;
-        color: #333;
-        font-size: 1.1rem;
-    }
-
-    .table-header-actions {
-        display: flex;
-        gap: 1rem;
-        align-items: center;
-    }
-
-    .delete-btn {
-        background: #ef4444;
-        color: white;
-        border: none;
-        padding: 0.5rem 1rem;
-        border-radius: 6px;
-        font-size: 0.9rem;
-        font-weight: 500;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        transition: all 0.2s ease;
-    }
-
-    .delete-btn:hover:not(:disabled) {
-        background: #dc2626;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);
-    }
-
-    .delete-btn:active:not(:disabled) {
-        transform: translateY(0);
-        box-shadow: none;
-    }
-
-    .delete-btn:disabled {
-        background: #fca5a5;
-        cursor: not-allowed;
-        opacity: 0.6;
-    }
-
-    .checkbox-column {
-        width: 40px;
-        text-align: center;
-    }
-
-    .select-all-checkbox,
-    .log-checkbox {
-        width: 18px;
-        height: 18px;
-        cursor: pointer;
-        accent-color: #667eea;
-    }
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    th {
-        text-align: left;
-        padding: 1rem 1.5rem;
-        background: #f8fafc;
-        color: #475569;
-        font-weight: 600;
-        font-size: 0.9rem;
-        border-bottom: 2px solid #e2e8f0;
-    }
-
-    td {
-        padding: 1rem 1.5rem;
-        border-bottom: 1px solid #e2e8f0;
-        color: #333;
-    }
-
-    /* Modal Styles */
+    /* ===== MODAL STYLES ===== */
     .modal {
         display: none;
         position: fixed;
@@ -433,8 +507,8 @@
 
     .modal-content {
         background: white;
-        border-radius: 10px;
-        padding: 2rem;
+        border-radius: 12px;
+        padding: 1.5rem;
         max-width: 400px;
         width: 90%;
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
@@ -444,13 +518,13 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 1.5rem;
+        margin-bottom: 1rem;
     }
 
     .modal-header h3 {
         margin: 0;
         color: #333;
-        font-size: 1.25rem;
+        font-size: 1.1rem;
     }
 
     .modal-close {
@@ -462,20 +536,21 @@
     }
 
     .modal-body {
-        margin-bottom: 2rem;
+        margin-bottom: 1.5rem;
         color: #666;
+        font-size: 0.95rem;
     }
 
     .modal-footer {
         display: flex;
-        gap: 1rem;
+        gap: 0.75rem;
         justify-content: flex-end;
     }
 
     .modal-footer button {
-        padding: 0.7rem 1.5rem;
+        padding: 0.6rem 1.2rem;
         border-radius: 6px;
-        font-size: 0.95rem;
+        font-size: 0.9rem;
         font-weight: 500;
         cursor: pointer;
         transition: all 0.2s ease;
@@ -501,7 +576,7 @@
         background: #dc2626;
     }
 
-    /* Toast Notification Styles */
+    /* ===== TOAST NOTIFICATION ===== */
     .toast-container {
         position: fixed;
         top: 20px;
@@ -512,14 +587,14 @@
     .toast {
         background: white;
         border-radius: 8px;
-        padding: 1rem 1.5rem;
+        padding: 1rem;
         margin-bottom: 10px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         display: flex;
         align-items: center;
         gap: 12px;
-        min-width: 300px;
-        max-width: 400px;
+        min-width: 280px;
+        max-width: 350px;
         transform: translateX(120%);
         transition: transform 0.3s ease;
         border-left: 4px solid;
@@ -529,40 +604,18 @@
         transform: translateX(0);
     }
 
-    .toast.success {
-        border-left-color: #10b981;
-    }
+    .toast.success { border-left-color: #10b981; }
+    .toast.error { border-left-color: #ef4444; }
+    .toast.warning { border-left-color: #f59e0b; }
+    .toast.info { border-left-color: #3b82f6; }
 
-    .toast.success .toast-icon {
-        color: #10b981;
-    }
-
-    .toast.error {
-        border-left-color: #ef4444;
-    }
-
-    .toast.error .toast-icon {
-        color: #ef4444;
-    }
-
-    .toast.warning {
-        border-left-color: #f59e0b;
-    }
-
-    .toast.warning .toast-icon {
-        color: #f59e0b;
-    }
-
-    .toast.info {
-        border-left-color: #3b82f6;
-    }
-
-    .toast.info .toast-icon {
-        color: #3b82f6;
-    }
+    .toast.success .toast-icon { color: #10b981; }
+    .toast.error .toast-icon { color: #ef4444; }
+    .toast.warning .toast-icon { color: #f59e0b; }
+    .toast.info .toast-icon { color: #3b82f6; }
 
     .toast-icon {
-        font-size: 1.5rem;
+        font-size: 1.2rem;
     }
 
     .toast-content {
@@ -572,27 +625,23 @@
     .toast-title {
         font-weight: 600;
         color: #1e293b;
-        margin-bottom: 4px;
+        font-size: 0.9rem;
+        margin-bottom: 2px;
     }
 
     .toast-message {
         color: #64748b;
-        font-size: 0.9rem;
+        font-size: 0.8rem;
     }
 
     .toast-close {
         color: #94a3b8;
         cursor: pointer;
-        font-size: 1.2rem;
+        font-size: 1rem;
         padding: 4px;
-        transition: color 0.2s;
     }
 
-    .toast-close:hover {
-        color: #475569;
-    }
-
-    /* Loading overlay */
+    /* ===== LOADING OVERLAY ===== */
     .loading-overlay {
         position: fixed;
         top: 0;
@@ -611,10 +660,10 @@
     }
 
     .spinner {
-        width: 50px;
-        height: 50px;
-        border: 5px solid #f3f3f3;
-        border-top: 5px solid #667eea;
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
         border-radius: 50%;
         animation: spin 1s linear infinite;
     }
@@ -622,6 +671,104 @@
     @keyframes spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
+    }
+
+    /* ===== RESPONSIVE BREAKPOINTS ===== */
+    @media (max-width: 992px) {
+        .logs-stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .filter-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .content {
+            padding: 0.75rem;
+        }
+
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .page-actions {
+            width: 100%;
+        }
+
+        .export-btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .logs-stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .filter-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .filter-actions {
+            flex-direction: column;
+        }
+
+        .filter-actions button {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .table-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .table-header-actions {
+            width: 100%;
+        }
+
+        .delete-btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            font-size: 0.85rem;
+        }
+
+        .user-avatar {
+            width: 28px;
+            height: 28px;
+            font-size: 0.7rem;
+        }
+
+        /* Hide User Agent column on mobile */
+        th:nth-child(8), td:nth-child(8) {
+            display: none;
+        }
+    }
+
+    @media (max-width: 480px) {
+        /* Hide Role column on very small screens */
+        th:nth-child(4), td:nth-child(4) {
+            display: none;
+        }
+
+        .action-badge {
+            padding: 0.2rem 0.4rem;
+            font-size: 0.7rem;
+        }
+
+        .modal-content {
+            padding: 1.25rem;
+        }
+
+        .toast {
+            min-width: 250px;
+        }
     }
 </style>
 @endpush
@@ -668,7 +815,7 @@
             </div>
             <div class="log-stat-card">
                 <h4>Most Active User</h4>
-                <div class="log-stat-value" style="font-size: 1.5rem;" id="mostActiveUser">{{ $stats['most_active_user'] }}</div>
+                <div class="log-stat-value" style="font-size: 1.2rem;" id="mostActiveUser">{{ $stats['most_active_user'] }}</div>
                 <div class="log-stat-label">Highest Activity</div>
             </div>
         </div>
@@ -748,72 +895,76 @@
 
             @if($logs->count() > 0)
             <div id="logsTableContainer">
-                <table>
-                    <thead>
-                        <tr>
-                            <th class="checkbox-column">
-                                <input type="checkbox" class="select-all-checkbox" id="selectAll" onclick="toggleSelectAll(this)">
-                            </th>
-                            <th>Timestamp</th>
-                            <th>User</th>
-                            <th>Role</th>
-                            <th>Action</th>
-                            <th>Description</th>
-                            <th>IP Address</th>
-                            <th>User Agent</th>
-                        </tr>
-                    </thead>
-                    <tbody id="logsTableBody">
-                        @foreach($logs as $log)
-                        <tr class="log-row" id="log-row-{{ $log->id }}">
-                            <td class="checkbox-column">
-                                <input type="checkbox" value="{{ $log->id }}" class="log-checkbox" onclick="updateBulkDeleteButton()">
-                            </td>
-                            <td>{{ $log->created_at->format('M j, Y g:i A') }}</td>
-                            <td>
-                                <div class="user-info">
-                                    <div class="user-avatar">
-                                        {{ substr($log->user->username ?? 'S', 0, 1) }}
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="checkbox-column">
+                                    <input type="checkbox" class="select-all-checkbox" id="selectAll" onclick="toggleSelectAll(this)">
+                                </th>
+                                <th>Timestamp</th>
+                                <th>User</th>
+                                <th>Role</th>
+                                <th>Action</th>
+                                <th>Description</th>
+                                <th>IP Address</th>
+                                <th>User Agent</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsTableBody">
+                            @foreach($logs as $log)
+                            <tr class="log-row" id="log-row-{{ $log->id }}">
+                                <td class="checkbox-column">
+                                    <input type="checkbox" value="{{ $log->id }}" class="log-checkbox" onclick="updateBulkDeleteButton()">
+                                </td>
+                                <td>{{ $log->created_at->format('M j, Y g:i A') }}</td>
+                                <td>
+                                    <div class="user-info">
+                                        <div class="user-avatar">
+                                            {{ substr($log->user->username ?? 'S', 0, 1) }}
+                                        </div>
+                                        <div class="user-details">
+                                            <div class="user-name" title="{{ $log->user->full_name ?? ($log->user->username ?? 'System') }}">
+                                                {{ Str::limit($log->user->full_name ?? ($log->user->username ?? 'System'), 20) }}
+                                            </div>
+                                            @if($log->user)
+                                                <div class="user-role">{{ $log->user->username }}</div>
+                                            @endif
+                                        </div>
                                     </div>
-                                    <div class="user-details">
-                                        <div class="user-name">{{ $log->user->full_name ?? ($log->user->username ?? 'System') }}</div>
-                                        @if($log->user)
-                                            <div class="user-role">{{ $log->user->username }}</div>
-                                        @endif
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                @if($log->user)
-                                    <span class="action-badge action-other">
-                                        {{ ucfirst($log->user->role) }}
+                                </td>
+                                <td>
+                                    @if($log->user)
+                                        <span class="action-badge action-other">
+                                            {{ ucfirst($log->user->role) }}
+                                        </span>
+                                    @else
+                                        <span class="action-badge action-other">System</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @php
+                                        $actionClass = 'action-other';
+                                        if (str_contains(strtolower($log->action), 'login')) $actionClass = 'action-login';
+                                        elseif (str_contains(strtolower($log->action), 'logout')) $actionClass = 'action-logout';
+                                        elseif (str_contains(strtolower($log->action), 'create')) $actionClass = 'action-create';
+                                        elseif (str_contains(strtolower($log->action), 'update')) $actionClass = 'action-update';
+                                        elseif (str_contains(strtolower($log->action), 'delete')) $actionClass = 'action-delete';
+                                    @endphp
+                                    <span class="action-badge {{ $actionClass }}">
+                                        {{ ucfirst($log->action) }}
                                     </span>
-                                @else
-                                    <span class="action-badge action-other">System</span>
-                                @endif
-                            </td>
-                            <td>
-                                @php
-                                    $actionClass = 'action-other';
-                                    if (str_contains(strtolower($log->action), 'login')) $actionClass = 'action-login';
-                                    elseif (str_contains(strtolower($log->action), 'logout')) $actionClass = 'action-logout';
-                                    elseif (str_contains(strtolower($log->action), 'create')) $actionClass = 'action-create';
-                                    elseif (str_contains(strtolower($log->action), 'update')) $actionClass = 'action-update';
-                                    elseif (str_contains(strtolower($log->action), 'delete')) $actionClass = 'action-delete';
-                                @endphp
-                                <span class="action-badge {{ $actionClass }}">
-                                    {{ ucfirst($log->action) }}
-                                </span>
-                            </td>
-                            <td>{{ $log->description }}</td>
-                            <td>{{ $log->ip_address ?? 'N/A' }}</td>
-                            <td title="{{ $log->user_agent }}">
-                                {{ $log->short_user_agent }}
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                                </td>
+                                <td title="{{ $log->description }}">{{ Str::limit($log->description, 30) }}</td>
+                                <td>{{ $log->ip_address ?? 'N/A' }}</td>
+                                <td title="{{ $log->user_agent }}">
+                                    {{ $log->short_user_agent ?? Str::limit($log->user_agent, 20) }}
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Pagination -->

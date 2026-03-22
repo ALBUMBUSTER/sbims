@@ -51,7 +51,7 @@ class LoginController extends Controller
         if (!$user || !$user->is_active) {
             Log::warning('Login failed: User not found or inactive', ['username' => $request->username]);
             throw ValidationException::withMessages([
-                'username' => ['Invalid credentials or account is disabled.'],
+                'username' => ['account is disabled.'],
             ]);
         }
 
@@ -59,7 +59,7 @@ class LoginController extends Controller
         if (!Hash::check($request->password, $user->password)) {
             Log::warning('Login failed: Password mismatch', ['username' => $request->username]);
             throw ValidationException::withMessages([
-                'username' => ['Invalid credentials or account is disabled.'],
+                'username' => ['Invalid credentials.'],
             ]);
         }
 

@@ -211,6 +211,8 @@
                             <option value="What elementary school did you attend?" {{ old('security_question', $user->security_question ?? '') == "What elementary school did you attend?" ? 'selected' : '' }}>What elementary school did you attend?</option>
                             <option value="What is your favorite book?" {{ old('security_question', $user->security_question ?? '') == "What is your favorite book?" ? 'selected' : '' }}>What is your favorite book?</option>
                             <option value="What city were you born in?" {{ old('security_question', $user->security_question ?? '') == "What city were you born in?" ? 'selected' : '' }}>What city were you born in?</option>
+                            <option value="What is your favorite color?" {{ old('security_question', $user->security_question ?? '') == "What is your favorite color?" ? 'selected' : '' }}>What is your favorite color?</option>
+                            <option value="What is your email address?" {{ old('security_question', $user->security_question ?? '') == "What is your email address?" ? 'selected' : '' }}>What is your email address?</option>
                             <option value="When is your birthday?" {{ old('security_question', $user->security_question ?? '') == "When is your birthday?" ? 'selected' : '' }}>When is your birthday?</option>
                             <option value="What is your favorite food?" {{ old('security_question', $user->security_question ?? '') == "What is your favorite food?" ? 'selected' : '' }}>What is your favorite food?</option>
                             <option value="custom">Custom Question (type below)</option>

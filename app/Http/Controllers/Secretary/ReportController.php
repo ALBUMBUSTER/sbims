@@ -55,6 +55,7 @@ class ReportController extends Controller
             'by_gender' => [
                 'male' => Resident::where('gender', 'Male')->count(),
                 'female' => Resident::where('gender', 'Female')->count(),
+                'other' => Resident::where('gender', 'Other')->count(),
             ],
             'by_purok' => Resident::select('purok', DB::raw('count(*) as total'))
                 ->groupBy('purok')
@@ -140,7 +141,7 @@ class ReportController extends Controller
             'total' => Blotter::count(),
             'by_status' => [
                 'pending' => Blotter::where('status', 'Pending')->count(),
-                'ongoing' => Blotter::whereIn('status', ['Investigating', 'Hearings'])->count(),
+                'ongoing' => Blotter::where('status', 'Ongoing')->count(),
                 'settled' => Blotter::where('status', 'Settled')->count(),
                 'referred' => Blotter::where('status', 'Referred')->count(),
             ],
@@ -157,43 +158,49 @@ class ReportController extends Controller
     /**
      * Display summary report.
      */
-    public function summary(Request $request)
-    {
-        $year = $request->get('year', date('Y'));
+public function summary(Request $request)
+{
+    $year = $request->get('year', date('Y'));
 
-        $statistics = [
-            'year' => $year,
-            'residents' => [
-                'total' => Resident::count(),
-                'new_this_year' => Resident::whereYear('created_at', $year)->count(),
-                'by_gender' => [
-                    'male' => Resident::where('gender', 'Male')->count(),
-                    'female' => Resident::where('gender', 'Female')->count(),
-                ],
-                'monthly' => $this->getResidentsMonthlyTrend($year),
+    $statistics = [
+        'year' => $year,
+        'residents' => [
+            'total' => Resident::count(),
+            'new_this_year' => Resident::whereYear('created_at', $year)->count(),
+            'by_gender' => [
+                'male' => Resident::where('gender', 'Male')->count(),
+                'female' => Resident::where('gender', 'Female')->count(),
+                'other' => Resident::where('gender', 'Other')->count(),
             ],
-            'certificates' => [
-                'total' => Certificate::count(),
-                'issued_this_year' => Certificate::whereYear('created_at', $year)->count(),
-                'by_status' => [
-                    'pending' => Certificate::where('status', 'Pending')->count(),
-                    'released' => Certificate::where('status', 'Released')->count(),
-                ],
-                'monthly' => $this->getCertificatesMonthlyTrend($year),
+            'monthly' => $this->getResidentsMonthlyTrend($year),
+        ],
+        'certificates' => [
+            'total' => Certificate::count(),
+            'issued_this_year' => Certificate::whereYear('created_at', $year)->count(),
+            'by_status' => [
+                'pending' => Certificate::where('status', 'Pending')->count(),
+                'approved' => Certificate::where('status', 'Approved')->count(),
+                'released' => Certificate::where('status', 'Released')->count(),
+                'rejected' => Certificate::where('status', 'Rejected')->count(),
             ],
-            'blotters' => [
-                'total' => Blotter::count(),
-                'filed_this_year' => Blotter::whereYear('created_at', $year)->count(),
-                'by_status' => [
-                    'active' => Blotter::whereIn('status', ['Pending', 'Investigating', 'Hearings'])->count(),
-                    'settled' => Blotter::where('status', 'Settled')->count(),
-                ],
-                'monthly' => $this->getBlottersMonthlyTrend($year),
+            'monthly' => $this->getCertificatesMonthlyTrend($year),
+        ],
+        'blotters' => [
+            'total' => Blotter::count(),
+            'filed_this_year' => Blotter::whereYear('created_at', $year)->count(),
+            'by_status' => [
+                'pending' => Blotter::where('status', 'Pending')->count(),
+                'ongoing' => Blotter::where('status', 'Ongoing')->count(),
+                'settled' => Blotter::where('status', 'Settled')->count(),
+                'referred' => Blotter::where('status', 'Referred')->count(),
+                'active' => Blotter::whereIn('status', ['Pending', 'Ongoing', 'Referred'])->count(),
             ],
-        ];
+            'monthly' => $this->getBlottersMonthlyTrend($year),
+        ],
+    ];
 
-        return view('secretary.reports.summary', compact('statistics'));
-    }
+    return view('secretary.reports.summary', compact('statistics'));
+}
 
     /**
      * Generate reports based on criteria.
@@ -355,6 +362,7 @@ class ReportController extends Controller
                 'by_gender' => [
                     'male' => Resident::where('gender', 'Male')->count(),
                     'female' => Resident::where('gender', 'Female')->count(),
+                    'other' => Resident::where('gender', 'Other')->count(),
                 ],
                 'monthly' => $this->getResidentsMonthlyTrend($year),
             ],
@@ -371,7 +379,7 @@ class ReportController extends Controller
                 'total' => Blotter::count(),
                 'filed_this_year' => Blotter::whereYear('created_at', $year)->count(),
                 'by_status' => [
-                    'active' => Blotter::whereIn('status', ['Pending', 'Investigating', 'Hearings'])->count(),
+                    'active' => Blotter::whereIn('status', ['Pending', 'Ongoing', 'Referred'])->count(),
                     'settled' => Blotter::where('status', 'Settled')->count(),
                 ],
                 'monthly' => $this->getBlottersMonthlyTrend($year),
@@ -409,7 +417,7 @@ class ReportController extends Controller
         // Get counts by status
         $byStatus = [
             'pending' => (clone $query)->where('status', 'Pending')->count(),
-            'ongoing' => (clone $query)->whereIn('status', ['Investigating', 'Hearings'])->count(),
+            'ongoing' => (clone $query)->where('status', 'Ongoing')->count(),
             'settled' => (clone $query)->where('status', 'Settled')->count(),
             'referred' => (clone $query)->where('status', 'Referred')->count(),
         ];
@@ -447,6 +455,7 @@ class ReportController extends Controller
             'by_gender' => [
                 'male' => (clone $query)->where('gender', 'Male')->count(),
                 'female' => (clone $query)->where('gender', 'Female')->count(),
+                'other' => (clone $query)->where('gender', 'Other')->count(),
             ],
             'by_status' => [
                 'voters' => (clone $query)->where('is_voter', true)->count(),

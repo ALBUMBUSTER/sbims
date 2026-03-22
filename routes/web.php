@@ -95,7 +95,7 @@ Route::middleware(['auth'])->group(function () {
     });
 });
     // Admin Routes
-    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::prefix('admin')->name('admin.')->group(function () {
         // User Management (Resourceful routes)
         Route::resource('users', UserController::class)->except(['show']);
         Route::post('/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
@@ -124,6 +124,7 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/backups/{backup}', [BackupController::class, 'destroy'])->name('backups.destroy');
         Route::put('/backups/schedule', [BackupController::class, 'updateSchedule'])->name('backups.schedule');
         Route::put('/barangay/update-stats', [BarangayInfoController::class, 'updateStats'])->name('barangay.update-stats');
+        Route::match(['PUT', 'POST'], '/barangay/update-officials', [BarangayInfoController::class, 'updateOfficials'])->name('barangay.update-officials');
     });
 
     // Captain Routes

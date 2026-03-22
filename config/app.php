@@ -106,7 +106,7 @@ return [
         App\Providers\AppServiceProvider::class,
         // Remove these if they don't exist in Laravel 11
         // App\Providers\AuthServiceProvider::class,
-        // App\Providers\BroadcastServiceProvider::class,
+        App\Providers\BroadcastServiceProvider::class,
         // App\Providers\EventServiceProvider::class,
         // App\Providers\RouteServiceProvider::class,
     ],

@@ -23,85 +23,113 @@ class BackupService
         }
     }
 
-    /**
-     * Create a database backup
-     */
-    public function createDatabaseBackup($userId = null)
-    {
-        try {
-            $filename = 'backup_' . date('Y-m-d_His') . '.sql';
-            $filepath = $this->backupPath . '/' . $filename;
+/**
+ * Create a database backup
+ */
+public function createDatabaseBackup($userId = null)
+{
+    try {
+        $filename = 'backup_' . date('Y-m-d_His') . '.sql';
+        $filepath = $this->backupPath . '/' . $filename;
 
-            // Get database configuration
-            $dbHost = env('DB_HOST', '127.0.0.1');
-            $dbPort = env('DB_PORT', '3306');
-            $dbName = env('DB_DATABASE', 'sbims_pro');
-            $dbUser = env('DB_USERNAME', 'root');
-            $dbPass = env('DB_PASSWORD', '');
+        // Get database configuration
+        $dbHost = env('DB_HOST', '127.0.0.1');
+        $dbPort = env('DB_PORT', '3306');
+        $dbName = env('DB_DATABASE', 'sbims_pro');
+        $dbUser = env('DB_USERNAME', 'root');
+        $dbPass = env('DB_PASSWORD', '');
 
-            // Build mysqldump command
+        // Set the correct path to mysqldump in MAMP
+        $mysqlDumpPath = 'C:\\MAMP\\bin\\mysql\\bin\\mysqldump.exe';
+
+        // Check if mysqldump exists
+        if (!file_exists($mysqlDumpPath)) {
+            throw new \Exception('mysqldump not found at: ' . $mysqlDumpPath . '. Please check your MAMP MySQL path.');
+        }
+
+        // Build mysqldump command with full path
+        if (empty($dbPass)) {
             $command = sprintf(
-                'mysqldump --host=%s --port=%s --user=%s %s > %s',
+                '"%s" --host=%s --port=%s --user=%s --single-transaction --routines --triggers --databases %s 2>&1',
+                $mysqlDumpPath,
                 escapeshellarg($dbHost),
                 escapeshellarg($dbPort),
                 escapeshellarg($dbUser),
-                escapeshellarg($dbName),
-                escapeshellarg($filepath)
+                escapeshellarg($dbName)
             );
+        } else {
+            // For Windows, we need to handle password differently
+            // Use the password in the command line for Windows
+            $command = sprintf(
+                '"%s" --host=%s --port=%s --user=%s --password=%s --single-transaction --routines --triggers --databases %s 2>&1',
+                $mysqlDumpPath,
+                escapeshellarg($dbHost),
+                escapeshellarg($dbPort),
+                escapeshellarg($dbUser),
+                $dbPass, // Don't escapeshellarg the password as it can cause issues
+                escapeshellarg($dbName)
+            );
+        }
 
-            if (!empty($dbPass)) {
-                $command = sprintf(
-                    'mysqldump --host=%s --port=%s --user=%s --password=%s %s > %s',
-                    escapeshellarg($dbHost),
-                    escapeshellarg($dbPort),
-                    escapeshellarg($dbUser),
-                    escapeshellarg($dbPass),
-                    escapeshellarg($dbName),
-                    escapeshellarg($filepath)
-                );
-            }
+        // Log the command for debugging (remove in production)
+        Log::info('Backup command: ' . $command);
 
-            // Execute command
-            exec($command, $output, $returnCode);
+        // Execute command
+        $output = [];
+        $returnCode = 0;
 
-            if ($returnCode !== 0) {
-                throw new \Exception('mysqldump failed with code: ' . $returnCode);
-            }
+        $fullCommand = $command . ' > ' . escapeshellarg($filepath);
+        exec($fullCommand, $output, $returnCode);
 
-            // Get list of tables backed up
-            $tables = DB::select('SHOW TABLES');
-            $tablesBackedUp = array_map('current', $tables);
+        if ($returnCode !== 0) {
+            // If command failed, read the error from the file or output
+            $errorOutput = file_exists($filepath) ? file_get_contents($filepath) : implode("\n", $output);
+            throw new \Exception('mysqldump failed with code: ' . $returnCode . ' - ' . $errorOutput);
+        }
 
-            // Create backup record
-            $backup = Backup::create([
-                'filename' => $filename,
-                'path' => 'backups/' . $filename,
-                'size' => filesize($filepath),
-                'type' => 'database',
-                'tables_backed_up' => $tablesBackedUp,
-                'created_at' => now()
-            ]);
+        // Check if file was created and has content
+        if (!file_exists($filepath) || filesize($filepath) === 0) {
+            throw new \Exception('Backup file is empty or was not created');
+        }
 
-            // Update last backup time in settings
+        // Get list of tables backed up
+        $tables = DB::select('SHOW TABLES');
+        $tablesBackedUp = array_map(function($table) {
+            return current((array)$table);
+        }, $tables);
+
+        // Create backup record
+        $backup = Backup::create([
+            'filename' => $filename,
+            'path' => 'backups/' . $filename,
+            'size' => filesize($filepath),
+            'type' => 'database',
+            'tables_backed_up' => $tablesBackedUp,
+            'created_at' => now()
+        ]);
+
+        // Update last backup time in settings
+        if (class_exists('\App\Models\BackupSetting')) {
             BackupSetting::set('last_backup_run', now()->toDateTimeString());
             $this->updateNextBackupTime();
-
-            Log::info('Database backup created', [
-                'backup_id' => $backup->id,
-                'filename' => $filename,
-                'size' => $backup->size
-            ]);
-
-            return $backup;
-
-        } catch (\Exception $e) {
-            Log::error('Database backup failed', [
-                'error' => $e->getMessage()
-            ]);
-            throw $e;
         }
-    }
 
+        Log::info('Database backup created', [
+            'backup_id' => $backup->id,
+            'filename' => $filename,
+            'size' => $backup->size
+        ]);
+
+        return $backup;
+
+    } catch (\Exception $e) {
+        Log::error('Database backup failed', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        throw $e;
+    }
+}
     /**
      * Create a full backup (database + files)
      */
@@ -167,6 +195,7 @@ class BackupService
         }
     }
 
+
     /**
      * Add folder contents to zip archive
      */
@@ -225,6 +254,8 @@ class BackupService
         $dbName = env('DB_DATABASE', 'sbims_pro');
         $dbUser = env('DB_USERNAME', 'root');
         $dbPass = env('DB_PASSWORD', '');
+
+        $mysqlDumpPath = 'C:\\MAMP\\bin\\mysql\\bin\\mysql.exe'; // Use mysql.exe for restore, not mysqldump
 
         $command = sprintf(
             'mysql --host=%s --port=%s --user=%s %s < %s',

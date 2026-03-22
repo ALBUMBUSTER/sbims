@@ -52,6 +52,9 @@ class BarangayInfoController extends Controller
         // Check if we have manual overrides in session (for testing/editing)
         $manual = session('manual_stats', []);
 
+        // Get officials data from session
+        $officialsData = session('officials_data', []);
+
         // Resident Statistics
         $totalResidents = Resident::count();
         $maleResidents = Resident::where('gender', 'Male')->count();
@@ -84,8 +87,8 @@ class BarangayInfoController extends Controller
         // Blotter Statistics
         $totalBlotters = Blotter::count();
         $pendingBlotters = Blotter::where('status', 'Pending')->count();
-        $investigatingBlotters = Blotter::where('status', 'Investigating')->count();
-        $hearingBlotters = Blotter::where('status', 'Hearings')->count();
+        $ongoingBlotters = Blotter::where('status', 'Ongoing')->count();
+        $referredBlotters = Blotter::where('status', 'Referred')->count();
         $settledBlotters = Blotter::where('status', 'Settled')->count();
         $monthlyBlotters = Blotter::where('created_at', '>=', $startOfMonth)->count();
 
@@ -104,12 +107,6 @@ class BarangayInfoController extends Controller
         // Officials Statistics
         $totalOfficials = User::whereIn('role_id', [2, 3, 4])->count(); // Captain, Secretary, etc.
         $activeOfficials = User::whereIn('role_id', [2, 3, 4])->where('is_active', true)->count();
-
-        // For now, we'll set placeholder values for these
-        $barangayTreasurer = 'Not set';
-        $skChairman = 'Not set';
-        $kagawadsCount = 'Not set';
-        $tanodsCount = 'Not set';
 
         // Monthly Transactions
         $monthlyTransactions = $monthlyCertificates + $monthlyBlotters + $newResidentsMonth;
@@ -137,8 +134,8 @@ class BarangayInfoController extends Controller
             // Blotter stats
             'total_blotters' => $manual['total_blotters'] ?? $totalBlotters,
             'pending_blotters' => $pendingBlotters,
-            'investigating_blotters' => $investigatingBlotters,
-            'hearing_blotters' => $hearingBlotters,
+            'ongoing_blotters' => $ongoingBlotters,
+            'referred_blotters' => $referredBlotters,
             'settled_blotters' => $settledBlotters,
             'monthly_blotters' => $monthlyBlotters,
 
@@ -156,10 +153,10 @@ class BarangayInfoController extends Controller
             // Officials stats
             'total_officials' => $totalOfficials,
             'active_officials' => $activeOfficials,
-            'barangay_treasurer' => $barangayTreasurer,
-            'sk_chairman' => $skChairman,
-            'kagawads_count' => $kagawadsCount,
-            'tanods_count' => $tanodsCount,
+            'barangay_treasurer' => $officialsData['barangay_treasurer'] ?? 'Not set',
+            'sk_chairman' => $officialsData['sk_chairman'] ?? 'Not set',
+            'kagawads_count' => $officialsData['kagawads_count'] ?? 'Not set',
+            'tanods_count' => $officialsData['tanods_count'] ?? 'Not set',
 
             // Monthly stats
             'monthly_transactions' => $monthlyTransactions,
@@ -228,6 +225,55 @@ class BarangayInfoController extends Controller
 
         return redirect()->route('admin.barangay.index')
             ->with('success', 'Barangay information updated successfully.');
+    }
+
+    /**
+     * Update barangay officials
+     */
+    public function updateOfficials(Request $request)
+    {
+        $validated = $request->validate([
+            'barangay_captain' => 'nullable|string|max:100',
+            'barangay_secretary' => 'nullable|string|max:100',
+            'barangay_treasurer' => 'nullable|string|max:100',
+            'kagawads_count' => 'nullable|integer|min:0|max:20',
+            'sk_chairman' => 'nullable|string|max:100',
+            'tanods_count' => 'nullable|integer|min:0|max:50',
+        ]);
+
+        // Get the barangay info record
+        $barangayInfo = BarangayInfo::first();
+
+        if (!$barangayInfo) {
+            $barangayInfo = new BarangayInfo();
+        }
+
+        // Update captain and secretary in the main table
+        $barangayInfo->barangay_captain = $validated['barangay_captain'] ?? $barangayInfo->barangay_captain;
+        $barangayInfo->barangay_secretary = $validated['barangay_secretary'] ?? $barangayInfo->barangay_secretary;
+        $barangayInfo->save();
+
+        // Store the other values in session
+        $officialsData = [
+            'barangay_treasurer' => $validated['barangay_treasurer'] ?? null,
+            'kagawads_count' => $validated['kagawads_count'] ?? null,
+            'sk_chairman' => $validated['sk_chairman'] ?? null,
+            'tanods_count' => $validated['tanods_count'] ?? null,
+        ];
+
+        session(['officials_data' => $officialsData]);
+
+        // Log the action
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'update',
+            'description' => "Updated barangay officials information",
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
+        return redirect()->route('admin.barangay.index')
+            ->with('success', 'Barangay officials updated successfully.');
     }
 
     /**

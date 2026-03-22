@@ -46,12 +46,12 @@
         <div class="user-profile">
             <span>{{ auth()->user()->full_name ?? auth()->user()->name }} ({{ ucfirst(auth()->user()->role) }})</span>
             <div class="user-dropdown">
-                <form action="{{ route('logout') }}" method="POST">
+                {{-- <form action="{{ route('logout') }}" method="POST">
                     @csrf
                     <button type="submit" style="background: none; border: none; color: inherit; cursor: pointer; padding: 0;">
                         Logout
                     </button>
-                </form>
+                </form> --}}
             </div>
         </div>
     </div>
@@ -593,6 +593,55 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Load notifications every 30 seconds
     setInterval(loadNotifications, 30000);
+    // Get current user ID from Laravel
+const userId = {{ auth()->user()->id }};
+
+// Initialize Echo for real-time notifications
+if (typeof Echo !== 'undefined') {
+    console.log('Echo initialized, listening for notifications for user:', userId);
+
+    Echo.private('notifications.' + userId)
+        .listen('.notification.received', (e) => {
+            console.log('Real-time notification received:', e);
+
+            // Update notification badge
+            const badge = document.getElementById('notificationBadge');
+            let currentCount = badge ? parseInt(badge.textContent) || 0 : 0;
+            currentCount++;
+
+            if (badge) {
+                badge.textContent = currentCount;
+                badge.style.display = 'inline';
+            } else {
+                // Create badge if it doesn't exist
+                const icon = document.querySelector('.notification-icon');
+                const newBadge = document.createElement('span');
+                newBadge.className = 'notification-badge';
+                newBadge.id = 'notificationBadge';
+                newBadge.textContent = '1';
+                icon.appendChild(newBadge);
+            }
+
+            // Show toast notification (if you have a toast function)
+            if (typeof showToast === 'function') {
+                showToast(e.title, e.message, e.type);
+            } else {
+                // Fallback alert
+                console.log('New notification:', e.title, e.message);
+            }
+
+            // Update notification list if panel is open
+            const panel = document.getElementById('notificationPanel');
+            if (panel && panel.classList.contains('show')) {
+                // Reload notifications if you have a loadNotifications function
+                if (typeof loadNotifications === 'function') {
+                    loadNotifications();
+                }
+            }
+        });
+} else {
+    console.error('Echo is not defined. Make sure Laravel Echo is properly installed.');
+}
 });
 
 function loadNotifications() {

@@ -67,36 +67,54 @@ class BackupController extends Controller
     }
 }
 
-    /**
-     * Download a backup file
-     */
-    public function download(Backup $backup)
-    {
-        try {
-            if (!$backup->fileExists()) {
-                throw new \Exception('Backup file not found');
-            }
-
-            $filepath = $backup->getFilePath();
-            $filename = $backup->filename;
-
-            Log::info('Backup downloaded', [
+/**
+ * Download a backup file
+ */
+public function download(Backup $backup)
+{
+    try {
+        if (!$backup->fileExists()) {
+            // Log the paths for debugging
+            Log::error('Backup file not found', [
                 'backup_id' => $backup->id,
-                'user_id' => Auth::id()
+                'filename' => $backup->filename,
+                'path' => $backup->path,
+                'full_path' => $backup->getFilePath(),
+                'storage_path' => storage_path('app/' . $backup->path)
             ]);
 
-            return response()->download($filepath, $filename);
-
-        } catch (\Exception $e) {
-            Log::error('Backup download failed', [
-                'backup_id' => $backup->id,
-                'error' => $e->getMessage()
-            ]);
-
-            return redirect()->route('admin.backups.index')
-                ->with('error', 'Download failed: ' . $e->getMessage());
+            throw new \Exception('Backup file not found at: ' . $backup->getFilePath());
         }
+
+        $filepath = $backup->getFilePath();
+        $filename = $backup->filename;
+
+        // Check if file is readable
+        if (!is_readable($filepath)) {
+            throw new \Exception('Backup file is not readable');
+        }
+
+        Log::info('Backup downloaded', [
+            'backup_id' => $backup->id,
+            'user_id' => Auth::id()
+        ]);
+
+        return response()->download($filepath, $filename, [
+            'Content-Type' => 'application/octet-stream',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"'
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Backup download failed', [
+            'backup_id' => $backup->id,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return redirect()->route('admin.backups.index')
+            ->with('error', 'Download failed: ' . $e->getMessage());
     }
+}
 
     /**
      * Restore from a backup

@@ -79,6 +79,7 @@
             <option value="">Select Gender</option>
             <option value="Male" {{ old('gender', $resident->gender ?? '') == 'Male' ? 'selected' : '' }}>Male</option>
             <option value="Female" {{ old('gender', $resident->gender ?? '') == 'Female' ? 'selected' : '' }}>Female</option>
+            <option value="Other" {{ old('gender', $resident->gender ?? '') == 'Other' ? 'selected' : '' }}>Other</option>
         </select>
         @error('gender')
             <span class="invalid-feedback">{{ $message }}</span>

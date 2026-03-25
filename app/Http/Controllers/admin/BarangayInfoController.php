@@ -59,6 +59,7 @@ class BarangayInfoController extends Controller
         $totalResidents = Resident::count();
         $maleResidents = Resident::where('gender', 'Male')->count();
         $femaleResidents = Resident::where('gender', 'Female')->count();
+        $otherResidents = Resident::where('gender', 'Other')->count();
         $seniorCitizens = Resident::where('is_senior', true)->count();
         $pwd = Resident::where('is_pwd', true)->count();
         $fourPs = Resident::where('is_4ps', true)->count();
@@ -120,6 +121,7 @@ class BarangayInfoController extends Controller
             'total_residents' => $manual['total_residents'] ?? $totalResidents,
             'male_residents' => $maleResidents,
             'female_residents' => $femaleResidents,
+            'other_residents' => $otherResidents,
             'senior_citizens' => $seniorCitizens,
             'pwd' => $pwd,
             'four_ps' => $fourPs,

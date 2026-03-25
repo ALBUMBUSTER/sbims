@@ -20,7 +20,6 @@ class UserController extends Controller
     {
         $users = User::orderBy('role_id')->orderBy('username')->get();
 
-        // Calculate statistics
         $stats = [
             'total' => User::count(),
             'active' => User::where('is_active', true)->count(),
@@ -66,7 +65,6 @@ class UserController extends Controller
             'last_login' => null,
         ]);
 
-        // Set security answer separately to trigger mutator
         $user->security_answer = $validated['security_answer'];
         $user->save();
 
@@ -74,8 +72,8 @@ class UserController extends Controller
         $roleNames = [1 => 'Admin', 2 => 'Captain', 3 => 'Secretary', 4 => 'Clerk'];
         $roleName = $roleNames[$validated['role_id']] ?? 'User';
 
-        // Notify all admins except current user
-        NotificationHelper::toEveryoneExcept(
+        // FIX 1: Notify all admins EXCEPT current user
+        NotificationHelper::toAdminsExceptCurrent(
             Auth::id(),
             'New User Created',
             'New ' . $roleName . ' account created: ' . $user->full_name,
@@ -83,7 +81,7 @@ class UserController extends Controller
             route('admin.users.edit', $user->id)
         );
 
-        // Notify the new user
+        // Notify the new user (keep this)
         NotificationHelper::toUser(
             $user->id,
             'Welcome to SBIMS-PRO',
@@ -93,7 +91,6 @@ class UserController extends Controller
         );
         // ========== END NOTIFICATIONS ==========
 
-        // Log to activity_logs table
         ActivityLog::create([
             'user_id' => Auth::id(),
             'action' => 'create',
@@ -130,7 +127,7 @@ class UserController extends Controller
         ]);
 
         $oldRole = $user->role_id;
-        $oldStatus = $user->is_active;
+        $oldName = $user->full_name;
 
         $updateData = [
             'username' => $validated['username'],
@@ -147,7 +144,6 @@ class UserController extends Controller
 
         $user->update($updateData);
 
-        // Update security answer only if provided
         if ($request->filled('security_answer')) {
             $user->security_answer = $validated['security_answer'];
             $user->save();
@@ -158,20 +154,34 @@ class UserController extends Controller
             $roleNames = [1 => 'Admin', 2 => 'Captain', 3 => 'Secretary', 4 => 'Clerk'];
             $newRoleName = $roleNames[$validated['role_id']] ?? 'User';
 
-            NotificationHelper::toAdmins(
+            // FIX 2: Notify all admins EXCEPT current user
+            NotificationHelper::toAdminsExceptCurrent(
+                Auth::id(),
                 'User Role Changed',
                 $user->full_name . '\'s role was changed to ' . $newRoleName,
                 'info',
                 route('admin.users.edit', $user->id)
             );
 
-            // Notify the user
+            // Notify the user (keep this)
             NotificationHelper::toUser(
                 $user->id,
                 'Your Role Has Been Updated',
                 'Your role has been changed to ' . $newRoleName,
                 'info',
                 route('dashboard')
+            );
+        }
+
+        // FIX 3: Notify about general user update (excluding current admin)
+        // Only if something else changed and current user is not the one being edited
+        if (Auth::id() != $user->id && $oldRole == $validated['role_id']) {
+            NotificationHelper::toAdminsExceptCurrent(
+                Auth::id(),
+                'User Updated',
+                'Admin ' . Auth::user()->full_name . ' updated user: ' . $oldName . ' → ' . $user->full_name,
+                'info',
+                route('admin.users.edit', $user->id)
             );
         }
         // ========== END NOTIFICATIONS ==========
@@ -193,10 +203,8 @@ class UserController extends Controller
      */
     public function toggleStatus(User $user)
     {
-        // Get current authenticated user safely
         $currentUser = Auth::user();
 
-        // Prevent admin from deactivating themselves
         if ($currentUser && $user->id === $currentUser->id) {
             return redirect()->back()
                 ->with('error', 'You cannot deactivate your own account.');
@@ -212,7 +220,7 @@ class UserController extends Controller
         $action = $newStatus ? 'activated' : 'deactivated';
 
         // ========== NOTIFICATIONS ==========
-        // Notify the user
+        // Notify the user (keep this)
         NotificationHelper::toUser(
             $user->id,
             'Account ' . ucfirst($action),
@@ -221,8 +229,9 @@ class UserController extends Controller
             route('dashboard')
         );
 
-        // Notify all admins
-        NotificationHelper::toAdmins(
+        // FIX 4: Notify all admins EXCEPT current user
+        NotificationHelper::toAdminsExceptCurrent(
+            Auth::id(),
             'User ' . ucfirst($action),
             $user->full_name . '\'s account has been ' . $action . ' by ' . Auth::user()->name,
             $newStatus ? 'success' : 'warning',
@@ -230,14 +239,12 @@ class UserController extends Controller
         );
         // ========== END NOTIFICATIONS ==========
 
-        // Log to Laravel log file
         Log::info('User status toggled', [
             'admin_id' => $currentUser ? $currentUser->id : 'Unknown',
             'user_id' => $user->id,
             'action' => $action
         ]);
 
-        // Log to activity_logs table
         ActivityLog::create([
             'user_id' => Auth::id(),
             'action' => 'update',
@@ -255,32 +262,32 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
-        // Get current authenticated user safely
         $currentUser = Auth::user();
 
-        // Prevent admin from deleting themselves
         if ($currentUser && $user->id === $currentUser->id) {
             return redirect()->back()
                 ->with('error', 'You cannot delete your own account.');
         }
 
+        $userName = $user->full_name;
+
         // ========== NOTIFICATIONS ==========
-        // Notify all admins
-        NotificationHelper::toAdmins(
+        // FIX 5: Notify all admins EXCEPT current user
+        NotificationHelper::toAdminsExceptCurrent(
+            Auth::id(),
             'User Deleted',
             $user->full_name . '\'s account was deleted by ' . Auth::user()->name,
-            'danger'
+            'danger',
+            route('admin.users.index')
         );
         // ========== END NOTIFICATIONS ==========
 
-        // Log to Laravel log file
         Log::info('User deleted by admin', [
             'admin_username' => $currentUser ? $currentUser->username : 'Unknown',
             'deleted_user_id' => $user->id,
             'deleted_user' => $user->username
         ]);
 
-        // Log to activity_logs table
         ActivityLog::create([
             'user_id' => Auth::id(),
             'action' => 'delete',

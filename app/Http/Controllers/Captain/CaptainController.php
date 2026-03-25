@@ -19,79 +19,88 @@ class CaptainController extends Controller
     /**
      * Display captain dashboard
      */
-    public function dashboard()
-    {
-        // Get current year for monthly stats
-        $currentYear = Carbon::now()->year;
+public function dashboard()
+{
+    try {
+        $totalResidents = DB::table('residents')->count();
+        $totalCertificates = DB::table('certificates')->count();
+        $totalBlotters = DB::table('blotters')->count();
+        $pendingBlotters = DB::table('blotters')->where('status', 'Pending')->count();
+        $activeBlotters = DB::table('blotters')->whereIn('status', ['Pending', 'Ongoing'])->count();
+        $settledBlotters = DB::table('blotters')->where('status', 'Settled')->count();
+        $pendingCertificates = DB::table('certificates')->where('status', 'Pending')->count();
+        $releasedCertificates = DB::table('certificates')->where('status', 'Released')->count();
 
-        // Statistics Cards
-        $totalResidents = Resident::count();
-        $totalBlotters = Blotter::count();
-        $pendingBlotters = Blotter::where('status', 'Pending')->count();
-        $settledBlotters = Blotter::where('status', 'Settled')->count();
-        $totalCertificates = Certificate::count();
-        $pendingCertificates = Certificate::where('status', 'Pending')->count();
-        $activeBlotters = Blotter::whereIn('status', ['Investigating', 'Hearings'])->count();
-        $releasedCertificates = Certificate::where('status', 'Released')->count();
-
-        // Monthly Statistics for Chart
-        $monthlyStats = [
-            'blotters' => [],
-            'certificates' => []
-        ];
-
-        // Get monthly blotter counts
-        for ($i = 1; $i <= 12; $i++) {
-            $monthlyStats['blotters'][$i] = Blotter::whereYear('created_at', $currentYear)
-                ->whereMonth('created_at', $i)
-                ->count();
-
-            $monthlyStats['certificates'][$i] = Certificate::whereYear('created_at', $currentYear)
-                ->whereMonth('created_at', $i)
-                ->count();
-        }
-
-        // Convert to indexed array for JSON (remove keys)
-        $monthlyStats['blotters'] = array_values($monthlyStats['blotters']);
-        $monthlyStats['certificates'] = array_values($monthlyStats['certificates']);
-
-        // Pending Approvals (certificates only for now)
-        $pendingApprovals = Certificate::with('resident')
-            ->where('status', 'Pending')
-            ->orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get()
-            ->map(function($cert) {
-                return (object)[
-                    'id' => $cert->id,
-                    'first_name' => $cert->resident->first_name ?? 'N/A',
-                    'last_name' => $cert->resident->last_name ?? '',
-                    'certificate_type' => $cert->certificate_type,
-                    'type' => 'certificate'
-                ];
-            });
-
-        // Recent Blotter Cases
-        $recentBlotters = Blotter::with('complainant')
-            ->orderBy('created_at', 'desc')
+        // Pending approvals
+        $pendingApprovals = DB::table('certificates as c')
+            ->join('residents as r', 'c.resident_id', '=', 'r.id')
+            ->where('c.status', 'Pending')
+            ->select('c.*', 'r.first_name', 'r.last_name')
+            ->orderBy('c.created_at', 'desc')
             ->limit(5)
             ->get();
 
-        return view('captain.dashboard', compact(
-            'totalResidents',
-            'totalBlotters',
-            'pendingBlotters',
-            'settledBlotters',
-            'totalCertificates',
-            'pendingCertificates',
-            'activeBlotters',
-            'releasedCertificates',
-            'monthlyStats',
-            'pendingApprovals',
-            'recentBlotters'
-        ));
+        // Recent blotters
+        $recentBlotters = DB::table('blotters')
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
+        // Monthly statistics
+        $certificateStats = DB::table('certificates')
+            ->select(
+                DB::raw('MONTH(created_at) as month'),
+                DB::raw('COUNT(*) as total')
+            )
+            ->whereYear('created_at', date('Y'))
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+
+        $residentStats = DB::table('residents')
+            ->select(
+                DB::raw('MONTH(created_at) as month'),
+                DB::raw('COUNT(*) as total')
+            )
+            ->whereYear('created_at', date('Y'))
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+
+        $blotterStats = DB::table('blotters')
+            ->select(
+                DB::raw('MONTH(created_at) as month'),
+                DB::raw('COUNT(*) as total')
+            )
+            ->whereYear('created_at', date('Y'))
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+
+    } catch (\Exception $e) {
+        // Set default values if tables don't exist
+        $totalResidents = $totalCertificates = $totalBlotters = $pendingBlotters = $activeBlotters = $settledBlotters = $pendingCertificates = $releasedCertificates = 0;
+        $pendingApprovals = collect([]);
+        $recentBlotters = collect([]);
+        $certificateStats = $residentStats = $blotterStats = collect([]);
     }
 
+    return view('captain.dashboard', compact(
+        'totalResidents',
+        'totalCertificates',
+        'totalBlotters',
+        'pendingBlotters',
+        'activeBlotters',
+        'settledBlotters',
+        'pendingCertificates',
+        'releasedCertificates',
+        'pendingApprovals',
+        'recentBlotters',
+        'certificateStats',
+        'residentStats',
+        'blotterStats'
+    ));
+}
     /**
      * Display approvals dashboard
      */

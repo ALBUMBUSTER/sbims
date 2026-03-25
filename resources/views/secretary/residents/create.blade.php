@@ -167,17 +167,22 @@
 
                 <div class="form-grid">
                     <!-- Contact Number -->
-                    <div class="form-group">
-                        <label for="contact_number">Contact Number</label>
-                        <input type="text"
-                               id="contact_number"
-                               name="contact_number"
-                               value="{{ old('contact_number') }}"
-                               class="form-control @error('contact_number') is-invalid @enderror">
-                        @error('contact_number')
-                            <span class="error-message">{{ $message }}</span>
-                        @enderror
-                    </div>
+<div class="form-group">
+    <label for="contact_number">Contact Number</label>
+    <input type="tel"
+           id="contact_number"
+           name="contact_number"
+           value="{{ old('contact_number') }}"
+           class="form-control @error('contact_number') is-invalid @enderror"
+           maxlength="11"
+           pattern="[0-9]+"
+           oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11)"
+           title="Please enter 11-digit mobile number (e.g., 09123456789)">
+    <small class="form-text text-muted">Enter 11-digit mobile number (e.g., 09123456789)</small>
+    @error('contact_number')
+        <span class="error-message">{{ $message }}</span>
+    @enderror
+</div>
 
                     <!-- Email -->
                     <div class="form-group">
@@ -326,6 +331,17 @@
 
 @push('styles')
 <style>
+    /* Helper text */
+.form-text {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+    display: block;
+}
+
+.text-muted {
+    color: #6c757d;
+}
 /* All existing styles from both files combined and deduplicated */
 .container-fluid { padding: 1.5rem; }
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
@@ -695,6 +711,18 @@ textarea.form-control {
 
 @push('scripts')
 <script>
+    // Contact number validation
+const contactInput = document.getElementById('contact_number');
+if (contactInput) {
+    contactInput.addEventListener('input', function(e) {
+        // Remove any non-numeric characters
+        this.value = this.value.replace(/[^0-9]/g, '');
+        // Limit to 11 characters
+        if (this.value.length > 11) {
+            this.value = this.value.slice(0, 11);
+        }
+    });
+}
 // Toast notification function
 function showToast(message, type = 'success') {
     let toast = document.getElementById('toast');

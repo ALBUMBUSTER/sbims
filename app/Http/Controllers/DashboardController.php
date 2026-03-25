@@ -114,53 +114,148 @@ class DashboardController extends Controller
     }
 
     public function secretary()
-    {
-        // Try to get data if tables exist
-        try {
-            $totalResidents = DB::table('residents')->count();
-            $activeBlotterCases = DB::table('blotters')->whereIn('status', ['Pending', 'Ongoing'])->count();
-            $pendingCertificates = DB::table('certificates')->where('status', 'Pending')->count();
-            $certificatesToday = DB::table('certificates')
-                ->whereDate('created_at', today())
-                ->count();
+{
+    try {
+        $totalResidents = DB::table('residents')->count();
+        $totalCertificates = DB::table('certificates')->count();
+        $totalBlotters = DB::table('blotters')->count();
+        $activeBlotterCases = DB::table('blotters')->whereIn('status', ['Pending', 'Ongoing'])->count();
+        $pendingCertificates = DB::table('certificates')->where('status', 'Pending')->count();
+        $certificatesToday = DB::table('certificates')
+            ->whereDate('created_at', today())
+            ->count();
 
-            // Get recent certificates
-            $recentCertificates = DB::table('certificates as c')
-                ->join('residents as r', 'c.resident_id', '=', 'r.id')
-                ->where('c.status', '!=', 'Archived')
-                ->select('c.*', 'r.first_name', 'r.last_name')
-                ->orderBy('c.created_at', 'desc')
-                ->limit(5)
-                ->get()
-                ->toArray();
+        $recentCertificates = DB::table('certificates as c')
+            ->join('residents as r', 'c.resident_id', '=', 'r.id')
+            ->where('c.status', '!=', 'Archived')
+            ->select('c.*', 'r.first_name', 'r.last_name')
+            ->orderBy('c.created_at', 'desc')
+            ->limit(5)
+            ->get()
+            ->toArray();
 
-            // Get recent activities
-            $recentActivities = ActivityLog::with('user')
-                ->orderBy('created_at', 'desc')
-                ->limit(10)
-                ->get();
+        $recentActivities = ActivityLog::with('user')
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
 
-        } catch (\Exception $e) {
-            // Tables don't exist yet
-            $totalResidents = 0;
-            $activeBlotterCases = 0;
-            $pendingCertificates = 0;
-            $certificatesToday = 0;
-            $recentCertificates = [];
-            $recentActivities = collect([]);
+        // Monthly certificate stats
+        $certificateStats = DB::table('certificates')
+            ->select(
+                DB::raw('MONTH(created_at) as month'),
+                DB::raw('COUNT(*) as total'),
+                DB::raw('MONTHNAME(created_at) as month_name')
+            )
+            ->whereYear('created_at', date('Y'))
+            ->groupBy('month', 'month_name')
+            ->orderBy('month')
+            ->get();
+
+        if ($certificateStats->isEmpty()) {
+            $certificateStats = collect([
+                (object) ['month' => 1, 'month_name' => 'January', 'total' => 0],
+                (object) ['month' => 2, 'month_name' => 'February', 'total' => 0],
+                (object) ['month' => 3, 'month_name' => 'March', 'total' => 0],
+                (object) ['month' => 4, 'month_name' => 'April', 'total' => 0],
+                (object) ['month' => 5, 'month_name' => 'May', 'total' => 0],
+                (object) ['month' => 6, 'month_name' => 'June', 'total' => 0],
+                (object) ['month' => 7, 'month_name' => 'July', 'total' => 0],
+                (object) ['month' => 8, 'month_name' => 'August', 'total' => 0],
+                (object) ['month' => 9, 'month_name' => 'September', 'total' => 0],
+                (object) ['month' => 10, 'month_name' => 'October', 'total' => 0],
+                (object) ['month' => 11, 'month_name' => 'November', 'total' => 0],
+                (object) ['month' => 12, 'month_name' => 'December', 'total' => 0],
+            ]);
         }
 
-        return view('secretary.dashboard', [
-            'title' => 'Secretary Dashboard',
-            'totalResidents' => $totalResidents,
-            'activeBlotterCases' => $activeBlotterCases,
-            'pendingCertificates' => $pendingCertificates,
-            'certificatesToday' => $certificatesToday,
-            'recentCertificates' => $recentCertificates,
-            'recentActivities' => $recentActivities,
-            'user' => Auth::user()
-        ]);
+        // Resident monthly statistics (new residents per month)
+        $residentStats = DB::table('residents')
+            ->select(
+                DB::raw('MONTH(created_at) as month'),
+                DB::raw('COUNT(*) as total'),
+                DB::raw('MONTHNAME(created_at) as month_name')
+            )
+            ->whereYear('created_at', date('Y'))
+            ->groupBy('month', 'month_name')
+            ->orderBy('month')
+            ->get();
+
+        if ($residentStats->isEmpty()) {
+            $residentStats = collect([
+                (object) ['month' => 1, 'month_name' => 'January', 'total' => 0],
+                (object) ['month' => 2, 'month_name' => 'February', 'total' => 0],
+                (object) ['month' => 3, 'month_name' => 'March', 'total' => 0],
+                (object) ['month' => 4, 'month_name' => 'April', 'total' => 0],
+                (object) ['month' => 5, 'month_name' => 'May', 'total' => 0],
+                (object) ['month' => 6, 'month_name' => 'June', 'total' => 0],
+                (object) ['month' => 7, 'month_name' => 'July', 'total' => 0],
+                (object) ['month' => 8, 'month_name' => 'August', 'total' => 0],
+                (object) ['month' => 9, 'month_name' => 'September', 'total' => 0],
+                (object) ['month' => 10, 'month_name' => 'October', 'total' => 0],
+                (object) ['month' => 11, 'month_name' => 'November', 'total' => 0],
+                (object) ['month' => 12, 'month_name' => 'December', 'total' => 0],
+            ]);
+        }
+
+        // Blotter monthly statistics
+        $blotterStats = DB::table('blotters')
+            ->select(
+                DB::raw('MONTH(created_at) as month'),
+                DB::raw('COUNT(*) as total'),
+                DB::raw('MONTHNAME(created_at) as month_name')
+            )
+            ->whereYear('created_at', date('Y'))
+            ->groupBy('month', 'month_name')
+            ->orderBy('month')
+            ->get();
+
+        if ($blotterStats->isEmpty()) {
+            $blotterStats = collect([
+                (object) ['month' => 1, 'month_name' => 'January', 'total' => 0],
+                (object) ['month' => 2, 'month_name' => 'February', 'total' => 0],
+                (object) ['month' => 3, 'month_name' => 'March', 'total' => 0],
+                (object) ['month' => 4, 'month_name' => 'April', 'total' => 0],
+                (object) ['month' => 5, 'month_name' => 'May', 'total' => 0],
+                (object) ['month' => 6, 'month_name' => 'June', 'total' => 0],
+                (object) ['month' => 7, 'month_name' => 'July', 'total' => 0],
+                (object) ['month' => 8, 'month_name' => 'August', 'total' => 0],
+                (object) ['month' => 9, 'month_name' => 'September', 'total' => 0],
+                (object) ['month' => 10, 'month_name' => 'October', 'total' => 0],
+                (object) ['month' => 11, 'month_name' => 'November', 'total' => 0],
+                (object) ['month' => 12, 'month_name' => 'December', 'total' => 0],
+            ]);
+        }
+
+    } catch (\Exception $e) {
+        $totalResidents = 0;
+        $totalCertificates = 0;
+        $totalBlotters = 0;
+        $activeBlotterCases = 0;
+        $pendingCertificates = 0;
+        $certificatesToday = 0;
+        $recentCertificates = [];
+        $recentActivities = collect([]);
+        $certificateStats = collect([]);
+        $residentStats = collect([]);
+        $blotterStats = collect([]);
     }
+
+    return view('secretary.dashboard', [
+        'title' => 'Secretary Dashboard',
+        'totalResidents' => $totalResidents,
+        'totalCertificates' => $totalCertificates,
+        'totalBlotters' => $totalBlotters,
+        'activeBlotterCases' => $activeBlotterCases,
+        'pendingCertificates' => $pendingCertificates,
+        'certificatesToday' => $certificatesToday,
+        'recentCertificates' => $recentCertificates,
+        'recentActivities' => $recentActivities,
+        'certificateStats' => $certificateStats,
+        'residentStats' => $residentStats,
+        'blotterStats' => $blotterStats,
+        'user' => Auth::user()
+    ]);
+}
 
     public function redirectToRoleDashboard()
     {

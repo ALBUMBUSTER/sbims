@@ -64,6 +64,12 @@
                             <span class="nav-text">User Management</span>
                         </a>
                     </li>
+                    <li class="nav-item {{ request()->routeIs('captain.approvals.*') ? 'active' : '' }}">
+                        <a href="{{ route('captain.approvals.index') }}">
+                            <span class="nav-icon"><x-heroicon-o-check-badge /></span>
+                            <span class="nav-text">Approvals</span>
+                        </a>
+                    </li>
                     <li class="nav-item {{ request()->is('admin/barangay*') ? 'active' : '' }}">
                         <a href="{{ route('admin.barangay.index') }}">
                             <span class="nav-icon"><x-heroicon-o-building-office /></span>
@@ -114,6 +120,12 @@
             <div class="nav-section">
                 <div class="nav-label">RECORDS MANAGEMENT</div>
                 <ul class="nav-menu">
+                    <li class="nav-item {{ request()->routeIs('captain.approvals.*') ? 'active' : '' }}">
+                        <a href="{{ route('captain.approvals.index') }}">
+                            <span class="nav-icon"><x-heroicon-o-check-badge /></span>
+                            <span class="nav-text">Approvals</span>
+                        </a>
+                    </li>
                     <li class="nav-item {{ request()->routeIs('secretary.residents.*') ? 'active' : '' }}">
                         <a href="{{ route('secretary.residents.index') }}">
                             <span class="nav-icon"><x-heroicon-o-user-group /></span>
@@ -155,7 +167,7 @@
                     <li class="nav-item {{ request()->routeIs('captain.residents.*') ? 'active' : '' }}">
                         <a href="{{ route('captain.residents.index') }}">
                             <span class="nav-icon"><x-heroicon-o-users /></span>
-                            <span class="nav-text">Residents</span>
+                            <span class="nav-text">Residents Records</span>
                         </a>
                     </li>
                     <li class="nav-item {{ request()->routeIs('captain.blotters.*') ? 'active' : '' }}">
@@ -185,19 +197,19 @@
                 <div class="nav-label">CLERK PANEL</div>
                 <ul class="nav-menu">
                     <li class="nav-item {{ request()->routeIs('clerk.residents.*') ? 'active' : '' }}">
-                        <a href="{{ route('clerk.residents.index') }}">
+                        <a href="{{ route('secretary.residents.index') }}">
                             <span class="nav-icon"><x-heroicon-o-users /></span>
                             <span class="nav-text">Residents</span>
                         </a>
                     </li>
                     <li class="nav-item {{ request()->routeIs('clerk.certificates.*') ? 'active' : '' }}">
-                        <a href="{{ route('clerk.certificates.index') }}">
+                        <a href="{{ route('secretary.certificates.index') }}">
                             <span class="nav-icon"><x-heroicon-o-document-text /></span>
                             <span class="nav-text">Certificates</span>
                         </a>
                     </li>
-                    <li class="nav-item {{ request()->routeIs('captain.blotters.*') ? 'active' : '' }}">
-                        <a href="{{ route('captain.blotters.index') }}">
+                    <li class="nav-item {{ request()->routeIs('secretary.blotter.*') ? 'active' : '' }}">
+                        <a href="{{ route('secretary.blotter.index') }}">
                             <span class="nav-icon"><x-heroicon-o-scale /></span>
                             <span class="nav-text">Blotter Cases</span>
                         </a>
@@ -300,7 +312,7 @@
     display: flex;
     align-items: center;
     width: 100%;
-    padding: 12px 16px;
+    padding: 12px 12px;
     color: #e53e3e;
     background: none;
     border: none;

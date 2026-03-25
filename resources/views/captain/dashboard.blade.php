@@ -127,6 +127,7 @@
             <div class="chart-card">
                 <div class="card-header">
                     <h3><i class="fas fa-chart-line"></i> Monthly Statistics ({{ date('Y') }})</h3>
+                    <span class="badge">Certificates | New Residents | Blotter Cases</span>
                 </div>
                 <div class="card-body">
                     <canvas id="monthlyChart" height="200"></canvas>
@@ -183,7 +184,6 @@
                 @if(count($recentBlotters) > 0)
                     <table class="cases-table">
                         <thead>
-                            <tr>
                                 <th><i class="fas fa-hashtag"></i> Case #</th>
                                 <th><i class="fas fa-user"></i> Complainant</th>
                                 <th><i class="fas fa-user-tie"></i> Respondent</th>
@@ -196,8 +196,8 @@
                         <tbody>
                             @foreach($recentBlotters as $case)
                             <tr>
-                                <td><span class="case-number">{{ $case->blotter_number ?? 'N/A' }}</span></td>
-                                <td>{{ $case->complainant_name ?? 'N/A' }}</td>
+                                <td><span class="case-number">{{ $case->blotter_number ?? $case->case_id ?? 'N/A' }}</span></td>
+                                <td>{{ $case->complainant_name ?? $case->complainant->first_name ?? 'N/A' }}</td>
                                 <td>{{ $case->respondent_name }}</td>
                                 <td>{{ $case->incident_type }}</td>
                                 <td>{{ \Carbon\Carbon::parse($case->created_at)->format('M d, Y') }}</td>
@@ -207,7 +207,7 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <a href="{{ route('captain.blotters.show', $case) }}" class="btn-view" title="View Details">
+                                    <a href="{{ route('captain.blotters.show', $case->id) }}" class="btn-view" title="View Details">
                                         <i class="fas fa-eye"></i>
                                     </a>
                                 </td>
@@ -229,6 +229,17 @@
 
 @push('styles')
 <style>
+/* Add badge style for chart header */
+.badge {
+    background: #e2e8f0;
+    color: #4a5568;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Rest of your existing styles remain the same */
 .main-container {
     display: flex;
     min-height: calc(100vh - 70px);
@@ -614,12 +625,12 @@
     color: #856404;
 }
 
-.status-investigating {
+.status-ongoing {
     background: #cce5ff;
     color: #004085;
 }
 
-.status-hearings {
+.status-referred {
     background: #e2d5f1;
     color: #553c9a;
 }
@@ -700,30 +711,81 @@ document.addEventListener('DOMContentLoaded', function() {
     const ctx = document.getElementById('monthlyChart')?.getContext('2d');
     if (!ctx) return;
 
-    // Get the data from PHP - using json_encode directly
-    const monthlyStats = <?php echo json_encode($monthlyStats); ?>;
+    // Get the data from PHP
+    const certificateStats = @json($certificateStats ?? []);
+    const residentStats = @json($residentStats ?? []);
+    const blotterStats = @json($blotterStats ?? []);
 
-    // Initialize the chart
+    // Prepare data arrays for 12 months
+    let certificatesData = Array(12).fill(0);
+    let residentsData = Array(12).fill(0);
+    let blottersData = Array(12).fill(0);
+
+    // Fill certificate data
+    if (certificateStats && certificateStats.length > 0) {
+        certificateStats.forEach(stat => {
+            const monthIndex = stat.month - 1;
+            certificatesData[monthIndex] = stat.total;
+        });
+    }
+
+    // Fill resident data
+    if (residentStats && residentStats.length > 0) {
+        residentStats.forEach(stat => {
+            const monthIndex = stat.month - 1;
+            residentsData[monthIndex] = stat.total;
+        });
+    }
+
+    // Fill blotter data
+    if (blotterStats && blotterStats.length > 0) {
+        blotterStats.forEach(stat => {
+            const monthIndex = stat.month - 1;
+            blottersData[monthIndex] = stat.total;
+        });
+    }
+
+    // Initialize the chart with three datasets
     new Chart(ctx, {
         type: 'line',
         data: {
             labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
             datasets: [
                 {
-                    label: 'Blotter Cases',
-                    data: monthlyStats.blotters || Array(12).fill(0),
-                    borderColor: '#f72585',
-                    backgroundColor: 'rgba(247, 37, 133, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                },
-                {
-                    label: 'Certificates',
-                    data: monthlyStats.certificates || Array(12).fill(0),
+                    label: 'Certificates Issued',
+                    data: certificatesData,
                     borderColor: '#4361ee',
                     backgroundColor: 'rgba(67, 97, 238, 0.1)',
                     tension: 0.4,
-                    fill: true
+                    fill: true,
+                    pointBackgroundColor: '#4361ee',
+                    pointBorderColor: '#fff',
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                },
+                {
+                    label: 'New Residents',
+                    data: residentsData,
+                    borderColor: '#06d6a0',
+                    backgroundColor: 'rgba(6, 214, 160, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#06d6a0',
+                    pointBorderColor: '#fff',
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                },
+                {
+                    label: 'Blotter Cases',
+                    data: blottersData,
+                    borderColor: '#f72585',
+                    backgroundColor: 'rgba(247, 37, 133, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#f72585',
+                    pointBorderColor: '#fff',
+                    pointRadius: 4,
+                    pointHoverRadius: 6
                 }
             ]
         },
@@ -732,7 +794,18 @@ document.addEventListener('DOMContentLoaded', function() {
             maintainAspectRatio: true,
             plugins: {
                 legend: {
-                    position: 'bottom'
+                    position: 'bottom',
+                    labels: {
+                        usePointStyle: true,
+                        boxWidth: 10
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.dataset.label}: ${context.raw} records`;
+                        }
+                    }
                 }
             },
             scales: {
@@ -741,8 +814,28 @@ document.addEventListener('DOMContentLoaded', function() {
                     ticks: {
                         stepSize: 1,
                         precision: 0
+                    },
+                    title: {
+                        display: true,
+                        text: 'Number of Records',
+                        font: {
+                            weight: 'bold'
+                        }
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Month',
+                        font: {
+                            weight: 'bold'
+                        }
                     }
                 }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
             }
         }
     });

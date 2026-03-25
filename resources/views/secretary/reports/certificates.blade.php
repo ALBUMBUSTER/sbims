@@ -260,22 +260,22 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td><span class="legend-dot pending" style="margin-right: 0.3rem;"></span> Pending</td>
+                            <td><span class="pending" style="margin-right: 0.3rem;"></span> Pending</td>
                             <td>{{ $certPending }}</td>
                             <td>{{ round(($certPending / $certTotal) * 100, 1) }}%</td>
                         </tr>
                         <tr>
-                            <td><span class="legend-dot approved" style="margin-right: 0.3rem;"></span> Approved</td>
+                            <td><span class="approved" style="margin-right: 0.3rem;"></span> Approved</td>
                             <td>{{ $certApproved }}</td>
                             <td>{{ round(($certApproved / $certTotal) * 100, 1) }}%</td>
                         </tr>
                         <tr>
-                            <td><span class="legend-dot released" style="margin-right: 0.3rem;"></span> Released</td>
+                            <td><span class="released" style="margin-right: 0.3rem;"></span> Released</td>
                             <td>{{ $certReleased }}</td>
                             <td>{{ round(($certReleased / $certTotal) * 100, 1) }}%</td>
                         </tr>
                         <tr>
-                            <td><span class="legend-dot rejected" style="margin-right: 0.3rem;"></span> Rejected</td>
+                            <td><span class="rejected" style="margin-right: 0.3rem;"></span> Rejected</td>
                             <td>{{ $certRejected }}</td>
                             <td>{{ round(($certRejected / $certTotal) * 100, 1) }}%</td>
                         </tr>
@@ -683,7 +683,8 @@
 /* ==================== */
 /* Legend Dots          */
 /* ==================== */
-.legend-dot {
+/*enable if needed the dots*/
+/* .legend-dot {
     display: inline-block;
     width: 10px;
     height: 10px;
@@ -692,7 +693,7 @@
 .legend-dot.pending { background: #f59e0b; }
 .legend-dot.approved { background: #10b981; }
 .legend-dot.released { background: #3b82f6; }
-.legend-dot.rejected { background: #ef4444; }
+.legend-dot.rejected { background: #ef4444; } */
 
 /* ==================== */
 /* Trend Stats          */

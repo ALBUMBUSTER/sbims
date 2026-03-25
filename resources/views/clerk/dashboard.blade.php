@@ -63,18 +63,23 @@
 <div class="quick-actions">
     <h2>Quick Actions</h2>
     <div class="actions-grid">
-        <a href="{{ route('clerk.certificates.create') }}" class="action-card" target="_blank">
+        <a href="{{ route('secretary.certificates.create') }}" class="action-card" target="_blank">
             <i class="fas fa-file-medical"></i>
             <span>Issue Certificate</span>
         </a>
-        <a href="{{ route('clerk.residents.index') }}" class="action-card" target="_blank">
+        <a href="{{ route('secretary.residents.index') }}" class="action-card" target="_blank">
             <i class="fas fa-search"></i>
             <span>Look Up Resident</span>
         </a>
-        <a href="{{ route('clerk.reports.summary') }}" class="action-card" target="_blank">
+        <a href="{{ route('secretary.blotter.index') }}" class="action-card" target="_blank">
+            <i class="fas fa-search"></i>
+            <span>Issue Blotter Case</span>
+        </a>
+        {{-- umcomment if want to access the reports --}}
+        {{-- <a href="{{ route('clerk.reports.summary') }}" class="action-card" target="_blank">
             <i class="fas fa-chart-bar"></i>
             <span>View Reports</span>
-        </a>
+        </a> --}}
     </div>
 </div>
 

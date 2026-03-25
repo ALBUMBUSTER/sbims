@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Helpers\NotificationHelper;
+
 
 class ResidentController extends Controller
 {
@@ -291,6 +293,7 @@ class ResidentController extends Controller
             return redirect()->back()->with('error', 'Error creating resident: ' . $e->getMessage())->withInput();
         }
     }
+
 
     /**
      * Display the specified resident.
@@ -1098,4 +1101,5 @@ class ResidentController extends Controller
 
         return view('secretary.residents.archived', compact('archivedResidents'));
     }
+
 }

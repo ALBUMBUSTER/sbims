@@ -105,6 +105,7 @@
                             <option value="">Select Gender</option>
                             <option value="Male" {{ old('gender', $resident->gender) == 'Male' ? 'selected' : '' }}>Male</option>
                             <option value="Female" {{ old('gender', $resident->gender) == 'Female' ? 'selected' : '' }}>Female</option>
+                            <option value="Other" {{ old('gender', $resident->gender) == 'Other' ? 'selected' : '' }}>Other</option>
                         </select>
                         @error('gender')
                             <span class="error-message">{{ $message }}</span>
@@ -174,13 +175,19 @@
                 <h2>Contact Information</h2>
 
                 <div class="form-grid">
+                    <!-- Contact Number with Validation -->
                     <div class="form-group">
                         <label for="contact_number">Contact Number</label>
-                        <input type="text"
+                        <input type="tel"
                                id="contact_number"
                                name="contact_number"
                                value="{{ old('contact_number', $resident->contact_number) }}"
-                               class="form-control @error('contact_number') is-invalid @enderror">
+                               class="form-control @error('contact_number') is-invalid @enderror"
+                               maxlength="11"
+                               pattern="[0-9]+"
+                               oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11)"
+                               title="Please enter 11-digit mobile number (e.g., 09123456789)">
+                        <small class="form-text text-muted">Enter 11-digit mobile number (e.g., 09123456789)</small>
                         @error('contact_number')
                             <span class="error-message">{{ $message }}</span>
                         @enderror
@@ -249,8 +256,8 @@
             </div>
 
             {{-- PWD Fields - show only if PWD is checked --}}
-<div id="pwd_fields" class="{{ old('is_pwd', $resident->is_pwd ?? false) ? '' : 'hidden' }}">
-                    <div class="form-section">
+            <div id="pwd_fields" class="{{ old('is_pwd', $resident->is_pwd ?? false) ? '' : 'hidden' }}">
+                <div class="form-section">
                     <h2>PWD Information</h2>
 
                     <div class="form-grid">
@@ -303,6 +310,21 @@ function togglePwdFields(isChecked) {
         pwdFields.style.display = isChecked ? 'block' : 'none';
     }
 }
+
+// Contact number validation
+document.addEventListener('DOMContentLoaded', function() {
+    const contactInput = document.getElementById('contact_number');
+    if (contactInput) {
+        contactInput.addEventListener('input', function(e) {
+            // Remove any non-numeric characters
+            this.value = this.value.replace(/[^0-9]/g, '');
+            // Limit to 11 characters
+            if (this.value.length > 11) {
+                this.value = this.value.slice(0, 11);
+            }
+        });
+    }
+});
 </script>
 @endpush
 
@@ -469,6 +491,18 @@ textarea.form-control {
     margin-top: 0.25rem;
 }
 
+/* Helper text */
+.form-text {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+    display: block;
+}
+
+.text-muted {
+    color: #6c757d;
+}
+
 /* Checkbox */
 .checkbox-group {
     display: flex;
@@ -499,6 +533,10 @@ textarea.form-control {
 .icon-small {
     width: 16px;
     height: 16px;
+}
+
+.hidden {
+    display: none;
 }
 </style>
 @endpush

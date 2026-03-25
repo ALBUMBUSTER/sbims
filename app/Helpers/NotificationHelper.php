@@ -119,4 +119,100 @@ class NotificationHelper
 
         return $notifications;
     }
+
+    /**
+     * Send notification to all admins except the current user
+     */
+    public static function toAdminsExceptCurrent($excludeUserId, $title, $message, $type = 'info', $link = null)
+    {
+        $users = User::where('role_id', 1)
+            ->where('id', '!=', $excludeUserId)
+            ->where('is_active', true)
+            ->get();
+
+        $notifications = [];
+        foreach ($users as $user) {
+            $notifications[] = Notification::create([
+                'user_id' => $user->id,
+                'title' => $title,
+                'message' => $message,
+                'type' => $type,
+                'link' => $link,
+                'is_read' => false
+            ]);
+        }
+        return $notifications;
+    }
+
+    /**
+     * Send notification to all captains except the current user
+     */
+    public static function toCaptainsExceptCurrent($excludeUserId, $title, $message, $type = 'info', $link = null)
+    {
+        $users = User::where('role_id', 2)
+            ->where('id', '!=', $excludeUserId)
+            ->where('is_active', true)
+            ->get();
+
+        $notifications = [];
+        foreach ($users as $user) {
+            $notifications[] = Notification::create([
+                'user_id' => $user->id,
+                'title' => $title,
+                'message' => $message,
+                'type' => $type,
+                'link' => $link,
+                'is_read' => false
+            ]);
+        }
+        return $notifications;
+    }
+
+    /**
+     * Send notification to all secretaries except the current user
+     */
+    public static function toSecretariesExceptCurrent($excludeUserId, $title, $message, $type = 'info', $link = null)
+    {
+        $users = User::where('role_id', 3)
+            ->where('id', '!=', $excludeUserId)
+            ->where('is_active', true)
+            ->get();
+
+        $notifications = [];
+        foreach ($users as $user) {
+            $notifications[] = Notification::create([
+                'user_id' => $user->id,
+                'title' => $title,
+                'message' => $message,
+                'type' => $type,
+                'link' => $link,
+                'is_read' => false
+            ]);
+        }
+        return $notifications;
+    }
+
+    /**
+     * Send notification to all clerks except the current user
+     */
+    public static function toClerksExceptCurrent($excludeUserId, $title, $message, $type = 'info', $link = null)
+    {
+        $users = User::where('role_id', 4)
+            ->where('id', '!=', $excludeUserId)
+            ->where('is_active', true)
+            ->get();
+
+        $notifications = [];
+        foreach ($users as $user) {
+            $notifications[] = Notification::create([
+                'user_id' => $user->id,
+                'title' => $title,
+                'message' => $message,
+                'type' => $type,
+                'link' => $link,
+                'is_read' => false
+            ]);
+        }
+        return $notifications;
+    }
 }

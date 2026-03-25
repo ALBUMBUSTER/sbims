@@ -1,4 +1,4 @@
-@extends('layouts.app')
+{{-- @extends('layouts.app')
 
 @section('title', 'Certificate Details')
 
@@ -482,4 +482,4 @@
     }
 }
 </style>
-@endpush
+@endpush --}}

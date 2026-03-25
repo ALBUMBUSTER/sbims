@@ -139,10 +139,9 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="email">Email Address *</label>
+                        <label for="email">Email Address</label>
                         <input type="email" id="email" name="email"
                                value="{{ old('email', $user->email ?? '') }}"
-                               required
                                placeholder="Enter email address">
                         @error('email')
                             <div class="error-message">{{ $message }}</div>

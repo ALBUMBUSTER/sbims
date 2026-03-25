@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/Clerk/ClerkCertificateController.php
 
 namespace App\Http\Controllers\Clerk;
 
@@ -7,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Certificate;
 use App\Models\Resident;
 use App\Models\ActivityLog;
+use App\Helpers\NotificationHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -33,15 +33,14 @@ class ClerkCertificateController extends Controller
      */
     public function index(Request $request)
     {
-        $this->isClerk(); // Role check
+        $this->isClerk();
 
         $query = Certificate::with('resident');
 
-        // Search functionality
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
-                $q->where('certificate_number', 'like', "%{$search}%")
+                $q->where('certificate_id', 'like', "%{$search}%")
                   ->orWhereHas('resident', function($r) use ($search) {
                       $r->where('first_name', 'like', "%{$search}%")
                         ->orWhere('last_name', 'like', "%{$search}%");
@@ -49,17 +48,14 @@ class ClerkCertificateController extends Controller
             });
         }
 
-        // Filter by status
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        // Filter by certificate type
         if ($request->filled('type')) {
             $query->where('certificate_type', $request->type);
         }
 
-        // Date range filter
         if ($request->filled('date_from')) {
             $query->whereDate('created_at', '>=', $request->date_from);
         }
@@ -70,9 +66,8 @@ class ClerkCertificateController extends Controller
 
         $certificates = $query->latest()->paginate(15)->withQueryString();
 
-        // Get unique certificate types for filter
         $certificateTypes = Certificate::distinct('certificate_type')->pluck('certificate_type');
-        $statuses = ['Pending', 'Processing', 'Approved', 'Released', 'Rejected'];
+        $statuses = ['Pending', 'Approved', 'Released', 'Rejected'];
 
         return view('clerk.certificates.index', compact('certificates', 'certificateTypes', 'statuses'));
     }
@@ -82,17 +77,13 @@ class ClerkCertificateController extends Controller
      */
     public function create()
     {
-        $this->isClerk(); // Role check
+        $this->isClerk();
 
         $residents = Resident::orderBy('last_name')->get();
         $certificateTypes = [
-            'Barangay Clearance',
-            'Certificate of Indigency',
-            'Certificate of Residency',
-            'Certificate of Good Moral Character',
-            'Barangay Business Clearance',
-            'Certificate of Cohabitation',
-            'First Time Jobseeker Certificate'
+            'Clearance',
+            'Indigency',
+            'Residency'
         ];
 
         return view('clerk.certificates.create', compact('residents', 'certificateTypes'));
@@ -103,45 +94,83 @@ class ClerkCertificateController extends Controller
      */
     public function store(Request $request)
     {
-        $this->isClerk(); // Role check
+        $this->isClerk();
 
         $request->validate([
             'resident_id' => 'required|exists:residents,id',
             'certificate_type' => 'required|string',
             'purpose' => 'required|string',
-            'or_number' => 'nullable|string',
-            'amount_paid' => 'nullable|numeric'
+            'transaction_fee' => 'nullable|numeric|min:0|max:999999.99'
         ]);
 
         try {
             DB::beginTransaction();
 
-            // Generate certificate number
             $year = date('Y');
             $month = date('m');
-            $lastCertificate = Certificate::whereYear('created_at', $year)
-                ->whereMonth('created_at', $month)
-                ->count();
+            $prefix = 'CERT';
 
-            $certificateNumber = sprintf('CERT-%s%s-%04d', $year, $month, $lastCertificate + 1);
+            $lastCertificate = Certificate::where('certificate_id', 'like', "{$prefix}-{$year}{$month}-%")
+                ->orderBy('certificate_id', 'desc')
+                ->first();
+
+            if ($lastCertificate) {
+                $lastNumber = intval(substr($lastCertificate->certificate_id, -4));
+                $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+            } else {
+                $newNumber = '0001';
+            }
+
+            $certificateNumber = "{$prefix}-{$year}{$month}-{$newNumber}";
+
+            $resident = Resident::find($request->resident_id);
+            $residentName = $resident ? $resident->first_name . ' ' . $resident->last_name : 'Unknown';
 
             $certificate = Certificate::create([
                 'resident_id' => $request->resident_id,
-                'certificate_number' => $certificateNumber,
+                'certificate_id' => $certificateNumber,
                 'certificate_type' => $request->certificate_type,
                 'purpose' => $request->purpose,
+                'transaction_fee' => $request->transaction_fee,
                 'status' => 'Pending',
-                'or_number' => $request->or_number,
-                'amount_paid' => $request->amount_paid,
-                'requested_by' => Auth::id(),
-                'requested_at' => now()
+                'issued_by' => Auth::id(),
             ]);
 
-            // Log activity
+            // ========== REAL-TIME NOTIFICATIONS ==========
+            $currentUserId = Auth::id();
+
+            // Notify captains (exclude current user)
+            NotificationHelper::toCaptainsExceptCurrent(
+                $currentUserId,
+                'New Certificate Request',
+                $certificate->certificate_type . ' certificate requested for ' . $residentName,
+                'info',
+                route('captain.certificates.show', $certificate->id)
+            );
+
+            // Notify secretaries (exclude current user)
+            NotificationHelper::toSecretariesExceptCurrent(
+                $currentUserId,
+                'New Certificate Request',
+                'Certificate #' . $certificate->certificate_id . ' requested for ' . $residentName,
+                'info',
+                route('secretary.certificates.show', $certificate->id)
+            );
+
+            // Notify admins (exclude current user)
+            NotificationHelper::toAdminsExceptCurrent(
+                $currentUserId,
+                'New Certificate Request',
+                $certificate->certificate_type . ' certificate requested by ' . Auth::user()->name,
+                'info',
+                route('secretary.certificates.show', $certificate->id)
+            );
+            // ========== END NOTIFICATIONS ==========
+
             ActivityLog::create([
                 'user_id' => Auth::id(),
-                'action' => 'Create Certificate',
-                'description' => "Created certificate request #{$certificateNumber} for resident ID: {$request->resident_id}",
+                'action' => 'CREATE_CERTIFICATE',
+                'description' => "Created certificate request #{$certificateNumber} for resident: {$residentName}",
                 'ip_address' => $request->ip()
             ]);
 
@@ -160,7 +189,7 @@ class ClerkCertificateController extends Controller
      */
     public function show(Certificate $certificate)
     {
-        $this->isClerk(); // Role check
+        $this->isClerk();
 
         $certificate->load('resident');
         return view('clerk.certificates.show', compact('certificate'));
@@ -171,9 +200,69 @@ class ClerkCertificateController extends Controller
      */
     public function print(Certificate $certificate)
     {
-        $this->isClerk(); // Role check
+        $this->isClerk();
 
         $certificate->load('resident');
         return view('clerk.certificates.print', compact('certificate'));
+    }
+
+    /**
+     * Update certificate status to Released
+     */
+    public function release(Request $request, Certificate $certificate)
+    {
+        $this->isClerk();
+
+        $oldStatus = $certificate->status;
+        $resident = $certificate->resident;
+        $residentName = $resident ? $resident->first_name . ' ' . $resident->last_name : 'Unknown';
+
+        $certificate->update([
+            'status' => 'Released',
+            'released_at' => now(),
+            'issued_date' => now(),
+            'issued_by' => Auth::id()
+        ]);
+
+        // ========== REAL-TIME NOTIFICATIONS ==========
+        $currentUserId = Auth::id();
+
+        // Notify captains (exclude current user)
+        NotificationHelper::toCaptainsExceptCurrent(
+            $currentUserId,
+            'Certificate Released',
+            'Certificate #' . $certificate->certificate_id . ' for ' . $residentName . ' has been released',
+            'success',
+            route('captain.certificates.show', $certificate->id)
+        );
+
+        // Notify secretaries (exclude current user)
+        NotificationHelper::toSecretariesExceptCurrent(
+            $currentUserId,
+            'Certificate Released',
+            'Certificate #' . $certificate->certificate_id . ' for ' . $residentName . ' has been released',
+            'success',
+            route('secretary.certificates.show', $certificate->id)
+        );
+
+        // Notify admins (exclude current user)
+        NotificationHelper::toAdminsExceptCurrent(
+            $currentUserId,
+            'Certificate Released',
+            'Certificate #' . $certificate->certificate_id . ' for ' . $residentName . ' has been released',
+            'success',
+            route('secretary.certificates.show', $certificate->id)
+        );
+        // ========== END NOTIFICATIONS ==========
+
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'RELEASE_CERTIFICATE',
+            'description' => 'Released certificate ' . $certificate->certificate_id . ' for ' . $residentName,
+            'ip_address' => $request->ip()
+        ]);
+
+        return redirect()->route('clerk.certificates.index')
+            ->with('success', 'Certificate released successfully.');
     }
 }

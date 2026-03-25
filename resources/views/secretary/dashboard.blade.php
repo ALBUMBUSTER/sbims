@@ -121,6 +121,15 @@
 
         <!-- Dashboard Grid -->
         <div class="dashboard-grid">
+            <!-- Monthly Statistics Chart -->
+            <div class="chart-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-chart-line"></i> Monthly Statistics ({{ date('Y') }})</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="monthlyChart" height="200"></canvas>
+                </div>
+            </div>
             <!-- Recent Certificates Chart (Simplified since we don't have monthly stats yet) -->
             <div class="chart-card">
                 <div class="card-header">
@@ -149,7 +158,7 @@
             </div>
 
             <!-- Recent Activities -->
-            <div class="approvals-card">
+            {{-- <div class="approvals-card">
                 <div class="card-header">
                     <h3><i class="fas fa-history"></i> Recent Activities</h3>
                     <a href="{{ route('secretary.activities') }}" class="view-link">View All</a>
@@ -178,7 +187,7 @@
                         <p class="no-data">No recent activities</p>
                     @endif
                 </div>
-            </div>
+            </div> --}}
         </div>
 
         <!-- Recent Certificates Table -->
@@ -666,4 +675,145 @@
     }
 }
 </style>
+@endpush
+@push('scripts')
+{{-- Load Chart.js locally via Vite --}}
+@vite(['resources/js/chart-config.js'])
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Monthly Statistics Chart
+    const ctx = document.getElementById('monthlyChart')?.getContext('2d');
+    if (!ctx) return;
+
+    // Get the data from PHP
+    const certificateStats = @json($certificateStats);
+    const residentStats = @json($residentStats ?? []);
+    const blotterStats = @json($blotterStats ?? []);
+
+    // Prepare data arrays for 12 months
+    let certificatesData = Array(12).fill(0);
+    let residentsData = Array(12).fill(0);
+    let blottersData = Array(12).fill(0);
+
+    // Fill certificate data
+    if (certificateStats && certificateStats.length > 0) {
+        certificateStats.forEach(stat => {
+            const monthIndex = stat.month - 1;
+            certificatesData[monthIndex] = stat.total;
+        });
+    }
+
+    // Fill resident data
+    if (residentStats && residentStats.length > 0) {
+        residentStats.forEach(stat => {
+            const monthIndex = stat.month - 1;
+            residentsData[monthIndex] = stat.total;
+        });
+    }
+
+    // Fill blotter data
+    if (blotterStats && blotterStats.length > 0) {
+        blotterStats.forEach(stat => {
+            const monthIndex = stat.month - 1;
+            blottersData[monthIndex] = stat.total;
+        });
+    }
+
+    // Initialize the chart with three datasets
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [
+                {
+                    label: 'Certificates Issued',
+                    data: certificatesData,
+                    borderColor: '#4361ee',
+                    backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#4361ee',
+                    pointBorderColor: '#fff',
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                },
+                {
+                    label: 'New Residents',
+                    data: residentsData,
+                    borderColor: '#06d6a0',
+                    backgroundColor: 'rgba(6, 214, 160, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#06d6a0',
+                    pointBorderColor: '#fff',
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                },
+                {
+                    label: 'Blotter Cases',
+                    data: blottersData,
+                    borderColor: '#f72585',
+                    backgroundColor: 'rgba(247, 37, 133, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#f72585',
+                    pointBorderColor: '#fff',
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        usePointStyle: true,
+                        boxWidth: 10
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.dataset.label}: ${context.raw} records`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1,
+                        precision: 0
+                    },
+                    title: {
+                        display: true,
+                        text: 'Number of Records',
+                        font: {
+                            weight: 'bold'
+                        }
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Month',
+                        font: {
+                            weight: 'bold'
+                        }
+                    }
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            }
+        }
+    });
+});
+</script>
 @endpush

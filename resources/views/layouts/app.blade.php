@@ -81,6 +81,7 @@
             min-height: auto;
             background: transparent;
             padding: 20px 0;
+            padding-bottom: 0px;
         }
 
         /* Custom scrollbar for sidebar */

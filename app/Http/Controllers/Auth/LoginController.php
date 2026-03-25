@@ -47,21 +47,36 @@ class LoginController extends Controller
             Log::warning('User not found', ['username' => $request->username]);
         }
 
-        // Check if user exists and is active
-        if (!$user || !$user->is_active) {
-            Log::warning('Login failed: User not found or inactive', ['username' => $request->username]);
-            throw ValidationException::withMessages([
-                'username' => ['account is disabled.'],
-            ]);
-        }
+// Check if user exists
+$user = User::where('username', $request->username)->first();
 
-        // Check password
-        if (!Hash::check($request->password, $user->password)) {
-            Log::warning('Login failed: Password mismatch', ['username' => $request->username]);
-            throw ValidationException::withMessages([
-                'username' => ['Invalid credentials.'],
-            ]);
-        }
+// CASE 1: User does NOT exist
+if (!$user) {
+    Log::warning('Login failed: User not found', ['username' => $request->username]);
+    throw ValidationException::withMessages([
+        'username' => ['Account does not exist. Please check your username.'],
+    ]);
+}
+
+// CASE 2: User exists but account is disabled (is_active = 0)
+if (!$user->is_active) {
+    Log::warning('Login failed: Account disabled', ['username' => $request->username, 'user_id' => $user->id]);
+    throw ValidationException::withMessages([
+        'username' => ['Your account has been disabled. Please contact the administrator.'],
+    ]);
+}
+
+// CASE 3: Password is incorrect
+if (!Hash::check($request->password, $user->password)) {
+    Log::warning('Login failed: Password mismatch', ['username' => $request->username]);
+    throw ValidationException::withMessages([
+        'password' => ['Incorrect password. Please try again.'],
+    ]);
+}
+
+// CASE 4: Login successful
+Log::info('Login successful', ['username' => $request->username, 'user_id' => $user->id]);
+Auth::login($user);
 
         // Log the user in
         Auth::login($user, $request->boolean('remember'));

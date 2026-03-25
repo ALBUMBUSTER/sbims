@@ -84,32 +84,26 @@ class BlotterController extends Controller
         $complainantName = $complainant ? $complainant->first_name . ' ' . $complainant->last_name : 'Unknown';
 
         // ========== REAL-TIME NOTIFICATIONS ==========
-// Notify all captains
-NotificationHelper::toCaptains(
-    'New Blotter Case',
-    'A new blotter case has been filed: ' . $blotter->case_id . ' - ' . $request->incident_type,
-    'warning',
-    route('captain.blotters.show', $blotter->id)
-);
+        $currentUserId = Auth::id();
 
-// Notify all secretaries (if current user is not a secretary)
-if (Auth::user()->role_id != 2) { // Assuming 2 is secretary
-    NotificationHelper::toSecretaries(
-        'New Blotter Case',
-        'Case #' . $blotter->case_id . ' has been filed by ' . $complainantName,
-        'info',
-        route('secretary.blotter.show', $blotter->id)
-    );
-}
+        // Notify captains (exclude current user)
+        NotificationHelper::toCaptainsExceptCurrent(
+            $currentUserId,
+            'New Blotter Case',
+            'A new blotter case has been filed: ' . $blotter->case_id . ' - ' . $request->incident_type,
+            'warning',
+            route('captain.blotters.show', $blotter->id)
+        );
 
-// Notify all admins
-NotificationHelper::toAdmins(
-    'New Blotter Case',
-    'Case #' . $blotter->case_id . ' was filed by ' . Auth::user()->name,
-    'info',
-    route('secretary.blotter.show', $blotter->id)
-);
-// ========== END NOTIFICATIONS ==========
+        // Notify admins (exclude current user)
+        NotificationHelper::toAdminsExceptCurrent(
+            $currentUserId,
+            'New Blotter Case',
+            'Case #' . $blotter->case_id . ' was filed by ' . Auth::user()->name,
+            'info',
+            route('secretary.blotter.show', $blotter->id)
+        );
+        // ========== END NOTIFICATIONS ==========
 
         ActivityLog::create([
             'user_id' => Auth::id(),
@@ -162,40 +156,44 @@ NotificationHelper::toAdmins(
         $complainantName = $complainant ? $complainant->first_name . ' ' . $complainant->last_name : 'Unknown';
 
         // ========== REAL-TIME NOTIFICATIONS FOR STATUS CHANGE ==========
-if ($oldStatus !== $validated['status']) {
-    $statusMessages = [
-        'Ongoing' => 'is now ongoing',
-        'Settled' => 'has been settled',
-        'Referred' => 'has been referred',
-    ];
+        if ($oldStatus !== $validated['status']) {
+            $currentUserId = Auth::id();
+            $statusMessages = [
+                'Ongoing' => 'is now ongoing',
+                'Settled' => 'has been settled',
+                'Referred' => 'has been referred',
+            ];
 
-    $message = $statusMessages[$validated['status']] ?? 'status changed to ' . $validated['status'];
+            $message = $statusMessages[$validated['status']] ?? 'status changed to ' . $validated['status'];
 
-    // Notify captains
-    NotificationHelper::toCaptains(
-        'Blotter Case Updated',
-        'Case #' . $blotter->case_id . ' ' . $message,
-        $validated['status'] == 'Settled' ? 'success' : 'info',
-        route('captain.blotters.show', $blotter->id)
-    );
+            // Notify captains (exclude current user)
+            NotificationHelper::toCaptainsExceptCurrent(
+                $currentUserId,
+                'Blotter Case Updated',
+                'Case #' . $blotter->case_id . ' ' . $message,
+                $validated['status'] == 'Settled' ? 'success' : 'info',
+                route('captain.blotters.show', $blotter->id)
+            );
 
-    // Notify secretaries
-    NotificationHelper::toSecretaries(
-        'Blotter Case Updated',
-        'Case #' . $blotter->case_id . ' ' . $message,
-        $validated['status'] == 'Settled' ? 'success' : 'info',
-        route('secretary.blotter.show', $blotter->id)
-    );
+            // Notify secretaries (exclude current user)
+            NotificationHelper::toSecretariesExceptCurrent(
+                $currentUserId,
+                'Blotter Case Updated',
+                'Case #' . $blotter->case_id . ' ' . $message,
+                $validated['status'] == 'Settled' ? 'success' : 'info',
+                route('secretary.blotter.show', $blotter->id)
+            );
 
-    // Notify admins
-    NotificationHelper::toAdmins(
-        'Blotter Case ' . $validated['status'],
-        'Case #' . $blotter->case_id . ' ' . $message,
-        $validated['status'] == 'Settled' ? 'success' : 'info',
-        route('secretary.blotter.show', $blotter->id)
-    );
-}
-// ========== END NOTIFICATIONS ==========
+            // Notify admins (exclude current user)
+            NotificationHelper::toAdminsExceptCurrent(
+                $currentUserId,
+                'Blotter Case ' . $validated['status'],
+                'Case #' . $blotter->case_id . ' ' . $message,
+                $validated['status'] == 'Settled' ? 'success' : 'info',
+                route('secretary.blotter.show', $blotter->id)
+            );
+        }
+        // ========== END NOTIFICATIONS ==========
 
         $description = 'Updated blotter case ' . $blotter->case_id;
 
@@ -219,59 +217,90 @@ if ($oldStatus !== $validated['status']) {
             ->with('success', 'Blotter case updated successfully.');
     }
 
+    /**
+     * Update blotter case status (FIXED)
+     */
     public function updateStatus(Request $request, Blotter $blotter)
     {
+        // Check if user is clerk (can't update status)
+        if (Auth::user()->role_id == 4) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to update blotter status.'
+                ], 403);
+            }
+            return redirect()->route('secretary.blotter.show', $blotter)
+                ->with('error', 'You do not have permission to update blotter status.');
+        }
+
+        // Validate the request - match field names from your blade
         $request->validate([
             'status' => 'required|in:Pending,Ongoing,Settled,Referred',
             'resolution' => 'nullable|required_if:status,Settled|string',
-            'resolved_date' => 'nullable|required_if:status,Settled|date',
+            'resolved_date' => 'nullable|date',
         ]);
 
         $oldStatus = $blotter->status;
-
-        $blotter->update([
-            'status' => $request->status,
-            'resolution' => $request->resolution,
-            'resolved_date' => $request->resolved_date,
-        ]);
-
         $complainant = $blotter->complainant;
         $complainantName = $complainant ? $complainant->first_name . ' ' . $complainant->last_name : 'Unknown';
 
-// ========== REAL-TIME NOTIFICATIONS ==========
-$statusMessages = [
-    'Ongoing' => 'is now ongoing',
-    'Settled' => 'has been settled',
-    'Referred' => 'has been referred',
-];
+        // Prepare update data
+        $updateData = [
+            'status' => $request->status,
+        ];
 
-$message = $statusMessages[$request->status] ?? 'status changed to ' . $request->status;
+        // Add resolution and resolved_date if status is Settled
+        if ($request->status == 'Settled') {
+            $updateData['resolution'] = $request->resolution;
+            $updateData['resolved_date'] = $request->resolved_date ?? now();
+        } else {
+            // Clear resolution fields if not settled
+            $updateData['resolution'] = null;
+            $updateData['resolved_date'] = null;
+        }
 
-// Notify captains
-NotificationHelper::toCaptains(
-    'Blotter Case Status Updated',
-    'Case #' . $blotter->case_id . ' ' . $message,
-    $request->status == 'Settled' ? 'success' : 'info',
-    route('captain.blotters.show', $blotter->id)
-);
+        $blotter->update($updateData);
 
-// Notify secretaries
-NotificationHelper::toSecretaries(
-    'Blotter Case Status Updated',
-    'Case #' . $blotter->case_id . ' ' . $message,
-    $request->status == 'Settled' ? 'success' : 'info',
-    route('secretary.blotter.show', $blotter->id)
-);
+        // ========== REAL-TIME NOTIFICATIONS ==========
+        $currentUserId = Auth::id();
+        $statusMessages = [
+            'Ongoing' => 'is now ongoing',
+            'Settled' => 'has been settled',
+            'Referred' => 'has been referred',
+        ];
 
-// Notify admins
-NotificationHelper::toAdmins(
-    'Blotter Case ' . $request->status,
-    'Case #' . $blotter->case_id . ' ' . $message,
-    $request->status == 'Settled' ? 'success' : 'info',
-    route('secretary.blotter.show', $blotter->id)
-);
-// ========== END NOTIFICATIONS ==========
+        $message = $statusMessages[$request->status] ?? 'status changed to ' . $request->status;
 
+        // Notify secretaries (exclude current user)
+        NotificationHelper::toSecretariesExceptCurrent(
+            $currentUserId,
+            'Blotter Case Status Updated',
+            'Case #' . $blotter->case_id . ' ' . $message,
+            $request->status == 'Settled' ? 'success' : 'info',
+            route('secretary.blotter.show', $blotter->id)
+        );
+
+        // Notify captains (exclude current user)
+        NotificationHelper::toCaptainsExceptCurrent(
+            $currentUserId,
+            'Blotter Case Status Updated',
+            'Case #' . $blotter->case_id . ' ' . $message,
+            $request->status == 'Settled' ? 'success' : 'info',
+            route('captain.blotters.show', $blotter->id)
+        );
+
+        // Notify admins (exclude current user)
+        NotificationHelper::toAdminsExceptCurrent(
+            $currentUserId,
+            'Blotter Case ' . $request->status,
+            'Case #' . $blotter->case_id . ' ' . $message . ' by ' . Auth::user()->name,
+            $request->status == 'Settled' ? 'success' : 'info',
+            route('secretary.blotter.show', $blotter->id)
+        );
+        // ========== END NOTIFICATIONS ==========
+
+        // Log the activity
         ActivityLog::create([
             'user_id' => Auth::id(),
             'action' => 'UPDATE_BLOTTER_STATUS',
@@ -283,6 +312,16 @@ NotificationHelper::toAdmins(
             'user_agent' => $request->userAgent()
         ]);
 
+        // Check if request is AJAX
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Case status updated successfully!',
+                'status' => $request->status,
+                'case_id' => $blotter->case_id
+            ]);
+        }
+
         return redirect()->route('secretary.blotter.show', $blotter)
             ->with('success', 'Blotter case status updated successfully.');
     }
@@ -292,13 +331,6 @@ NotificationHelper::toAdmins(
      */
     public function archive(Request $request, Blotter $blotter)
     {
-        // Check if user is authenticated
-        if (!Auth::check()) {
-            return redirect()->route('login')
-                ->with('error', 'You must be logged in.');
-        }
-
-        // Clerks (role_id = 4) cannot archive
         if (Auth::user()->role_id == 4) {
             return redirect()->route('secretary.blotter.index')
                 ->with('error', 'You do not have permission to archive blotter cases.');
@@ -320,7 +352,7 @@ NotificationHelper::toAdmins(
             'user_agent' => $request->userAgent()
         ]);
 
-        $blotter->delete(); // Soft delete
+        $blotter->delete();
 
         return redirect()->route('secretary.blotter.index')
             ->with('success', 'Blotter case archived successfully.');
@@ -331,13 +363,6 @@ NotificationHelper::toAdmins(
      */
     public function archived(Request $request)
     {
-        // Check if user is authenticated
-        if (!Auth::check()) {
-            return redirect()->route('login')
-                ->with('error', 'You must be logged in.');
-        }
-
-        // Clerks (role_id = 4) cannot view archive
         if (Auth::user()->role_id == 4) {
             return redirect()->route('secretary.blotter.index')
                 ->with('error', 'You do not have permission to view archived cases.');
@@ -364,13 +389,6 @@ NotificationHelper::toAdmins(
      */
     public function restore(Request $request, $id)
     {
-        // Check if user is authenticated
-        if (!Auth::check()) {
-            return redirect()->route('login')
-                ->with('error', 'You must be logged in.');
-        }
-
-        // Clerks (role_id = 4) cannot restore
         if (Auth::user()->role_id == 4) {
             return redirect()->route('secretary.blotter.index')
                 ->with('error', 'You do not have permission to restore cases.');
@@ -396,16 +414,9 @@ NotificationHelper::toAdmins(
      */
     public function forceDelete(Request $request, $id)
     {
-        // Check if user is authenticated
-        if (!Auth::check()) {
-            return redirect()->route('login')
-                ->with('error', 'You must be logged in.');
-        }
-
         $userRole = Auth::user()->role_id;
 
-        // Allow only Admin (1) to permanently delete
-        if (!in_array($userRole, [1])) { // Only Admin can permanently delete
+        if (!in_array($userRole, [1])) {
             return redirect()->route('secretary.blotter.archived')
                 ->with('error', 'You do not have permission to permanently delete cases.');
         }
@@ -427,12 +438,8 @@ NotificationHelper::toAdmins(
             ->with('success', 'Blotter case permanently deleted.');
     }
 
-    /**
-     * Legacy destroy method - consider removing or redirecting to archive
-     */
     public function destroy(Request $request, Blotter $blotter)
     {
-        // Redirect to archive method instead
         return $this->archive($request, $blotter);
     }
 

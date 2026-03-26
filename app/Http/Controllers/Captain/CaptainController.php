@@ -121,7 +121,7 @@ public function dashboard()
         return view('captain.approvals.index', compact('pendingCertificates', 'pendingBlotters'));
     }
 
-    /**
+/**
  * Approve a certificate
  */
 public function approveCertificate(Request $request, Certificate $certificate)
@@ -139,66 +139,75 @@ public function approveCertificate(Request $request, Certificate $certificate)
         'issued_date' => now(),
     ]);
 
-    // ========== FIXED NOTIFICATIONS ==========
-    // Notify the secretary who created it (if exists and not the current user)
-    if ($certificate->created_by && $certificate->created_by != Auth::id()) {
+    $currentUserId = Auth::id();
+    $currentUserName = Auth::user()->name;
+    $certificateNumber = $certificate->certificate_number ?? $certificate->certificate_id;
+    $residentName = $certificate->resident->full_name ?? 'Unknown';
+
+    // ========== FIXED NOTIFICATIONS - EXCLUDE CURRENT USER ==========
+
+    // 1. Notify the secretary who created it (if exists and NOT the current user)
+    if ($certificate->created_by && $certificate->created_by != $currentUserId) {
         NotificationHelper::toUser(
             $certificate->created_by,
             'Certificate Approved',
-            'Certificate #' . $certificate->certificate_number . ' has been approved',
+            'Certificate #' . $certificateNumber . ' for ' . $residentName . ' has been approved',
             'success',
             route('secretary.certificates.show', $certificate->id)
         );
     }
 
-    // Notify all secretaries (EXCLUDING current user)
-    $secretaries = User::where('role_id', 3)
-        ->where('id', '!=', Auth::id())
+    // 2. Notify all OTHER secretaries (EXCLUDE current user)
+    $otherSecretaries = User::where('role_id', 3)
+        ->where('id', '!=', $currentUserId)
         ->get();
-    foreach ($secretaries as $secretary) {
+    foreach ($otherSecretaries as $secretary) {
         NotificationHelper::toUser(
             $secretary->id,
             'Certificate Approved',
-            'Certificate #' . $certificate->certificate_number . ' has been approved by Captain',
+            'Certificate #' . $certificateNumber . ' for ' . $residentName . ' has been approved by Captain ' . $currentUserName,
             'success',
             route('secretary.certificates.show', $certificate->id)
         );
     }
 
-    // Notify all clerks (EXCLUDING current user)
+    // 3. Notify all clerks (EXCLUDE current user - though captain is not a clerk, this is safe)
     $clerks = User::where('role_id', 4)
-        ->where('id', '!=', Auth::id())
+        ->where('id', '!=', $currentUserId)
         ->get();
     foreach ($clerks as $clerk) {
         NotificationHelper::toUser(
             $clerk->id,
             'Certificate Ready',
-            'Certificate #' . $certificate->certificate_number . ' is approved and ready for release',
+            'Certificate #' . $certificateNumber . ' for ' . $residentName . ' is approved and ready for release',
             'success',
             route('clerk.certificates.show', $certificate->id)
         );
     }
 
-    // Notify all admins (EXCLUDING current user)
-    $admins = User::where('role_id', 1)
-        ->where('id', '!=', Auth::id())
+    // 4. Notify all OTHER admins (EXCLUDE current user)
+    $otherAdmins = User::where('role_id', 1)
+        ->where('id', '!=', $currentUserId)
         ->get();
-    foreach ($admins as $admin) {
+    foreach ($otherAdmins as $admin) {
         NotificationHelper::toUser(
             $admin->id,
             'Certificate Approved',
-            'Certificate #' . $certificate->certificate_number . ' was approved by Captain ' . Auth::user()->name,
+            'Certificate #' . $certificateNumber . ' was approved by Captain ' . $currentUserName,
             'success',
             route('secretary.certificates.show', $certificate->id)
         );
     }
+
+    // 5. IMPORTANT: DO NOT notify the captain who performed the approval
+    // (No notification is sent to the current user/captain)
     // ========== END FIXED NOTIFICATIONS ==========
 
     // Store the remarks in activity log instead
     ActivityLog::create([
         'user_id' => Auth::id(),
         'action' => 'APPROVE_CERTIFICATE',
-        'description' => 'Approved certificate #' . $certificate->certificate_number . ' for ' . ($certificate->resident->full_name ?? 'Unknown') . '. Remarks: ' . ($request->remarks ?? 'No remarks'),
+        'description' => 'Approved certificate #' . $certificateNumber . ' for ' . $residentName . '. Remarks: ' . ($request->remarks ?? 'No remarks'),
         'ip_address' => $request->ip(),
         'user_agent' => $request->userAgent()
     ]);
@@ -206,61 +215,82 @@ public function approveCertificate(Request $request, Certificate $certificate)
     return redirect()->back()->with('success', 'Certificate approved successfully.');
 }
 
-    /**
-     * Reject a certificate
-     */
-    public function rejectCertificate(Request $request, Certificate $certificate)
-    {
-        $request->validate([
-            'rejection_reason' => 'required|string|max:500'
-        ]);
+/**
+ * Reject a certificate
+ */
+public function rejectCertificate(Request $request, Certificate $certificate)
+{
+    $request->validate([
+        'rejection_reason' => 'required|string|max:500'
+    ]);
 
-        // Update certificate with existing columns only
-        $certificate->update([
-            'status' => 'Rejected',
-            'rejected_at' => now(),
-            'rejection_reason' => $request->rejection_reason,
-        ]);
+    // Update certificate with existing columns only
+    $certificate->update([
+        'status' => 'Rejected',
+        'rejected_at' => now(),
+        'rejection_reason' => $request->rejection_reason,
+    ]);
 
-        // ========== NOTIFICATIONS ==========
-        // Notify the secretary who created it
-        if ($certificate->created_by) {
-            NotificationHelper::toUser(
-                $certificate->created_by,
-                'Certificate Rejected',
-                'Certificate #' . $certificate->certificate_number . ' was rejected. Reason: ' . $request->rejection_reason,
-                'danger',
-                route('secretary.certificates.show', $certificate->id)
-            );
-        }
+    $currentUserId = Auth::id();
+    $currentUserName = Auth::user()->name;
+    $certificateNumber = $certificate->certificate_number ?? $certificate->certificate_id;
+    $residentName = $certificate->resident->full_name ?? 'Unknown';
 
-        // Notify all secretaries
-        NotificationHelper::toSecretaries(
+    // ========== NOTIFICATIONS - EXCLUDE CURRENT USER ==========
+
+    // 1. Notify the secretary who created it (if exists and NOT the current user)
+    if ($certificate->created_by && $certificate->created_by != $currentUserId) {
+        NotificationHelper::toUser(
+            $certificate->created_by,
             'Certificate Rejected',
-            'Certificate #' . $certificate->certificate_number . ' was rejected by Captain',
+            'Certificate #' . $certificateNumber . ' for ' . $residentName . ' was rejected. Reason: ' . $request->rejection_reason,
             'danger',
             route('secretary.certificates.show', $certificate->id)
         );
-
-        // Notify all admins
-        NotificationHelper::toAdmins(
-            'Certificate Rejected',
-            'Certificate #' . $certificate->certificate_number . ' was rejected by Captain ' . Auth::user()->name,
-            'danger',
-            route('secretary.certificates.show', $certificate->id)
-        );
-        // ========== END NOTIFICATIONS ==========
-
-        ActivityLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'REJECT_CERTIFICATE',
-            'description' => 'Rejected certificate #' . $certificate->certificate_number . ' for ' . ($certificate->resident->full_name ?? 'Unknown') . '. Reason: ' . $request->rejection_reason,
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent()
-        ]);
-
-        return redirect()->back()->with('success', 'Certificate rejected successfully.');
     }
+
+    // 2. Notify all OTHER secretaries (EXCLUDE current user)
+    $otherSecretaries = User::where('role_id', 3)
+        ->where('id', '!=', $currentUserId)
+        ->get();
+    foreach ($otherSecretaries as $secretary) {
+        NotificationHelper::toUser(
+            $secretary->id,
+            'Certificate Rejected',
+            'Certificate #' . $certificateNumber . ' for ' . $residentName . ' was rejected by Captain ' . $currentUserName,
+            'danger',
+            route('secretary.certificates.show', $certificate->id)
+        );
+    }
+
+    // 3. Notify all OTHER admins (EXCLUDE current user)
+    $otherAdmins = User::where('role_id', 1)
+        ->where('id', '!=', $currentUserId)
+        ->get();
+    foreach ($otherAdmins as $admin) {
+        NotificationHelper::toUser(
+            $admin->id,
+            'Certificate Rejected',
+            'Certificate #' . $certificateNumber . ' was rejected by Captain ' . $currentUserName,
+            'danger',
+            route('secretary.certificates.show', $certificate->id)
+        );
+    }
+
+    // 4. IMPORTANT: DO NOT notify the captain who performed the rejection
+    // (No notification is sent to the current user/captain)
+    // ========== END NOTIFICATIONS ==========
+
+    ActivityLog::create([
+        'user_id' => Auth::id(),
+        'action' => 'REJECT_CERTIFICATE',
+        'description' => 'Rejected certificate #' . $certificateNumber . ' for ' . $residentName . '. Reason: ' . $request->rejection_reason,
+        'ip_address' => $request->ip(),
+        'user_agent' => $request->userAgent()
+    ]);
+
+    return redirect()->back()->with('success', 'Certificate rejected successfully.');
+}
 
     /**
      * Mark certificate as released
@@ -485,4 +515,5 @@ public function approveCertificate(Request $request, Certificate $certificate)
 
         return redirect()->back()->with('success', 'Report generation started. You will be notified when it\'s ready.');
     }
+    
 }

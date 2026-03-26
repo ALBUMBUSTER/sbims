@@ -248,8 +248,9 @@ class ResidentController extends Controller
                 'is_4ps' => 'sometimes|boolean',
                 'is_senior' => 'sometimes|boolean',
                 'is_pwd' => 'sometimes|boolean',
-                'pwd_id' => 'nullable|required_if:is_pwd,true|string|max:50|unique:residents,pwd_id',
+                'pwd_id' => 'nullable|required_if:is_pwd,true|string|max:50',
                 'disability_type' => 'nullable|required_if:is_pwd,true|string|max:100',
+                 // 'pwd_id' => 'nullable|required_if:is_pwd,true|string|max:50|unique:residents,pwd_id',
             ]);
 
             // Convert checkbox values to integers

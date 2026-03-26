@@ -124,46 +124,100 @@
 
         <!-- Case Details Grid -->
         <div class="details-grid">
-            <!-- Complainant Information -->
-            <div class="detail-card">
-                <div class="detail-header">
-                    <x-heroicon-o-user class="detail-icon" />
-                    <h3>Complainant Information</h3>
-                </div>
-                <div class="detail-body">
+<!-- Complainant Information -->
+<div class="detail-card">
+    <div class="detail-header">
+        <x-heroicon-o-user class="detail-icon" />
+        <h3>Complainant Information</h3>
+    </div>
+    <div class="detail-body">
+        @if($blotter->complainants->count() > 0)
+            @foreach($blotter->complainants as $index => $complainant)
+                <div class="party-detail-row {{ $index > 0 ? 'mt-3' : '' }}">
+                    <div class="party-header">
+                        <span class="party-number">Complainant {{ $index + 1 }}</span>
+                    </div>
                     <div class="detail-row">
                         <span class="detail-label">Name:</span>
-                        <span class="detail-value">{{ $blotter->complainant->first_name ?? '' }} {{ $blotter->complainant->last_name ?? '' }}</span>
+                        <span class="detail-value">{{ $complainant->name }}</span>
                     </div>
                     <div class="detail-row">
                         <span class="detail-label">Address:</span>
-                        <span class="detail-value">{{ $blotter->complainant->address ?? 'N/A' }}</span>
+                        <span class="detail-value">{{ $complainant->address ?? 'N/A' }}</span>
                     </div>
                     <div class="detail-row">
                         <span class="detail-label">Contact:</span>
-                        <span class="detail-value">{{ $blotter->complainant->contact_number ?? 'N/A' }}</span>
+                        <span class="detail-value">{{ $complainant->contact_number ?? 'N/A' }}</span>
                     </div>
                 </div>
+            @endforeach
+        @else
+            <div class="detail-row">
+                <span class="detail-value">No complainant information available</span>
             </div>
+        @endif
+    </div>
+</div>
 
-            <!-- Respondent Information -->
-            <div class="detail-card">
-                <div class="detail-header">
-                    <x-heroicon-o-user-group class="detail-icon" />
-                    <h3>Respondent Information</h3>
-                </div>
-                <div class="detail-body">
+<!-- Respondent Information -->
+<div class="detail-card">
+    <div class="detail-header">
+        <x-heroicon-o-user-group class="detail-icon" />
+        <h3>Respondent Information</h3>
+    </div>
+    <div class="detail-body">
+        @if($blotter->respondents->count() > 0)
+            @foreach($blotter->respondents as $index => $respondent)
+                <div class="party-detail-row {{ $index > 0 ? 'mt-3' : '' }}">
+                    <div class="party-header">
+                        <span class="party-number">Respondent {{ $index + 1 }}</span>
+                    </div>
                     <div class="detail-row">
                         <span class="detail-label">Name:</span>
-                        <span class="detail-value">{{ $blotter->respondent_name ?? 'N/A' }}</span>
+                        <span class="detail-value">{{ $respondent->name }}</span>
                     </div>
                     <div class="detail-row">
                         <span class="detail-label">Address:</span>
-                        <span class="detail-value">{{ $blotter->respondent_address ?? 'N/A' }}</span>
+                        <span class="detail-value">{{ $respondent->address ?? 'N/A' }}</span>
                     </div>
                 </div>
+            @endforeach
+        @else
+            <div class="detail-row">
+                <span class="detail-value">No respondent information available</span>
             </div>
+        @endif
+    </div>
+</div>
 
+<!-- Witness Information (Optional) -->
+@if($blotter->witnesses->count() > 0)
+<div class="detail-card">
+    <div class="detail-header">
+        <x-heroicon-o-eye class="detail-icon" />
+        <h3>Witness Information</h3>
+    </div>
+    <div class="detail-body">
+        @foreach($blotter->witnesses as $index => $witness)
+            <div class="party-detail-row {{ $index > 0 ? 'mt-3' : '' }}">
+                <div class="party-header">
+                    <span class="party-number">Witness {{ $index + 1 }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Name:</span>
+                    <span class="detail-value">{{ $witness->name }}</span>
+                </div>
+                @if($witness->additional_info)
+                <div class="detail-row full-width">
+                    <span class="detail-label">Statement:</span>
+                    <span class="detail-value">{{ $witness->additional_info }}</span>
+                </div>
+                @endif
+            </div>
+        @endforeach
+    </div>
+</div>
+@endif
             <!-- Incident Details -->
             <div class="detail-card full-width">
                 <div class="detail-header">
@@ -370,6 +424,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
 @push('styles')
 <style>
+    .party-detail-row {
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.party-detail-row:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.party-header {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px dashed #e2e8f0;
+}
+
+.party-number {
+    font-weight: 600;
+    color: #667eea;
+    font-size: 0.85rem;
+}
+
+.mt-3 {
+    margin-top: 1rem;
+}
 .container-fluid {
     padding: 1.5rem;
 }

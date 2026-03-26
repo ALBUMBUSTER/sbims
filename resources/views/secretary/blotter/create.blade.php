@@ -36,88 +36,150 @@
                     </div>
                 </div>
 
-                <h3>Complainant Information</h3>
-                <div class="form-group">
-                    <label for="complainant_search">Search Complainant *</label>
-                    <div class="search-container">
-                        <input type="text" id="complainant_search" placeholder="Start typing resident name..."
-                               autocomplete="off" class="search-input" value="{{ old('complainant_search') }}">
-                        <div class="search-results" id="complainant_results"></div>
-                    </div>
-                    <input type="hidden" id="complainant_id" name="complainant_id" value="{{ old('complainant_id') }}" required>
-                    <div id="selected_complainant" class="selected-resident" @if(old('complainant_id')) style="display: block;" @else style="display: none;" @endif>
-                        <div class="resident-info">
-                            <strong>Selected:</strong>
-                            <span id="selected_complainant_name">
-                                @if(old('complainant_id'))
-                                    @php
-                                        $selectedComplainant = $residents->firstWhere('id', old('complainant_id'));
-                                    @endphp
-                                    @if($selectedComplainant)
-                                        {{ $selectedComplainant->first_name }} {{ $selectedComplainant->last_name }} ({{ $selectedComplainant->resident_id }})
-                                    @endif
+                <!-- ========== COMPLAINANTS SECTION (MULTIPLE) ========== -->
+                <div class="section-header">
+                    <h3><i class="fas fa-user"></i> Complainants <span class="required">*</span></h3>
+                    <button type="button" class="btn-add-party" onclick="addParty('complainant')">
+                        <i class="fas fa-plus"></i> Add Complainant
+                    </button>
+                </div>
+                <div id="complainants-container">
+                    @php
+                        $oldComplainants = old('complainants', [['name' => '', 'address' => '', 'contact' => '', 'resident_id' => '']]);
+                    @endphp
+                    @foreach($oldComplainants as $index => $complainant)
+                        <div class="party-card complainant-card" data-index="{{ $index }}">
+                            <div class="party-header">
+                                <span class="party-number">Complainant {{ $index + 1 }}</span>
+                                @if($index > 0)
+                                    <button type="button" class="btn-remove-party" onclick="removeParty(this)">
+                                        <i class="fas fa-trash"></i> Remove
+                                    </button>
                                 @endif
-                            </span>
-                            <button type="button" class="btn-clear" onclick="clearComplainant()">×</button>
+                            </div>
+                            <div class="party-fields">
+                                <div class="form-group">
+                                    <label>Search Resident *</label>
+                                    <div class="search-container">
+                                        <input type="text" class="search-input party-search" placeholder="Start typing resident name..."
+                                               autocomplete="off" data-type="complainant" data-index="{{ $index }}" value="{{ $complainant['name'] ?? '' }}">
+                                        <div class="search-results" data-type="complainant" data-index="{{ $index }}"></div>
+                                    </div>
+                                    <input type="hidden" name="complainants[{{ $index }}][resident_id]" class="resident-id" value="{{ $complainant['resident_id'] ?? '' }}">
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Full Name *</label>
+                                        <input type="text" name="complainants[{{ $index }}][name]" class="party-name" value="{{ $complainant['name'] ?? '' }}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Address</label>
+                                        <textarea name="complainants[{{ $index }}][address]" class="party-address" rows="2">{{ $complainant['address'] ?? '' }}</textarea>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Contact Number</label>
+                                    <input type="text" name="complainants[{{ $index }}][contact]" class="party-contact" value="{{ $complainant['contact'] ?? '' }}" maxlength="11">
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <small>Type at least 2 characters to search residents</small>
+                    @endforeach
                 </div>
 
-                <h3>Respondent Information</h3>
-
-                <div class="form-group">
-                    <label for="respondent_search">Search Respondent Resident (Optional)</label>
-                    <div class="search-container">
-                        <input type="text" id="respondent_search" placeholder="Start typing resident name..."
-                               autocomplete="off" class="search-input">
-                        <div class="search-results" id="respondent_results"></div>
-                    </div>
-                    <input type="hidden" id="respondent_resident_id" name="respondent_resident_id" value="{{ old('respondent_resident_id') }}">
-                    <div id="selected_respondent" class="selected-resident" @if(old('respondent_resident_id')) style="display: block;" @else style="display: none;" @endif>
-                        <div class="resident-info">
-                            <strong>Selected:</strong>
-                            <span id="selected_respondent_name">
-                                @if(old('respondent_resident_id'))
-                                    @php
-                                        $selectedRespondent = $residents->firstWhere('id', old('respondent_resident_id'));
-                                    @endphp
-                                    @if($selectedRespondent)
-                                        {{ $selectedRespondent->first_name }} {{ $selectedRespondent->last_name }} ({{ $selectedRespondent->resident_id }})
-                                    @endif
-                                @endif
-                            </span>
-                            <button type="button" class="btn-clear" onclick="clearRespondent()">×</button>
-                        </div>
-                    </div>
-                    <small>Selecting a resident will auto-fill name and address below</small>
+                <!-- ========== RESPONDENTS SECTION (MULTIPLE) ========== -->
+                <div class="section-header">
+                    <h3><i class="fas fa-user-friends"></i> Respondents <span class="required">*</span></h3>
+                    <button type="button" class="btn-add-party" onclick="addParty('respondent')">
+                        <i class="fas fa-plus"></i> Add Respondent
+                    </button>
                 </div>
-
-                <div class="form-row">
+                <div id="respondents-container">
+                    @php
+                        $oldRespondents = old('respondents', [['name' => '', 'address' => '', 'resident_id' => '']]);
+                    @endphp
+                    @foreach($oldRespondents as $index => $respondent)
+                        <div class="party-card respondent-card" data-index="{{ $index }}">
+                            <div class="party-header">
+                                <span class="party-number">Respondent {{ $index + 1 }}</span>
+                                @if($index > 0)
+                                    <button type="button" class="btn-remove-party" onclick="removeParty(this)">
+                                        <i class="fas fa-trash"></i> Remove
+                                    </button>
+                                @endif
+                            </div>
+                            <div class="party-fields">
+                                <div class="form-group">
+                                    <label>Search Resident *</label>
+                                    <div class="search-container">
+                                        <input type="text" class="search-input party-search" placeholder="Start typing resident name..."
+                                               autocomplete="off" data-type="respondent" data-index="{{ $index }}" value="{{ $respondent['name'] ?? '' }}">
+                                        <div class="search-results" data-type="respondent" data-index="{{ $index }}"></div>
+                                    </div>
+                                    <input type="hidden" name="respondents[{{ $index }}][resident_id]" class="resident-id" value="{{ $respondent['resident_id'] ?? '' }}">
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Full Name *</label>
+                                        <input type="text" name="respondents[{{ $index }}][name]" class="party-name" value="{{ $respondent['name'] ?? '' }}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Address *</label>
+                                        <textarea name="respondents[{{ $index }}][address]" class="party-address" rows="2" required>{{ $respondent['address'] ?? '' }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+{{-- <!-- ========== WITNESSES SECTION (OPTIONAL) ========== -->
+<div class="section-header">
+    <h3><i class="fas fa-eye"></i> Witnesses <span class="optional">(Optional)</span></h3>
+    <button type="button" class="btn-add-party" onclick="addParty('witness')">
+        <i class="fas fa-plus"></i> Add Witness
+    </button>
+</div>
+<div id="witnesses-container">
+    @php
+        $oldWitnesses = old('witnesses', []);
+    @endphp
+    @if(count($oldWitnesses) > 0)
+        @foreach($oldWitnesses as $index => $witness)
+            <div class="party-card witness-card" data-index="{{ $index }}">
+                <div class="party-header">
+                    <span class="party-number">Witness {{ $index + 1 }}</span>
+                    <button type="button" class="btn-remove-party" onclick="removeParty(this)">
+                        <i class="fas fa-trash"></i> Remove
+                    </button>
+                </div>
+                <div class="party-fields">
                     <div class="form-group">
-                        <label for="respondent_name">Respondent Name *</label>
-                        <input type="text" id="respondent_name" name="respondent_name" value="{{ old('respondent_name') }}" required>
+                        <label>Name *</label>
+                        <input type="text" name="witnesses[{{ $index }}][name]" value="{{ $witness['name'] ?? '' }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Statement</label>
+                        <textarea name="witnesses[{{ $index }}][statement]" rows="2">{{ $witness['statement'] ?? '' }}</textarea>
                     </div>
                 </div>
+            </div>
+        @endforeach
+    @endif
+</div> --}}
 
-                <div class="form-group">
-                    <label for="respondent_address">Respondent Address *</label>
-                    <textarea id="respondent_address" name="respondent_address" rows="2" placeholder="Complete address of the respondent" required>{{ old('respondent_address') }}</textarea>
-                </div>
-
+                <!-- Incident Details -->
                 <h3>Incident Details</h3>
                 <div class="form-row">
                     <div class="form-group">
                         <label for="incident_type">Incident Type *</label>
                         <select id="incident_type" name="incident_type" required onchange="toggleOtherIncident()">
                             <option value="">Select Type</option>
-                            <option value="Boundary Dispute" {{ old('incident_type') == 'Boundary Dispute' ? 'selected' : '' }}>Boundary Dispute</option>
-                            <option value="Noise Complaint" {{ old('incident_type') == 'Noise Complaint' ? 'selected' : '' }}>Noise Complaint</option>
-                            <option value="Property Damage" {{ old('incident_type') == 'Property Damage' ? 'selected' : '' }}>Property Damage</option>
-                            <option value="Physical Altercation" {{ old('incident_type') == 'Physical Altercation' ? 'selected' : '' }}>Physical Altercation</option>
-                            <option value="Theft" {{ old('incident_type') == 'Theft' ? 'selected' : '' }}>Theft</option>
-                            <option value="Trespassing" {{ old('incident_type') == 'Trespassing' ? 'selected' : '' }}>Trespassing</option>
-                            <option value="Verbal Argument" {{ old('incident_type') == 'Verbal Argument' ? 'selected' : '' }}>Verbal Argument</option>
+                            <option value="Boundary Dispute" {{ old('incident_type') == 'Boundary Dispute' ? 'selected' : '' }}>Boundary Dispute(Ang panaglalis sa yuta)</option>
+                            <option value="Noise Complaint" {{ old('incident_type') == 'Noise Complaint' ? 'selected' : '' }}>Noise Complaint(Reklamo sa Kasaba)</option>
+                            <option value="Property Damage" {{ old('incident_type') == 'Property Damage' ? 'selected' : '' }}>Property Damage(Kadaot sa Lugar)</option>
+                            <option value="Physical Altercation" {{ old('incident_type') == 'Physical Altercation' ? 'selected' : '' }}>Physical Altercation(pisikal nga panaglalis)</option>
+                            <option value="Theft" {{ old('incident_type') == 'Theft' ? 'selected' : '' }}>Theft(Pagpangawat)</option>
+                            <option value="Trespassing" {{ old('incident_type') == 'Trespassing' ? 'selected' : '' }}>Trespassing(Paglapas)</option>
+                            <option value="Verbal Argument" {{ old('incident_type') == 'Verbal Argument' ? 'selected' : '' }}>Verbal Argument(Verbal nga Argumento)</option>
                             <option value="Other" {{ old('incident_type') == 'Other' ? 'selected' : '' }}>Other</option>
                         </select>
                     </div>
@@ -134,9 +196,9 @@
                 </div>
 
                 <!-- Other Incident Type Input (Hidden by default) -->
-                <div class="form-group" id="other_incident_container" @if(old('incident_type') == 'Other') style="display: block; margin-top: -10px;" @else style="display: none; margin-top: -10px;" @endif>
+                <div class="form-group" id="other_incident_container" @if(old('incident_type') == 'Other') style="display: block;" @else style="display: none;" @endif>
                     <label for="other_incident_type">Specify Incident Type *</label>
-                    <input type="text" id="other_incident_type" name="other_incident_type" value="{{ old('other_incident_type') }}" placeholder="Please specify the incident type" style="margin-top: 5px;">
+                    <input type="text" id="other_incident_type" name="other_incident_type" value="{{ old('other_incident_type') }}" placeholder="Please specify the incident type">
                 </div>
 
                 <div class="form-group">
@@ -144,7 +206,6 @@
                     <textarea id="incident_location" name="incident_location" rows="2" placeholder="Exact location where the incident occurred" required>{{ old('incident_location') }}</textarea>
                 </div>
 
-                <!-- Case Description - Using 'description' to match database -->
                 <div class="form-group">
                     <label for="description">Case Description *</label>
                     <textarea id="description" name="description" rows="5" placeholder="Detailed description of the incident, including what happened, who was involved, and any witnesses..." required>{{ old('description') }}</textarea>
@@ -154,7 +215,7 @@
                     <button type="button" class="btn btn-secondary" id="previewBtn">
                         <span class="preview-icon">👁️</span> Preview & Confirm
                     </button>
-                    <button type="submit" class="btn btn-primary">Add Blotter Case</button>
+                    {{-- <button type="submit" class="btn btn-primary">Add Blotter Case</button> --}}
                     <a href="{{ route('secretary.blotter.index') }}" class="btn btn-outline">Cancel</a>
                 </div>
             </form>
@@ -163,6 +224,7 @@
 </div>
 
 <style>
+/* All existing styles remain exactly as you have them */
 .main-container {
     display: flex;
     min-height: 100vh;
@@ -752,62 +814,288 @@ h3:first-of-type {
         justify-content: center;
     }
 }
+
+/* ========== ADDITIONAL STYLES FOR MULTIPLE PARTIES ========== */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 2rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.section-header h3 {
+    margin: 0;
+    padding: 0;
+    border: none;
+    font-size: 1.25rem;
+}
+
+.optional {
+    font-size: 0.85rem;
+    font-weight: normal;
+    color: #6b7280;
+}
+
+.btn-add-party {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    transition: all 0.3s;
+}
+
+.btn-add-party:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.party-card {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s;
+}
+
+.party-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.party-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.party-number {
+    font-weight: 600;
+    color: #374151;
+}
+
+.btn-remove-party {
+    background: none;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    font-size: 0.8rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.btn-remove-party:hover {
+    background: #fee2e2;
+}
+
+.party-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.party-fields .form-row {
+    margin-bottom: 0;
+}
+
+.party-fields .form-group {
+    margin-bottom: 0;
+}
+
+.complainant-card {
+    border-left: 4px solid #3b82f6;
+}
+
+.respondent-card {
+    border-left: 4px solid #ef4444;
+}
+
+.witness-card {
+    border-left: 4px solid #10b981;
+}
+
+/* Party search results */
+.party-card .search-container {
+    position: relative;
+}
+
+.party-card .search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+}
+
+.party-card .search-results.active {
+    display: block;
+}
+
+@media (max-width: 768px) {
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .party-fields .form-row {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+}
 </style>
 
 <script>
 // Residents data for autocomplete
 const residents = <?php echo json_encode($residents); ?>;
 
-// Set default date and time to current
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize other incident type visibility
-    toggleOtherIncident();
+// Party index counters - track how many of each type exist
+// Get the actual count of existing parties from the DOM
+let complainantCount = document.querySelectorAll('#complainants-container .party-card').length;
+let respondentCount = document.querySelectorAll('#respondents-container .party-card').length;
+let witnessCount = document.querySelectorAll('#witnesses-container .party-card').length;
 
-    // Setup search functionality
-    setupSearch('complainant_search', 'complainant_results', 'complainant_id', 'selected_complainant', 'selected_complainant_name', true);
-    setupSearch('respondent_search', 'respondent_results', 'respondent_resident_id', 'selected_respondent', 'selected_respondent_name', false);
+let partyIndexCounters = {
+    complainant: complainantCount,
+    respondent: respondentCount,
+    witness: witnessCount
+};
 
-    // Add preview button functionality
-    document.getElementById('previewBtn').addEventListener('click', function() {
-        console.log('Preview button clicked');
-        if (!validateBlotterForm()) {
-            console.log('Validation failed');
-            return;
-        }
-        console.log('Showing preview...');
-        showBlotterPreview();
-    });
+console.log('Initial counts:', partyIndexCounters); // Debug to see initial counts
 
-    // Form submit handler
-    document.getElementById('blotterForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        console.log('Form submitted');
+function addParty(type) {
+    const container = document.getElementById(`${type}s-container`);
+    const index = partyIndexCounters[type]++;
 
-        if (!validateBlotterForm()) {
-            console.log('Validation failed');
-            return;
-        }
+    const partyCard = document.createElement('div');
+    partyCard.className = `party-card ${type}-card`;
+    partyCard.dataset.index = index;
 
-        // If preview is showing, use it for confirmation
-        if (document.querySelector('.preview-modal')) {
-            const confirmBtn = document.querySelector('.confirm-preview-btn');
-            if (confirmBtn) {
-                confirmBtn.click();
-            }
-        } else {
-            showBlotterPreview();
-        }
-    });
-});
+    if (type === 'complainant') {
+        partyCard.innerHTML = `
+            <div class="party-header">
+                <span class="party-number">Complainant ${index + 1}</span>
+                <button type="button" class="btn-remove-party" onclick="removeParty(this)">
+                    <i class="fas fa-trash"></i> Remove
+                </button>
+            </div>
+            <div class="party-fields">
+                <div class="form-group">
+                    <label>Search Resident *</label>
+                    <div class="search-container">
+                        <input type="text" class="search-input party-search" placeholder="Start typing resident name..."
+                               autocomplete="off" data-type="${type}" data-index="${index}">
+                        <div class="search-results" data-type="${type}" data-index="${index}"></div>
+                    </div>
+                    <input type="hidden" name="${type}s[${index}][resident_id]" class="resident-id" value="">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Full Name *</label>
+                        <input type="text" name="${type}s[${index}][name]" class="party-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Address</label>
+                        <textarea name="${type}s[${index}][address]" class="party-address" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Contact Number</label>
+                    <input type="text" name="${type}s[${index}][contact]" class="party-contact" maxlength="11">
+                </div>
+            </div>
+        `;
+    } else if (type === 'respondent') {
+        partyCard.innerHTML = `
+            <div class="party-header">
+                <span class="party-number">Respondent ${index + 1}</span>
+                <button type="button" class="btn-remove-party" onclick="removeParty(this)">
+                    <i class="fas fa-trash"></i> Remove
+                </button>
+            </div>
+            <div class="party-fields">
+                <div class="form-group">
+                    <label>Search Resident *</label>
+                    <div class="search-container">
+                        <input type="text" class="search-input party-search" placeholder="Start typing resident name..."
+                               autocomplete="off" data-type="${type}" data-index="${index}">
+                        <div class="search-results" data-type="${type}" data-index="${index}"></div>
+                    </div>
+                    <input type="hidden" name="${type}s[${index}][resident_id]" class="resident-id" value="">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Full Name *</label>
+                        <input type="text" name="${type}s[${index}][name]" class="party-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Address *</label>
+                        <textarea name="${type}s[${index}][address]" class="party-address" rows="2" required></textarea>
+                    </div>
+                </div>
+            </div>
+        `;
+} else if (type === 'witness') {
+    partyCard.innerHTML = `
+        <div class="party-header">
+            <span class="party-number">Witness ${index + 1}</span>
+            <button type="button" class="btn-remove-party" onclick="removeParty(this)">
+                <i class="fas fa-trash"></i> Remove
+            </button>
+        </div>
+        <div class="party-fields">
+            <div class="form-group">
+                <label>Name *</label>
+                <input type="text" name="witnesses[${index}][name]" required>
+            </div>
+            <div class="form-group">
+                <label>Statement</label>
+                <textarea name="witnesses[${index}][statement]" rows="2"></textarea>
+            </div>
+        </div>
+    `;
+}
 
-function setupSearch(inputId, resultsId, hiddenId, selectedDivId, selectedNameId, isRequired) {
-    const input = document.getElementById(inputId);
-    const results = document.getElementById(resultsId);
-    const hiddenInput = document.getElementById(hiddenId);
-    const selectedDiv = document.getElementById(selectedDivId);
-    const selectedName = document.getElementById(selectedNameId);
+    container.appendChild(partyCard);
 
+    // Setup search for the new party
+    if (type !== 'witness') {
+        const searchInput = partyCard.querySelector('.party-search');
+        const resultsDiv = partyCard.querySelector('.search-results');
+        setupPartySearch(searchInput, resultsDiv);
+    }
+}
+
+function removeParty(button) {
+    const partyCard = button.closest('.party-card');
+    partyCard.remove();
+}
+
+function setupPartySearch(input, resultsDiv) {
     let timeout = null;
+    const type = input.dataset.type;
+    const index = input.dataset.index;
 
     input.addEventListener('input', function() {
         clearTimeout(timeout);
@@ -815,73 +1103,54 @@ function setupSearch(inputId, resultsId, hiddenId, selectedDivId, selectedNameId
             const searchTerm = this.value.trim().toLowerCase();
 
             if (searchTerm.length < 2) {
-                results.classList.remove('active');
+                resultsDiv.classList.remove('active');
                 return;
             }
 
-            // Show loading
-            results.innerHTML = '<div class="loading">Searching</div>';
-            results.classList.add('active');
+            resultsDiv.innerHTML = '<div class="loading">Searching...</div>';
+            resultsDiv.classList.add('active');
 
-            // Filter residents
             const filtered = residents.filter(resident => {
                 const fullName = (resident.first_name + ' ' + resident.last_name).toLowerCase();
                 const residentId = resident.resident_id ? resident.resident_id.toLowerCase() : '';
                 return fullName.includes(searchTerm) || residentId.includes(searchTerm);
             });
 
-            // Display results
             if (filtered.length > 0) {
-                results.innerHTML = '';
+                resultsDiv.innerHTML = '';
                 filtered.forEach(resident => {
                     const option = document.createElement('div');
                     option.className = 'resident-option';
                     option.innerHTML = `
                         <div class="resident-name">${resident.first_name} ${resident.last_name}</div>
                         <div class="resident-details">
-                            ID: ${resident.resident_id} |
-                            Address: ${resident.address}, Purok ${resident.purok}
+                            ID: ${resident.resident_id} | Address: ${resident.address}, Purok ${resident.purok}
                         </div>
                     `;
 
                     option.addEventListener('click', function() {
-                        // Set the hidden input
+                        const hiddenInput = document.querySelector(`input[name="${type}s[${index}][resident_id]"]`);
+                        const nameInput = document.querySelector(`input[name="${type}s[${index}][name]"]`);
+                        const addressInput = document.querySelector(`textarea[name="${type}s[${index}][address]"]`);
+
                         hiddenInput.value = resident.id;
-
-                        // Show selected resident
-                        selectedName.textContent = `${resident.first_name} ${resident.last_name} (${resident.resident_id})`;
-                        selectedDiv.style.display = 'block';
-
-                        // Clear search input
-                        input.value = '';
-                        results.classList.remove('active');
-
-                        // For respondent, auto-fill name and address
-                        if (inputId === 'respondent_search') {
-                            document.getElementById('respondent_name').value = `${resident.first_name} ${resident.last_name}`;
-                            document.getElementById('respondent_address').value = `${resident.address}, Purok ${resident.purok}`;
-
-                            // Visual feedback
-                            document.getElementById('respondent_name').style.borderColor = '#10b981';
-                            document.getElementById('respondent_address').style.borderColor = '#10b981';
-
-                            setTimeout(() => {
-                                document.getElementById('respondent_name').style.borderColor = '';
-                                document.getElementById('respondent_address').style.borderColor = '';
-                            }, 2000);
+                        nameInput.value = `${resident.first_name} ${resident.last_name}`;
+                        if (addressInput) {
+                            addressInput.value = `${resident.address}, Purok ${resident.purok}`;
                         }
+
+                        input.value = '';
+                        resultsDiv.classList.remove('active');
                     });
 
-                    results.appendChild(option);
+                    resultsDiv.appendChild(option);
                 });
             } else {
-                // Show "No residents found" with inline Add New Resident button
-                results.innerHTML = `
+                resultsDiv.innerHTML = `
                     <div class="no-results">
                         <div class="no-results-message">No residents found</div>
                         <a href="{{ route('secretary.residents.create') }}" target="_blank" class="btn-add-new-inline">
-                            <i class="fas fa-plus-circle"></i>
-                            <span>Add New Resident</span>
+                            <i class="fas fa-plus-circle"></i> Add New Resident
                         </a>
                     </div>
                 `;
@@ -889,59 +1158,11 @@ function setupSearch(inputId, resultsId, hiddenId, selectedDivId, selectedNameId
         }, 300);
     });
 
-    // Close results when clicking outside
     document.addEventListener('click', function(e) {
-        if (!input.contains(e.target) && !results.contains(e.target)) {
-            results.classList.remove('active');
+        if (!input.contains(e.target) && !resultsDiv.contains(e.target)) {
+            resultsDiv.classList.remove('active');
         }
     });
-
-    // Keyboard navigation
-    input.addEventListener('keydown', function(e) {
-        const options = results.querySelectorAll('.resident-option');
-        let currentIndex = -1;
-
-        options.forEach((option, index) => {
-            if (option.classList.contains('highlighted')) {
-                currentIndex = index;
-            }
-        });
-
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            if (currentIndex < options.length - 1) {
-                if (currentIndex >= 0) {
-                    options[currentIndex].classList.remove('highlighted');
-                }
-                currentIndex++;
-                options[currentIndex].classList.add('highlighted');
-                options[currentIndex].scrollIntoView({ block: 'nearest' });
-            }
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            if (currentIndex > 0) {
-                options[currentIndex].classList.remove('highlighted');
-                currentIndex--;
-                options[currentIndex].classList.add('highlighted');
-                options[currentIndex].scrollIntoView({ block: 'nearest' });
-            }
-        } else if (e.key === 'Enter' && currentIndex >= 0) {
-            e.preventDefault();
-            options[currentIndex].click();
-        }
-    });
-}
-
-function clearComplainant() {
-    document.getElementById('complainant_id').value = '';
-    document.getElementById('selected_complainant').style.display = 'none';
-}
-
-function clearRespondent() {
-    document.getElementById('respondent_resident_id').value = '';
-    document.getElementById('selected_respondent').style.display = 'none';
-    document.getElementById('respondent_name').value = '';
-    document.getElementById('respondent_address').value = '';
 }
 
 function toggleOtherIncident() {
@@ -952,9 +1173,6 @@ function toggleOtherIncident() {
     if (incidentType === 'Other') {
         otherContainer.style.display = 'block';
         otherInput.required = true;
-        setTimeout(() => {
-            otherInput.focus();
-        }, 100);
     } else {
         otherContainer.style.display = 'none';
         otherInput.required = false;
@@ -962,56 +1180,68 @@ function toggleOtherIncident() {
     }
 }
 
-// Clear respondent auto-fill if user manually edits
-document.getElementById('respondent_name').addEventListener('input', function() {
-    const respondentId = document.getElementById('respondent_resident_id').value;
-    if (respondentId) {
-        const resident = residents.find(r => r.id == respondentId);
-        if (resident && this.value !== `${resident.first_name} ${resident.last_name}`) {
-            clearRespondent();
-        }
-    }
-});
-
-document.getElementById('respondent_address').addEventListener('input', function() {
-    const respondentId = document.getElementById('respondent_resident_id').value;
-    if (respondentId) {
-        const resident = residents.find(r => r.id == respondentId);
-        if (resident && this.value !== `${resident.address}, Purok ${resident.purok}`) {
-            clearRespondent();
-        }
-    }
-});
-
-// Form validation - Using 'description' to match database
 function validateBlotterForm() {
-    // Validate complainant is selected
-    const complainantId = document.getElementById('complainant_id').value;
-    if (!complainantId) {
-        showError('Please select a complainant from the search results.');
-        document.getElementById('complainant_search').focus();
+    // Validate at least one complainant
+    const complainants = document.querySelectorAll('#complainants-container .party-card');
+    if (complainants.length === 0) {
+        showError('Please add at least one complainant.');
         return false;
     }
 
-    // Validate respondent name
-    const respondentName = document.getElementById('respondent_name').value;
-    if (!respondentName.trim()) {
-        showError('Please enter respondent name.');
-        document.getElementById('respondent_name').focus();
+    // Validate at least one respondent
+    const respondents = document.querySelectorAll('#respondents-container .party-card');
+    if (respondents.length === 0) {
+        showError('Please add at least one respondent.');
         return false;
     }
 
-    // Validate incident type
+    // Validate each complainant has name
+    for (let i = 0; i < complainants.length; i++) {
+        const nameInput = complainants[i].querySelector('input[name*="[name]"]');
+        if (!nameInput.value.trim()) {
+            showError(`Please enter name for Complainant ${i + 1}.`);
+            nameInput.focus();
+            return false;
+        }
+    }
+
+    // Validate each respondent has name and address
+    for (let i = 0; i < respondents.length; i++) {
+        const nameInput = respondents[i].querySelector('input[name*="[name]"]');
+        const addressInput = respondents[i].querySelector('textarea[name*="[address]"]');
+
+        if (!nameInput.value.trim()) {
+            showError(`Please enter name for Respondent ${i + 1}.`);
+            nameInput.focus();
+            return false;
+        }
+        if (!addressInput.value.trim()) {
+            showError(`Please enter address for Respondent ${i + 1}.`);
+            addressInput.focus();
+            return false;
+        }
+    }
+
+    // Validate incident details
+    const incidentDate = document.getElementById('incident_date').value;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const incidentDateObj = new Date(incidentDate);
+    incidentDateObj.setHours(0, 0, 0, 0);
+
+    if (incidentDateObj > today) {
+        showError('Incident date cannot be in the future.');
+        return false;
+    }
+
     const incidentType = document.getElementById('incident_type').value;
-    const otherInput = document.getElementById('other_incident_type');
-
     if (!incidentType) {
         showError('Please select incident type.');
-        document.getElementById('incident_type').focus();
         return false;
     }
 
     if (incidentType === 'Other') {
+        const otherInput = document.getElementById('other_incident_type');
         if (!otherInput.value.trim()) {
             showError('Please specify the incident type.');
             otherInput.focus();
@@ -1019,33 +1249,7 @@ function validateBlotterForm() {
         }
     }
 
-    // Validate incident date is not in future
-    const incidentDateInput = document.getElementById('incident_date').value;
-const incidentDate = new Date(incidentDateInput);
-const today = new Date();
-
-// Reset to midnight for accurate day comparison
-incidentDate.setHours(0, 0, 0, 0);
-today.setHours(0, 0, 0, 0);
-
-// Check if incident date is in the future
-if (incidentDate > today) {
-    showError('Incident date cannot be in the future.');
-    document.getElementById('incident_date').focus();
-    return false;
-}
-    // Validate incident date is not too far in past (5 years max)
-    const fiveYearsAgo = new Date();
-    fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
-
-    if (incidentDate < fiveYearsAgo) {
-        if (!confirm('Incident date appears to be more than 5 years ago. Is this correct?')) {
-            document.getElementById('incident_date').focus();
-            return false;
-        }
-    }
-
-    // Validate required fields - Using 'description' to match database
+    // Validate required fields
     const requiredFields = [
         {id: 'incident_location', label: 'Incident Location'},
         {id: 'description', label: 'Case Description'}
@@ -1054,7 +1258,7 @@ if (incidentDate > today) {
     for (const field of requiredFields) {
         const fieldElement = document.getElementById(field.id);
         if (!fieldElement.value.trim()) {
-            showError(`Please fill in ${field.label}`);
+            showError(`Please fill in ${field.label}.`);
             fieldElement.focus();
             return false;
         }
@@ -1063,13 +1267,9 @@ if (incidentDate > today) {
     return true;
 }
 
-// Helper function to show error messages
 function showError(message) {
-    // Remove existing error toast
     const existingToast = document.querySelector('.error-toast');
-    if (existingToast) {
-        existingToast.remove();
-    }
+    if (existingToast) existingToast.remove();
 
     const errorDiv = document.createElement('div');
     errorDiv.className = 'error-toast';
@@ -1083,195 +1283,214 @@ function showError(message) {
 
     document.body.appendChild(errorDiv);
 
-    // Auto-remove after 5 seconds
     setTimeout(() => {
-        if (errorDiv.parentNode) {
-            document.body.removeChild(errorDiv);
-        }
+        if (errorDiv.parentNode) errorDiv.remove();
     }, 5000);
 
-    // Close button handler
-    errorDiv.querySelector('.error-close').addEventListener('click', () => {
-        document.body.removeChild(errorDiv);
-    });
+    errorDiv.querySelector('.error-close').addEventListener('click', () => errorDiv.remove());
 }
 
-// Function to show blotter preview - Using 'description' to match database
+// Initialize existing party searches and form handlers
+document.addEventListener('DOMContentLoaded', function() {
+    // Setup search for existing parties
+    document.querySelectorAll('.party-search').forEach(searchInput => {
+        const resultsDiv = searchInput.closest('.search-container').querySelector('.search-results');
+        setupPartySearch(searchInput, resultsDiv);
+    });
+
+    toggleOtherIncident();
+
+    // Form submit handler
+    document.getElementById('blotterForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (validateBlotterForm()) {
+            this.submit();
+        }
+    });
+
+    // Preview button handler
+    document.getElementById('previewBtn').addEventListener('click', function() {
+        if (validateBlotterForm()) {
+            showBlotterPreview();
+        }
+    });
+});
+
 function showBlotterPreview() {
-    // Get complainant info
-    const complainantId = document.getElementById('complainant_id').value;
-    const complainant = residents.find(r => r.id == complainantId);
-    const complainantName = complainant ?
-        `${complainant.first_name} ${complainant.last_name} (${complainant.resident_id})` :
-        'Not selected';
-    const complainantAddress = complainant ?
-        `${complainant.address}, Purok ${complainant.purok}` :
-        'Not available';
+    // Get all complainants
+    const complainants = [];
+    document.querySelectorAll('#complainants-container .party-card').forEach(card => {
+        const name = card.querySelector('input[name*="[name]"]').value;
+        const address = card.querySelector('textarea[name*="[address]"]')?.value || '';
+        const contact = card.querySelector('input[name*="[contact]"]')?.value || '';
+        if (name) complainants.push({ name, address, contact });
+    });
 
-    // Get the incident type
-    const incidentTypeSelect = document.getElementById('incident_type');
-    const otherIncidentInput = document.getElementById('other_incident_type');
+    // Get all respondents
+    const respondents = [];
+    document.querySelectorAll('#respondents-container .party-card').forEach(card => {
+        const name = card.querySelector('input[name*="[name]"]').value;
+        const address = card.querySelector('textarea[name*="[address]"]').value;
+        if (name) respondents.push({ name, address });
+    });
 
-    let finalIncidentType = incidentTypeSelect.value;
-    if (finalIncidentType === 'Other' && otherIncidentInput) {
-        finalIncidentType = otherIncidentInput.value || 'Other (not specified)';
-    }
+    // Get witnesses
+    const witnesses = [];
+    document.querySelectorAll('#witnesses-container .party-card').forEach(card => {
+        const name = card.querySelector('input[name*="[name]"]').value;
+        const statement = card.querySelector('textarea[name*="[statement]"]')?.value || '';
+        if (name) witnesses.push({ name, statement });
+    });
 
-    // Get case ID from the input field
+    // Get incident details
+    const incidentType = document.getElementById('incident_type').value;
+    const otherIncident = document.getElementById('other_incident_type').value;
+    const finalIncidentType = incidentType === 'Other' ? otherIncident : incidentType;
+    const incidentDate = document.getElementById('incident_date').value;
+    const incidentTime = document.getElementById('incident_time').value;
+    const incidentLocation = document.getElementById('incident_location').value;
+    const description = document.getElementById('description').value;
     const caseId = document.getElementById('case_id').value || 'Will be generated upon save';
 
-    // Collect all form data - Using 'description' to match database
-    const formData = {
-        complainant_name: complainantName,
-        complainant_address: complainantAddress,
-        respondent_name: document.getElementById('respondent_name').value,
-        respondent_address: document.getElementById('respondent_address').value,
-        incident_type: finalIncidentType,
-        incident_date: document.getElementById('incident_date').value,
-        incident_time: document.getElementById('incident_time').value,
-        incident_location: document.getElementById('incident_location').value,
-        description: document.getElementById('description').value,
-        case_id: caseId
-    };
+    // Format date
+    const formattedDate = new Date(incidentDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-    // Create modal
-    const modal = document.createElement('div');
-    modal.className = 'preview-modal active';
-    modal.innerHTML = `
-        <div class="preview-modal-content">
-            <div class="preview-header">
-                <h3><span class="header-icon">⚖️</span> Blotter Case Preview</h3>
-                <button type="button" class="preview-close">&times;</button>
+    // Build complainant HTML
+    let complainantHtml = '';
+    complainants.forEach((c, i) => {
+        complainantHtml += `
+            <div class="preview-item full-width" style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #e5e7eb;">
+                <div style="font-weight: 600; color: #3b82f6; margin-bottom: 5px;">Complainant ${i + 1}</div>
+                <div><strong>Name:</strong> ${escapeHtml(c.name)}</div>
+                <div><strong>Address:</strong> ${escapeHtml(c.address) || 'N/A'}</div>
+                <div><strong>Contact:</strong> ${escapeHtml(c.contact) || 'N/A'}</div>
             </div>
+        `;
+    });
 
-            <div class="preview-body">
-                <div class="preview-alert">
-                    <span class="alert-icon">⚠️</span>
-                    <span>Please review all case details before submitting</span>
-                </div>
-
-                <div class="preview-sections">
-                    <div class="preview-section">
-                        <h4>📋 Case Information</h4>
-                        <div class="preview-grid">
-                            <div class="preview-item">
-                                <span class="preview-label">Case ID:</span>
-                                <span class="preview-value highlight">${formData.case_id}</span>
-                            </div>
-                            <div class="preview-item">
-                                <span class="preview-label">Incident Type:</span>
-                                <span class="preview-value">${formData.incident_type}</span>
-                            </div>
-                            <div class="preview-item">
-                                <span class="preview-label">Incident Date:</span>
-                                <span class="preview-value">${formData.incident_date}</span>
-                            </div>
-                            <div class="preview-item">
-                                <span class="preview-label">Incident Time:</span>
-                                <span class="preview-value">${formData.incident_time}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="preview-section">
-                        <h4>👤 Complainant Information</h4>
-                        <div class="preview-grid">
-                            <div class="preview-item">
-                                <span class="preview-label">Complainant:</span>
-                                <span class="preview-value">${formData.complainant_name}</span>
-                            </div>
-                            <div class="preview-item full-width">
-                                <span class="preview-label">Address:</span>
-                                <span class="preview-value">${formData.complainant_address}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="preview-section">
-                        <h4>👥 Respondent Information</h4>
-                        <div class="preview-grid">
-                            <div class="preview-item">
-                                <span class="preview-label">Respondent Name:</span>
-                                <span class="preview-value">${formData.respondent_name}</span>
-                            </div>
-                            <div class="preview-item full-width">
-                                <span class="preview-label">Respondent Address:</span>
-                                <span class="preview-value">${formData.respondent_address || 'Not provided'}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="preview-section">
-                        <h4>📍 Incident Location</h4>
-                        <div class="preview-grid">
-                            <div class="preview-item full-width">
-                                <span class="preview-label">Where it happened:</span>
-                                <div class="preview-text">${formData.incident_location}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="preview-section">
-                        <h4>📝 Case Description</h4>
-                        <div class="preview-grid">
-                            <div class="preview-item full-width">
-                                <span class="preview-label">Detailed Description:</span>
-                                <div class="preview-text">${formData.description}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    // Build respondent HTML
+    let respondentHtml = '';
+    respondents.forEach((r, i) => {
+        respondentHtml += `
+            <div class="preview-item full-width" style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #e5e7eb;">
+                <div style="font-weight: 600; color: #ef4444; margin-bottom: 5px;">Respondent ${i + 1}</div>
+                <div><strong>Name:</strong> ${escapeHtml(r.name)}</div>
+                <div><strong>Address:</strong> ${escapeHtml(r.address)}</div>
             </div>
+        `;
+    });
 
-            <div class="preview-footer">
-                <div class="preview-warning">
-                    <span class="warning-icon">⚠️</span>
-                    <span>This action will create a permanent blotter record. Blotter cases are official documents and cannot be easily modified.</span>
+    // Build witness HTML
+    let witnessHtml = '';
+    if (witnesses.length > 0) {
+        witnesses.forEach((w, i) => {
+            witnessHtml += `
+                <div class="preview-item full-width" style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #e5e7eb;">
+                    <div style="font-weight: 600; color: #10b981; margin-bottom: 5px;">Witness ${i + 1}</div>
+                    <div><strong>Name:</strong> ${escapeHtml(w.name)}</div>
+                    <div><strong>Statement:</strong> ${escapeHtml(w.statement) || 'N/A'}</div>
                 </div>
-                <div class="preview-actions">
-                    <button type="button" class="btn btn-outline edit-btn">
-                        <span class="btn-icon">✏️</span> Edit Details
-                    </button>
-                    <button type="button" class="btn btn-secondary cancel-btn">
-                        <span class="btn-icon">❌</span> Cancel
-                    </button>
-                    <button type="button" class="btn btn-primary confirm-preview-btn">
-                        <span class="btn-icon">⚖️</span> Confirm & File Case
-                    </button>
+            `;
+        });
+    }
+
+    const modalHtml = `
+        <div class="preview-modal active">
+            <div class="preview-modal-content">
+                <div class="preview-header">
+                    <h3><span class="header-icon">⚖️</span> Blotter Case Preview</h3>
+                    <button type="button" class="preview-close">&times;</button>
+                </div>
+                <div class="preview-body">
+                    <div class="preview-alert">
+                        <span class="alert-icon">⚠️</span>
+                        <span>Please review all case details before submitting</span>
+                    </div>
+                    <div class="preview-sections">
+                        <div class="preview-section">
+                            <h4>📋 Case Information</h4>
+                            <div class="preview-grid">
+                                <div class="preview-item">
+                                    <span class="preview-label">Case ID:</span>
+                                    <span class="preview-value highlight">${escapeHtml(caseId)}</span>
+                                </div>
+                                <div class="preview-item">
+                                    <span class="preview-label">Incident Type:</span>
+                                    <span class="preview-value">${escapeHtml(finalIncidentType)}</span>
+                                </div>
+                                <div class="preview-item">
+                                    <span class="preview-label">Incident Date:</span>
+                                    <span class="preview-value">${formattedDate}</span>
+                                </div>
+                                <div class="preview-item">
+                                    <span class="preview-label">Incident Time:</span>
+                                    <span class="preview-value">${escapeHtml(incidentTime)}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="preview-section">
+                            <h4>👤 Complainant Information</h4>
+                            <div class="preview-grid">
+                                ${complainantHtml || '<div class="preview-item full-width">No complainants added</div>'}
+                            </div>
+                        </div>
+                        <div class="preview-section">
+                            <h4>👥 Respondent Information</h4>
+                            <div class="preview-grid">
+                                ${respondentHtml || '<div class="preview-item full-width">No respondents added</div>'}
+                            </div>
+                        </div>
+                        ${witnessHtml ? `<div class="preview-section">
+                            <h4>👁️ Witness Information</h4>
+                            <div class="preview-grid">
+                                ${witnessHtml}
+                            </div>
+                        </div>` : ''}
+                        <div class="preview-section">
+                            <h4>📍 Incident Location</h4>
+                            <div class="preview-grid">
+                                <div class="preview-item full-width">
+                                    <div class="preview-text">${escapeHtml(incidentLocation)}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="preview-section">
+                            <h4>📝 Case Description</h4>
+                            <div class="preview-grid">
+                                <div class="preview-item full-width">
+                                    <div class="preview-text">${escapeHtml(description)}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="preview-footer">
+                    <div class="preview-warning">
+                        <span class="warning-icon">⚠️</span>
+                        <span>This action will create a permanent blotter record. Blotter cases are official documents and cannot be easily modified.</span>
+                    </div>
+                    <div class="preview-actions">
+                        <button type="button" class="btn btn-outline edit-btn">✏️ Edit Details</button>
+                        <button type="button" class="btn btn-secondary cancel-btn">❌ Cancel</button>
+                        <button type="button" class="btn btn-primary confirm-preview-btn">⚖️ Confirm & File Case</button>
+                    </div>
                 </div>
             </div>
         </div>
     `;
 
-    document.body.appendChild(modal);
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modal = document.querySelector('.preview-modal');
 
-    // Add event listeners
     modal.querySelector('.preview-close').addEventListener('click', closePreview);
     modal.querySelector('.cancel-btn').addEventListener('click', closePreview);
     modal.querySelector('.edit-btn').addEventListener('click', closePreview);
-
     modal.querySelector('.confirm-preview-btn').addEventListener('click', function() {
-        const btn = this;
-        btn.innerHTML = '<span class="loading-spinner"></span> Filing Case...';
-        btn.disabled = true;
-
-        // Disable other buttons
-        modal.querySelectorAll('button').forEach(b => b.disabled = true);
-
-        // Submit form after a short delay
-        setTimeout(() => {
-            document.getElementById('blotterForm').submit();
-        }, 800);
+        document.getElementById('blotterForm').submit();
     });
-
-    // Close on background click
     modal.addEventListener('click', function(e) {
-        if (e.target === modal) {
-            closePreview();
-        }
+        if (e.target === modal) closePreview();
     });
-
-    // Prevent body scroll
     document.body.style.overflow = 'hidden';
 }
 
@@ -1281,6 +1500,13 @@ function closePreview() {
         modal.remove();
         document.body.style.overflow = '';
     }
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 </script>
 @endsection

@@ -13,9 +13,6 @@ use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
-    /**
-     * Display user management page
-     */
     public function index()
     {
         $users = User::orderBy('role_id')->orderBy('username')->get();
@@ -30,49 +27,50 @@ class UserController extends Controller
         return view('admin.users.index', compact('users', 'stats'));
     }
 
-    /**
-     * Show form to create new user
-     */
     public function create()
     {
         return view('admin.users.form');
     }
 
-    /**
-     * Store new user
-     */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'username' => 'required|unique:users|min:3|max:50',
-            'email' => 'required|email|unique:users',
-            'full_name' => 'required|max:100',
-            'role_id' => 'required|integer|in:1,2,3,4',
-            'password' => 'required|min:6|confirmed',
-            'security_question' => 'required|string|max:255',
-            'security_answer' => 'required|string|max:255',
-        ]);
+public function store(Request $request)
+{
+    $validated = $request->validate([
+        'username' => 'required|unique:users|min:3|max:50',
+        'email' => 'required|email|unique:users',
+        'full_name' => 'required|max:100',
+        'role_id' => 'required|integer|in:1,2,3,4',
+        'password' => 'required|min:6|confirmed',
+        'security_question' => 'required|string|max:255',
+        'security_answer' => 'required|string|max:255',
+        // term_end_date is NOT in validation - it's auto-set
+    ]);
 
-        $user = User::create([
-            'username' => $validated['username'],
-            'email' => $validated['email'],
-            'full_name' => $validated['full_name'],
-            'name' => $validated['full_name'],
-            'role_id' => $validated['role_id'],
-            'password' => Hash::make($validated['password']),
-            'security_question' => $validated['security_question'],
-            'is_active' => true,
-            'last_login' => null,
-        ]);
+    // Auto-set term end date for captain (4 years from now)
+    $termEndDate = null;
+    if ($validated['role_id'] == 2) {
+        $termEndDate = now()->addYears(4)->format('Y-m-d');
+    }
+    // No else needed - $termEndDate stays null for non-captains
+
+    $user = User::create([
+        'username' => $validated['username'],
+        'email' => $validated['email'],
+        'full_name' => $validated['full_name'],
+        'name' => $validated['full_name'],
+        'role_id' => $validated['role_id'],
+        'password' => Hash::make($validated['password']),
+        'security_question' => $validated['security_question'],
+        'is_active' => true,
+        'last_login' => null,
+        'term_end_date' => $termEndDate, // USE the variable
+    ]);
 
         $user->security_answer = $validated['security_answer'];
         $user->save();
 
-        // ========== NOTIFICATIONS ==========
         $roleNames = [1 => 'Admin', 2 => 'Captain', 3 => 'Secretary', 4 => 'Clerk'];
         $roleName = $roleNames[$validated['role_id']] ?? 'User';
 
-        // FIX 1: Notify all admins EXCEPT current user
         NotificationHelper::toAdminsExceptCurrent(
             Auth::id(),
             'New User Created',
@@ -81,7 +79,6 @@ class UserController extends Controller
             route('admin.users.edit', $user->id)
         );
 
-        // Notify the new user (keep this)
         NotificationHelper::toUser(
             $user->id,
             'Welcome to SBIMS-PRO',
@@ -89,7 +86,6 @@ class UserController extends Controller
             'success',
             route('dashboard')
         );
-        // ========== END NOTIFICATIONS ==========
 
         ActivityLog::create([
             'user_id' => Auth::id(),
@@ -100,44 +96,57 @@ class UserController extends Controller
         ]);
 
         return redirect()->route('admin.users.index')
-            ->with('success', 'User created successfully.');
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'User Created',
+                'message' => "User '{$user->full_name}' created successfully!"
+            ]);
     }
 
-    /**
-     * Show form to edit user
-     */
     public function edit(User $user)
     {
         return view('admin.users.form', compact('user'));
     }
 
-    /**
-     * Update user
-     */
-    public function update(Request $request, User $user)
-    {
-        $validated = $request->validate([
-            'username' => 'required|min:3|max:50|unique:users,username,' . $user->id,
-            'email' => 'required|email|unique:users,email,' . $user->id,
-            'full_name' => 'required|max:100',
-            'role_id' => 'required|integer|in:1,2,3,4',
-            'password' => 'nullable|min:6|confirmed',
-            'security_question' => 'required|string|max:255',
-            'security_answer' => 'nullable|string|max:255',
-        ]);
+public function update(Request $request, User $user)
+{
+    $validated = $request->validate([
+        'username' => 'required|min:3|max:50|unique:users,username,' . $user->id,
+        'email' => 'required|email|unique:users,email,' . $user->id,
+        'full_name' => 'required|max:100',
+        'role_id' => 'required|integer|in:1,2,3,4',
+        'password' => 'nullable|min:6|confirmed',
+        'security_question' => 'required|string|max:255',
+        'security_answer' => 'nullable|string|max:255',
+        // term_end_date is optional in validation (can be manually set)
+    ]);
 
-        $oldRole = $user->role_id;
-        $oldName = $user->full_name;
+    $oldRole = $user->role_id;
+    $oldName = $user->full_name;
 
-        $updateData = [
-            'username' => $validated['username'],
-            'email' => $validated['email'],
-            'full_name' => $validated['full_name'],
-            'name' => $validated['full_name'],
-            'role_id' => $validated['role_id'],
-            'security_question' => $validated['security_question'],
-        ];
+    // Calculate term end date based on role
+    $termEndDate = null;
 
+    if ($validated['role_id'] == 2) {
+        // If role is captain, set to 4 years from now
+        $termEndDate = now()->addYears(4)->format('Y-m-d');
+    } elseif ($validated['role_id'] != 2 && $oldRole == 2) {
+        // If changing from captain to other role, clear term end date
+        $termEndDate = null;
+    } else {
+        // Keep existing term end date (for non-captain roles)
+        $termEndDate = $user->term_end_date;
+    }
+
+    $updateData = [
+        'username' => $validated['username'],
+        'email' => $validated['email'],
+        'full_name' => $validated['full_name'],
+        'name' => $validated['full_name'],
+        'role_id' => $validated['role_id'],
+        'security_question' => $validated['security_question'],
+        'term_end_date' => $termEndDate, // USE the variable
+    ];
         if ($request->filled('password')) {
             $updateData['password'] = Hash::make($validated['password']);
         }
@@ -149,12 +158,10 @@ class UserController extends Controller
             $user->save();
         }
 
-        // ========== NOTIFICATIONS ==========
         if ($oldRole != $validated['role_id']) {
             $roleNames = [1 => 'Admin', 2 => 'Captain', 3 => 'Secretary', 4 => 'Clerk'];
             $newRoleName = $roleNames[$validated['role_id']] ?? 'User';
 
-            // FIX 2: Notify all admins EXCEPT current user
             NotificationHelper::toAdminsExceptCurrent(
                 Auth::id(),
                 'User Role Changed',
@@ -163,7 +170,6 @@ class UserController extends Controller
                 route('admin.users.edit', $user->id)
             );
 
-            // Notify the user (keep this)
             NotificationHelper::toUser(
                 $user->id,
                 'Your Role Has Been Updated',
@@ -173,8 +179,6 @@ class UserController extends Controller
             );
         }
 
-        // FIX 3: Notify about general user update (excluding current admin)
-        // Only if something else changed and current user is not the one being edited
         if (Auth::id() != $user->id && $oldRole == $validated['role_id']) {
             NotificationHelper::toAdminsExceptCurrent(
                 Auth::id(),
@@ -184,7 +188,6 @@ class UserController extends Controller
                 route('admin.users.edit', $user->id)
             );
         }
-        // ========== END NOTIFICATIONS ==========
 
         ActivityLog::create([
             'user_id' => Auth::id(),
@@ -195,19 +198,24 @@ class UserController extends Controller
         ]);
 
         return redirect()->route('admin.users.index')
-            ->with('success', 'User updated successfully.');
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'User Updated',
+                'message' => "User '{$user->full_name}' has been updated successfully."
+            ]);
     }
 
-    /**
-     * Toggle user active status
-     */
     public function toggleStatus(User $user)
     {
         $currentUser = Auth::user();
 
         if ($currentUser && $user->id === $currentUser->id) {
             return redirect()->back()
-                ->with('error', 'You cannot deactivate your own account.');
+                ->with('toast', [
+                    'type' => 'error',
+                    'title' => 'Action Denied',
+                    'message' => 'You cannot deactivate your own account.'
+                ]);
         }
 
         $oldStatus = $user->is_active;
@@ -219,8 +227,6 @@ class UserController extends Controller
 
         $action = $newStatus ? 'activated' : 'deactivated';
 
-        // ========== NOTIFICATIONS ==========
-        // Notify the user (keep this)
         NotificationHelper::toUser(
             $user->id,
             'Account ' . ucfirst($action),
@@ -229,7 +235,6 @@ class UserController extends Controller
             route('dashboard')
         );
 
-        // FIX 4: Notify all admins EXCEPT current user
         NotificationHelper::toAdminsExceptCurrent(
             Auth::id(),
             'User ' . ucfirst($action),
@@ -237,7 +242,6 @@ class UserController extends Controller
             $newStatus ? 'success' : 'warning',
             route('admin.users.edit', $user->id)
         );
-        // ========== END NOTIFICATIONS ==========
 
         Log::info('User status toggled', [
             'admin_id' => $currentUser ? $currentUser->id : 'Unknown',
@@ -253,26 +257,32 @@ class UserController extends Controller
             'user_agent' => request()->userAgent()
         ]);
 
+        $message = $newStatus ? "User '{$user->full_name}' has been activated successfully." : "User '{$user->full_name}' has been deactivated successfully.";
+
         return redirect()->back()
-            ->with('success', "User {$action} successfully.");
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'User ' . ucfirst($action),
+                'message' => $message
+            ]);
     }
 
-    /**
-     * Delete user
-     */
     public function destroy(User $user)
     {
         $currentUser = Auth::user();
 
         if ($currentUser && $user->id === $currentUser->id) {
             return redirect()->back()
-                ->with('error', 'You cannot delete your own account.');
+                ->with('toast', [
+                    'type' => 'error',
+                    'title' => 'Action Denied',
+                    'message' => 'You cannot delete your own account.'
+                ]);
         }
 
         $userName = $user->full_name;
+        $userUsername = $user->username;
 
-        // ========== NOTIFICATIONS ==========
-        // FIX 5: Notify all admins EXCEPT current user
         NotificationHelper::toAdminsExceptCurrent(
             Auth::id(),
             'User Deleted',
@@ -280,7 +290,6 @@ class UserController extends Controller
             'danger',
             route('admin.users.index')
         );
-        // ========== END NOTIFICATIONS ==========
 
         Log::info('User deleted by admin', [
             'admin_username' => $currentUser ? $currentUser->username : 'Unknown',
@@ -291,7 +300,7 @@ class UserController extends Controller
         ActivityLog::create([
             'user_id' => Auth::id(),
             'action' => 'delete',
-            'description' => "Deleted user: {$user->username} ({$user->full_name})",
+            'description' => "Deleted user: {$userUsername} ({$userName})",
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent()
         ]);
@@ -299,6 +308,10 @@ class UserController extends Controller
         $user->delete();
 
         return redirect()->route('admin.users.index')
-            ->with('success', 'User deleted successfully.');
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'User Deleted',
+                'message' => "User '{$userName}' has been deleted successfully."
+            ]);
     }
 }

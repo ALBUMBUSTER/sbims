@@ -137,67 +137,96 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($blotters as $blotter)
-                        <tr>
-                            <td>
-                                <span class="case-id">{{ $blotter->case_id }}</span>
-                            </td>
-                            <td>
-                                <div class="resident-info">
-                                    <span class="resident-name">{{ $blotter->complainant->first_name ?? '' }} {{ $blotter->complainant->last_name ?? '' }}</span>
-                                </div>
-                            </td>
-                            <td>{{ $blotter->respondent_name }}</td>
-                            <td>
-                                <span class="incident-type">{{ $blotter->incident_type }}</span>
-                            </td>
-                            <td>{{ $blotter->incident_date ? $blotter->incident_date->format('M d, Y') : 'N/A' }}</td>
-                            <td>{{ Str::limit($blotter->incident_location, 15) }}</td>
-                            <td>
-                                <span class="status-badge status-{{ strtolower($blotter->status) }}">
-                                    {{ $blotter->status }}
-                                </span>
-                            </td>
-                            <td>
-                                <div class="action-buttons">
-                                    <a href="{{ route('secretary.blotter.show', $blotter) }}" class="btn-icon" title="View">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    <a href="{{ route('secretary.blotter.edit', $blotter) }}" class="btn-icon" title="Edit">
-                                        <i class="fas fa-pencil-alt"></i>
-                                    </a>
-
-                                    {{-- Archive Button - Hidden for Clerk --}}
-@if(auth()->user()->role_id != 4) {{-- Not a clerk --}}
-<button type="button" class="btn-icon archive-btn" title="Archive"
-    onclick="confirmArchive('{{ $blotter->id }}')">
-    <i class="fas fa-archive"></i>
-</button>
-<form id="archive-form-{{ $blotter->id }}"
-      action="{{ route('secretary.blotter.archive', $blotter) }}"
-      method="POST" style="display: none;">
-    @csrf
-</form>
-@endif
-                                </div>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="8" class="text-center">
-                                <div class="empty-state">
-                                    <i class="fas fa-file-alt empty-icon"></i>
-                                    <h3>No blotter cases found</h3>
-                                    <p>Get started by filing your first blotter case.</p>
-                                    <a href="{{ route('secretary.blotter.create') }}" class="btn-primary">
-                                        <i class="fas fa-plus icon-small"></i>
-                                        New Blotter Case
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                        @endforelse
-                    </tbody>
+    @forelse($blotters as $blotter)
+    <tr>
+        <td>
+            <span class="case-id">{{ $blotter->case_id }}</span>
+        </td>
+        <td>
+            @php
+                $complainants = $blotter->complainants;
+            @endphp
+            @if($complainants->count() > 0)
+                <div class="resident-info">
+                    <span class="resident-name">
+                        {{ $complainants->first()->name }}
+                        @if($complainants->count() > 1)
+                            <span class="badge-more">+{{ $complainants->count() - 1 }} more</span>
+                        @endif
+                    </span>
+                    @if($complainants->count() > 1)
+                        <small class="text-muted">Total: {{ $complainants->count() }} complainant(s)</small>
+                    @endif
+                </div>
+            @else
+                <span class="text-muted">N/A</span>
+            @endif
+        </td>
+        <td>
+            @php
+                $respondents = $blotter->respondents;
+            @endphp
+            @if($respondents->count() > 0)
+                <div class="resident-info">
+                    <span class="resident-name">
+                        {{ $respondents->first()->name }}
+                        @if($respondents->count() > 1)
+                            <span class="badge-more">+{{ $respondents->count() - 1 }} more</span>
+                        @endif
+                    </span>
+                    @if($respondents->count() > 1)
+                        <small class="text-muted">Total: {{ $respondents->count() }} respondent(s)</small>
+                    @endif
+                </div>
+            @else
+                {{ $blotter->respondent_name ?? 'N/A' }}
+            @endif
+        </td>
+        <td>
+            <span class="incident-type">{{ $blotter->incident_type }}</span>
+        </td>
+        <td>{{ $blotter->incident_date ? $blotter->incident_date->format('M d, Y') : 'N/A' }}</td>
+        <td>{{ Str::limit($blotter->incident_location, 15) }}</td>
+        <td>
+            <span class="status-badge status-{{ strtolower($blotter->status) }}">
+                {{ $blotter->status }}
+            </span>
+        </td>
+        <td>
+            <div class="action-buttons">
+                <a href="{{ route('secretary.blotter.show', $blotter) }}" class="btn-icon" title="View">
+                    <i class="fas fa-eye"></i>
+                </a>
+                <a href="{{ route('secretary.blotter.edit', $blotter) }}" class="btn-icon" title="Edit">
+                    <i class="fas fa-pencil-alt"></i>
+                </a>
+                @if(auth()->user()->role_id != 4)
+                    <button type="button" class="btn-icon archive-btn" title="Archive" onclick="confirmArchive('{{ $blotter->id }}')">
+                        <i class="fas fa-archive"></i>
+                    </button>
+                    <form id="archive-form-{{ $blotter->id }}" action="{{ route('secretary.blotter.archive', $blotter) }}" method="POST" style="display: none;">
+                        @csrf
+                    </form>
+                @endif
+            </div>
+        </td>
+    </tr>
+    @empty
+    <tr>
+        <td colspan="8" class="text-center">
+            <div class="empty-state">
+                <i class="fas fa-file-alt empty-icon"></i>
+                <h3>No blotter cases found</h3>
+                <p>Get started by filing your first blotter case.</p>
+                <a href="{{ route('secretary.blotter.create') }}" class="btn-primary">
+                    <i class="fas fa-plus icon-small"></i>
+                    New Blotter Case
+                </a>
+            </div>
+        </td>
+    </tr>
+    @endforelse
+</tbody>
                 </table>
             </div>
 
@@ -260,6 +289,22 @@
 
 @push('styles')
 <style>
+    /* Badge for multiple parties */
+.badge-more {
+    display: inline-block;
+    background: #e2e8f0;
+    color: #4a5568;
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 20px;
+    margin-left: 0.5rem;
+    font-weight: normal;
+}
+
+.text-muted {
+    color: #6c757d;
+    font-size: 0.7rem;
+}
     /* Archive Access Button */
     .archive-access {
         margin-top: 2rem;

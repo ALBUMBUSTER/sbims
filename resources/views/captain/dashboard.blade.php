@@ -26,6 +26,39 @@
                 </button>
             </div>
         @endif
+<!-- ========== TERM END WARNING BANNER (PERMANENT - NO ALERT CLASS) ========== -->
+@if(auth()->user()->role_id == 2 && auth()->user()->term_end_date)
+    @php
+        $daysLeft = auth()->user()->getDaysLeftInTerm();
+    @endphp
+    @if($daysLeft <= 30 && $daysLeft > 0)
+        <div class="term-warning-card warning">
+            <div class="term-warning-content">
+                <i class="fas fa-clock"></i>
+                <div class="term-warning-text">
+                    <strong>Term Reminder:</strong> Your term as Barangay Captain ends on
+                    <strong>{{ \Carbon\Carbon::parse(auth()->user()->term_end_date)->format('F d, Y') }}</strong>.
+                    @if($daysLeft <= 7)
+                        <span class="text-danger font-weight-bold">Only {{ $daysLeft }} day(s) remaining!</span>
+                    @endif
+                </div>
+            </div>
+            <div class="term-warning-badge">
+                <span class="days-left-badge">{{ $daysLeft }} days left</span>
+            </div>
+        </div>
+    @elseif($daysLeft <= 0)
+        <div class="term-warning-card expired">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div class="term-warning-text">
+                <strong>Term Expired:</strong> Your term as Barangay Captain ended on
+                <strong>{{ \Carbon\Carbon::parse(auth()->user()->term_end_date)->format('F d, Y') }}</strong>.
+                Please contact the administrator for account renewal.
+            </div>
+        </div>
+    @endif
+@endif
+<!-- ========== END TERM WARNING ========== -->
 
         <!-- Statistics Cards -->
         <div class="stats-grid">
@@ -184,6 +217,7 @@
                 @if(count($recentBlotters) > 0)
                     <table class="cases-table">
                         <thead>
+                            <tr>
                                 <th><i class="fas fa-hashtag"></i> Case #</th>
                                 <th><i class="fas fa-user"></i> Complainant</th>
                                 <th><i class="fas fa-user-tie"></i> Respondent</th>
@@ -238,7 +272,134 @@
     font-size: 0.75rem;
     font-weight: 500;
 }
+/* ========== PERMANENT TERM WARNING CARD ========== */
+.term-warning-card {
+    margin-bottom: 1.5rem;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: all 0.2s ease;
+}
 
+/* Warning (Active term with days left) */
+.term-warning-card.warning {
+    background: #fef3c7;
+    border-left: 5px solid #f59e0b;
+    color: #92400e;
+}
+
+/* Expired term */
+.term-warning-card.expired {
+    background: #fee2e2;
+    border-left: 5px solid #dc2626;
+    color: #991b1b;
+}
+
+/* Content wrapper for warning */
+.term-warning-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+/* Icon styling */
+.term-warning-card i {
+    font-size: 1.5rem;
+}
+
+.term-warning-card.warning i {
+    color: #f59e0b;
+}
+
+.term-warning-card.expired i {
+    color: #dc2626;
+}
+
+/* Text content */
+.term-warning-text {
+    font-size: 0.95rem;
+    line-height: 1.4;
+    flex: 1;
+}
+
+.term-warning-text strong {
+    font-weight: 700;
+}
+
+/* Danger text for urgent reminders */
+.text-danger {
+    color: #dc2626 !important;
+    font-weight: 600;
+}
+
+/* Days left badge */
+.term-warning-badge {
+    flex-shrink: 0;
+}
+
+.days-left-badge {
+    background: #f59e0b;
+    color: white;
+    padding: 0.35rem 0.9rem;
+    border-radius: 30px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+    display: inline-block;
+}
+
+.term-warning-card.expired .days-left-badge {
+    background: #dc2626;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .term-warning-card {
+        flex-direction: column;
+        text-align: center;
+        padding: 1rem;
+    }
+
+    .term-warning-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+    }
+
+    .term-warning-text {
+        text-align: center;
+    }
+
+    .days-left-badge {
+        display: inline-block;
+        margin-top: 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .term-warning-card {
+        padding: 0.875rem;
+    }
+
+    .term-warning-card i {
+        font-size: 1.25rem;
+    }
+
+    .term-warning-text {
+        font-size: 0.85rem;
+    }
+
+    .days-left-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.75rem;
+    }
+}
 /* Rest of your existing styles remain the same */
 .main-container {
     display: flex;

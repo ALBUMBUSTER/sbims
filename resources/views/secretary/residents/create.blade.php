@@ -106,7 +106,7 @@
 
                     <!-- Middle Name -->
                     <div class="form-group">
-                        <label for="middle_name">Middle Name</label>
+                        <label for="middle_name">Middle Name(Optional)</label>
                         <input type="text"
                                id="middle_name"
                                name="middle_name"
@@ -168,7 +168,7 @@
                 <div class="form-grid">
                     <!-- Contact Number -->
 <div class="form-group">
-    <label for="contact_number">Contact Number</label>
+    <label for="contact_number">Contact Number(Optinal)</label>
     <input type="tel"
            id="contact_number"
            name="contact_number"
@@ -282,18 +282,21 @@
                     </div>
                 </div>
 
-                <!-- PWD Fields (hidden by default) -->
+<!-- PWD Fields (hidden by default) -->
 <div id="pwd_fields_container" @if(old('is_pwd')) style="display: block; margin-top: 1rem;" @else style="display: none; margin-top: 1rem;" @endif>
     <div class="form-grid">
         <div class="form-group">
-            <label for="pwd_id">PWD ID Number</label>
-            <div class="id-input-wrapper">
-                <input type="text"
-                       id="pwd_id"
-                       name="pwd_id"
-                       value="{{ old('pwd_id', $generatedPwdId ?? '') }}"
-                       class="form-control @error('pwd_id') is-invalid @enderror"
-                       readonly>
+            <label for="pwd_id">PWD ID Number <span class="required">*</span></label>
+            <input type="text"
+                   id="pwd_id"
+                   name="pwd_id"
+                   value="{{ old('pwd_id') }}"
+                   class="form-control @error('pwd_id') is-invalid @enderror"
+                   placeholder="Enter PWD ID number"
+                   maxlength="50">
+            <div class="help-text">
+                <i class="fas fa-info-circle"></i>
+                Enter the PWD ID number from the resident's official PWD card.
             </div>
             @error('pwd_id')
                 <span class="error-message">{{ $message }}</span>
@@ -301,12 +304,29 @@
         </div>
 
         <div class="form-group">
-            <label for="disability_type">Type of Disability</label>
-            <input type="text"
-                   id="disability_type"
-                   name="disability_type"
-                   value="{{ old('disability_type') }}"
-                   class="form-control @error('disability_type') is-invalid @enderror">
+            <label for="disability_type">Type of Disability <span class="required">*</span></label>
+            <select id="disability_type" name="disability_type" class="form-control @error('disability_type') is-invalid @enderror" onchange="toggleDisabilityTypeInput()">
+                <option value="">Select disability type</option>
+                <option value="Physical Disability" {{ old('disability_type') == 'Physical Disability' ? 'selected' : '' }}>Physical Disability</option>
+                <option value="Visual Impairment" {{ old('disability_type') == 'Visual Impairment' ? 'selected' : '' }}>Visual Impairment</option>
+                <option value="Hearing Impairment" {{ old('disability_type') == 'Hearing Impairment' ? 'selected' : '' }}>Hearing Impairment</option>
+                <option value="Speech Impairment" {{ old('disability_type') == 'Speech Impairment' ? 'selected' : '' }}>Speech Impairment</option>
+                <option value="Intellectual Disability" {{ old('disability_type') == 'Intellectual Disability' ? 'selected' : '' }}>Intellectual Disability</option>
+                <option value="Learning Disability" {{ old('disability_type') == 'Learning Disability' ? 'selected' : '' }}>Learning Disability</option>
+                <option value="Psychosocial Disability" {{ old('disability_type') == 'Psychosocial Disability' ? 'selected' : '' }}>Psychosocial Disability</option>
+                <option value="Multiple Disabilities" {{ old('disability_type') == 'Multiple Disabilities' ? 'selected' : '' }}>Multiple Disabilities</option>
+                <option value="other">Other (specify below)</option>
+            </select>
+
+            <div id="other_disability_container" style="display: none; margin-top: 0.5rem;">
+                <input type="text"
+                       id="disability_type_other"
+                       name="disability_type"
+                       value="{{ old('disability_type') }}"
+                       class="form-control @error('disability_type') is-invalid @enderror"
+                       placeholder="Please specify disability type">
+            </div>
+
             @error('disability_type')
                 <span class="error-message">{{ $message }}</span>
             @enderror
@@ -711,6 +731,50 @@ textarea.form-control {
 
 @push('scripts')
 <script>
+function toggleDisabilityTypeInput() {
+    const select = document.getElementById('disability_type');
+    const otherContainer = document.getElementById('other_disability_container');
+    const otherInput = document.getElementById('disability_type_other');
+
+    if (select.value === 'other') {
+        otherContainer.style.display = 'block';
+        // Clear the select value so it doesn't get submitted
+        select.value = '';
+        otherInput.required = true;
+        otherInput.focus();
+    } else {
+        otherContainer.style.display = 'none';
+        if (otherInput) {
+            otherInput.required = false;
+            otherInput.value = '';
+        }
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const select = document.getElementById('disability_type');
+    const otherContainer = document.getElementById('other_disability_container');
+    const otherInput = document.getElementById('disability_type_other');
+
+    if (select && otherContainer) {
+        // Check if there's an existing value that's not in the dropdown options
+        const options = Array.from(select.options).map(opt => opt.value);
+        const currentValue = select.value;
+
+        if (currentValue && !options.includes(currentValue) && currentValue !== 'other') {
+            // Value is not in dropdown - treat as other
+            select.value = 'other';
+            otherContainer.style.display = 'block';
+            otherInput.value = currentValue;
+            otherInput.required = true;
+            select.disabled = true;
+        } else if (currentValue === 'other') {
+            otherContainer.style.display = 'block';
+            otherInput.required = true;
+        }
+    }
+});
     // Contact number validation
 const contactInput = document.getElementById('contact_number');
 if (contactInput) {

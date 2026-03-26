@@ -2,14 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Blotter extends Model
 {
-    use HasFactory, SoftDeletes;
-    protected $dates = ['deleted_at'];
+    use SoftDeletes;
+
     protected $fillable = [
         'case_id',
         'complainant_id',
@@ -32,59 +31,45 @@ class Blotter extends Model
         'updated_at' => 'datetime',
     ];
 
-    /**
-     * Get the complainant resident
-     */
     public function complainant()
     {
         return $this->belongsTo(Resident::class, 'complainant_id');
     }
 
-    /**
-     * Get the user who handled the case
-     */
     public function handledBy()
     {
         return $this->belongsTo(User::class, 'handled_by');
     }
 
     /**
-     * Get the complainant name via relationship
+     * Get all parties (complainants, respondents, witnesses)
      */
-    public function getComplainantNameAttribute()
+    public function parties()
     {
-        return $this->complainant ? $this->complainant->first_name . ' ' . $this->complainant->last_name : 'N/A';
+        return $this->hasMany(CaseParty::class, 'blotter_id');
     }
 
     /**
-     * Get the complainant address via relationship
+     * Get only complainants
      */
-    public function getComplainantAddressAttribute()
+    public function complainants()
     {
-        return $this->complainant ? $this->complainant->address . ', Purok ' . $this->complainant->purok : 'N/A';
+        return $this->hasMany(CaseParty::class, 'blotter_id')->where('party_type', 'complainant');
     }
 
     /**
-     * Scope a query to only include pending blotters
+     * Get only respondents
      */
-    public function scopePending($query)
+    public function respondents()
     {
-        return $query->where('status', 'Pending');
+        return $this->hasMany(CaseParty::class, 'blotter_id')->where('party_type', 'respondent');
     }
 
     /**
-     * Scope a query to only include active blotters (not settled/closed)
+     * Get only witnesses
      */
-    public function scopeActive($query)
+    public function witnesses()
     {
-        return $query->whereIn('status', ['Pending', 'Ongoing']);
-    }
-
-    /**
-     * Scope a query to only include settled blotters
-     */
-    public function scopeSettled($query)
-    {
-        return $query->where('status', 'Settled');
+        return $this->hasMany(CaseParty::class, 'blotter_id')->where('party_type', 'witness');
     }
 }

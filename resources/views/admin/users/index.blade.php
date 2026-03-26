@@ -10,14 +10,14 @@
         min-height: calc(100vh - 70px);
         background: #f8fafc;
         width: 100%;
-        overflow-x: hidden; /* THIS FIXES THE MAIN HORIZONTAL SCROLL */
+        overflow-x: hidden;
     }
 
     .content {
         flex: 1;
         padding: 1rem;
         overflow-y: auto;
-        overflow-x: hidden; /* THIS FIXES THE CONTENT SCROLL */
+        overflow-x: hidden;
         width: 100%;
         max-width: 100%;
         box-sizing: border-box;
@@ -73,7 +73,7 @@
         box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         border-left: 4px solid #667eea;
         text-align: center;
-        min-width: 0; /* Prevents overflow */
+        min-width: 0;
     }
 
     .user-stat-card h4 {
@@ -197,7 +197,6 @@
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         width: 100%;
-        /* Custom scrollbar styling */
         scrollbar-width: thin;
         scrollbar-color: #cbd5e0 #f1f5f9;
     }
@@ -223,7 +222,7 @@
     table {
         width: 100%;
         border-collapse: collapse;
-        min-width: 900px; /* Table will scroll at this width */
+        min-width: 900px;
     }
 
     thead {
@@ -377,6 +376,205 @@
         padding: 0.25rem 0.5rem;
     }
 
+    /* ===== TOAST NOTIFICATION ===== */
+    .toast-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        min-width: 300px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 1.5rem;
+        z-index: 9999;
+        animation: slideInRight 0.3s ease;
+        border-left: 4px solid;
+        max-width: 400px;
+    }
+
+    .toast-notification.success { border-left-color: #10b981; }
+    .toast-notification.error { border-left-color: #ef4444; }
+    .toast-notification.warning { border-left-color: #f59e0b; }
+    .toast-notification.info { border-left-color: #3b82f6; }
+
+    .toast-icon {
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+
+    .toast-icon.success { color: #10b981; }
+    .toast-icon.error { color: #ef4444; }
+    .toast-icon.warning { color: #f59e0b; }
+    .toast-icon.info { color: #3b82f6; }
+
+    .toast-content {
+        flex: 1;
+    }
+
+    .toast-title {
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 0.25rem;
+    }
+
+    .toast-message {
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
+
+    .toast-close {
+        background: none;
+        border: none;
+        font-size: 1.25rem;
+        cursor: pointer;
+        color: #9ca3af;
+        padding: 0;
+        line-height: 1;
+    }
+
+    .toast-close:hover {
+        color: #4b5563;
+    }
+
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes fadeOut {
+        from {
+            opacity: 1;
+        }
+        to {
+            opacity: 0;
+        }
+    }
+
+    .toast-notification.fade-out {
+        animation: fadeOut 0.3s ease forwards;
+    }
+
+    /* ===== CUSTOM CONFIRMATION MODAL ===== */
+    .custom-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 10000;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(4px);
+    }
+
+    .custom-modal.active {
+        display: flex;
+    }
+
+    .custom-modal-content {
+        background: white;
+        border-radius: 16px;
+        max-width: 450px;
+        width: 90%;
+        overflow: hidden;
+        animation: modalSlideIn 0.2s ease;
+    }
+
+    @keyframes modalSlideIn {
+        from {
+            transform: translateY(-20px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .custom-modal-header {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .custom-modal-header i {
+        font-size: 1.5rem;
+    }
+
+    .custom-modal-header.warning i { color: #f59e0b; }
+    .custom-modal-header.danger i { color: #ef4444; }
+    .custom-modal-header.info i { color: #3b82f6; }
+
+    .custom-modal-header h3 {
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+    .custom-modal-body {
+        padding: 1.5rem;
+        color: #4b5563;
+        font-size: 0.95rem;
+    }
+
+    .custom-modal-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+    }
+
+    .custom-modal-btn {
+        padding: 0.5rem 1.25rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+    }
+
+    .custom-modal-btn.cancel {
+        background: #f3f4f6;
+        color: #374151;
+    }
+
+    .custom-modal-btn.cancel:hover {
+        background: #e5e7eb;
+    }
+
+    .custom-modal-btn.confirm {
+        background: #f59e0b;
+        color: white;
+    }
+
+    .custom-modal-btn.confirm.danger {
+        background: #ef4444;
+    }
+
+    .custom-modal-btn.confirm.warning {
+        background: #f59e0b;
+    }
+
+    .custom-modal-btn.confirm:hover {
+        filter: brightness(0.95);
+    }
+
     /* ===== RESPONSIVE BREAKPOINTS ===== */
     @media (min-width: 1201px) {
         .action-menu-container {
@@ -442,10 +640,9 @@
         }
 
         th i {
-            display: none; /* Hide icons on mobile */
+            display: none;
         }
 
-        /* Hide email on mobile */
         th:nth-child(4), td:nth-child(4) {
             display: none;
         }
@@ -457,7 +654,6 @@
     }
 
     @media (max-width: 480px) {
-        /* Hide last login on very small screens */
         th:nth-child(7), td:nth-child(7) {
             display: none;
         }
@@ -485,6 +681,26 @@
 @section('content')
 <div class="main-container">
     <main class="content">
+        <!-- Toast Notification Container -->
+        <div id="toastContainer"></div>
+
+        <!-- Custom Confirmation Modal -->
+        <div id="confirmationModal" class="custom-modal">
+            <div class="custom-modal-content">
+                <div class="custom-modal-header" id="modalHeader">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Confirm Action</h3>
+                </div>
+                <div class="custom-modal-body" id="modalMessage">
+                    Are you sure you want to proceed?
+                </div>
+                <div class="custom-modal-footer">
+                    <button class="custom-modal-btn cancel" onclick="closeConfirmationModal()">Cancel</button>
+                    <button class="custom-modal-btn confirm" id="confirmActionBtn">Confirm</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Page Header -->
         <div class="page-header">
             <div class="page-title">
@@ -530,10 +746,10 @@
 
             @if($users->count() > 0)
             <div class="table-responsive">
-                <table>
+                 <table>
                     <thead>
-                        <tr>
-                            <th><i class="fas fa-hashtag"></i> ID</th>
+                         <tr>
+                            {{-- <th><i class="fas fa-hashtag"></i> ID</th> --}}
                             <th><i class="fas fa-user"></i> Username</th>
                             <th><i class="fas fa-id-card"></i> Full Name</th>
                             <th><i class="fas fa-envelope"></i> Email</th>
@@ -546,7 +762,7 @@
                     <tbody>
                         @foreach($users as $user)
                         <tr class="user-row">
-                            <td>#{{ $user->id }}</td>
+                            {{-- <td>#{{ $user->id }}</td> --}}
                             <td><strong>{{ $user->username }}</strong></td>
                             <td>{{ $user->full_name ?? 'N/A' }}</td>
                             <td>{{ $user->email }}</td>
@@ -576,28 +792,18 @@
 
                                     @if($user->id !== auth()->id())
                                         @if($user->is_active)
-                                            <form action="{{ route('admin.users.toggle-status', $user) }}" method="POST" style="display: inline;">
-                                                @csrf
-                                                <button type="submit" class="btn-danger btn-sm" onclick="return confirm('Are you sure you want to deactivate this user?')">
-                                                    <i class="fas fa-ban"></i> Deactivate
-                                                </button>
-                                            </form>
+                                            <button type="button" class="btn-danger btn-sm" onclick="showConfirmationModal('deactivate', '{{ $user->id }}', '{{ addslashes($user->full_name) }}')">
+                                                <i class="fas fa-ban"></i> Deactivate
+                                            </button>
                                         @else
-                                            <form action="{{ route('admin.users.toggle-status', $user) }}" method="POST" style="display: inline;">
-                                                @csrf
-                                                <button type="submit" class="btn-success btn-sm" onclick="return confirm('Are you sure you want to activate this user?')">
-                                                    <i class="fas fa-check-circle"></i> Activate
-                                                </button>
-                                            </form>
+                                            <button type="button" class="btn-success btn-sm" onclick="showConfirmationModal('activate', '{{ $user->id }}', '{{ addslashes($user->full_name) }}')">
+                                                <i class="fas fa-check-circle"></i> Activate
+                                            </button>
                                         @endif
 
-                                        <form action="{{ route('admin.users.destroy', $user) }}" method="POST" style="display: inline;">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn-danger btn-sm" onclick="return confirm('Delete this user permanently? This action cannot be undone.')">
-                                                <i class="fas fa-trash-alt"></i> Delete
-                                            </button>
-                                        </form>
+                                        <button type="button" class="btn-danger btn-sm" onclick="showConfirmationModal('delete', '{{ $user->id }}', '{{ addslashes($user->full_name) }}')">
+                                            <i class="fas fa-trash-alt"></i> Delete
+                                        </button>
                                     @else
                                         <span class="text-muted">Current</span>
                                     @endif
@@ -617,38 +823,28 @@
                                             <div class="action-dropdown-divider"></div>
 
                                             @if($user->is_active)
-                                                <form action="{{ route('admin.users.toggle-status', $user) }}" method="POST">
-                                                    @csrf
-                                                    <button type="submit" class="action-dropdown-item" onclick="return confirm('Are you sure you want to deactivate this user?')">
-                                                        <i class="fas fa-ban"></i> Deactivate
-                                                    </button>
-                                                </form>
+                                                <button type="button" class="action-dropdown-item" onclick="showConfirmationModal('deactivate', '{{ $user->id }}', '{{ addslashes($user->full_name) }}'); toggleDropdown(this)">
+                                                    <i class="fas fa-ban"></i> Deactivate
+                                                </button>
                                             @else
-                                                <form action="{{ route('admin.users.toggle-status', $user) }}" method="POST">
-                                                    @csrf
-                                                    <button type="submit" class="action-dropdown-item" onclick="return confirm('Are you sure you want to activate this user?')">
-                                                        <i class="fas fa-check-circle"></i> Activate
-                                                    </button>
-                                                </form>
+                                                <button type="button" class="action-dropdown-item" onclick="showConfirmationModal('activate', '{{ $user->id }}', '{{ addslashes($user->full_name) }}'); toggleDropdown(this)">
+                                                    <i class="fas fa-check-circle"></i> Activate
+                                                </button>
                                             @endif
 
-                                            <form action="{{ route('admin.users.destroy', $user) }}" method="POST">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="action-dropdown-item danger" onclick="return confirm('Delete this user permanently? This action cannot be undone.')">
-                                                    <i class="fas fa-trash-alt"></i> Delete
-                                                </button>
-                                            </form>
+                                            <button type="button" class="action-dropdown-item danger" onclick="showConfirmationModal('delete', '{{ $user->id }}', '{{ addslashes($user->full_name) }}'); toggleDropdown(this)">
+                                                <i class="fas fa-trash-alt"></i> Delete
+                                            </button>
                                         @else
                                             <span class="text-muted">Current User</span>
                                         @endif
                                     </div>
                                 </div>
-                            </td>
+                            </div>
                         </tr>
                         @endforeach
                     </tbody>
-                </table>
+                 </table>
             </div>
             @else
             <div class="no-data-message">
@@ -676,19 +872,15 @@
 
     // Dropdown toggle
     function toggleDropdown(button) {
-        // Close all other dropdowns
         document.querySelectorAll('.action-dropdown.show').forEach(dropdown => {
             if (dropdown !== button.nextElementSibling) {
                 dropdown.classList.remove('show');
             }
         });
-
-        // Toggle current dropdown
         const dropdown = button.nextElementSibling;
         dropdown.classList.toggle('show');
     }
 
-    // Close dropdown when clicking outside
     document.addEventListener('click', function(event) {
         if (!event.target.closest('.action-menu-container')) {
             document.querySelectorAll('.action-dropdown.show').forEach(dropdown => {
@@ -697,7 +889,6 @@
         }
     });
 
-    // Close dropdown on escape key
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape') {
             document.querySelectorAll('.action-dropdown.show').forEach(dropdown => {
@@ -705,5 +896,170 @@
             });
         }
     });
+
+    // ========== TOAST NOTIFICATION ==========
+    function showToast(type, title, message, duration = 5000) {
+        const toastContainer = document.getElementById('toastContainer');
+        if (!toastContainer) return;
+
+        const toast = document.createElement('div');
+        toast.className = `toast-notification ${type}`;
+
+        let iconClass = '';
+        switch(type) {
+            case 'success': iconClass = 'fas fa-check-circle'; break;
+            case 'error': iconClass = 'fas fa-exclamation-circle'; break;
+            case 'warning': iconClass = 'fas fa-exclamation-triangle'; break;
+            default: iconClass = 'fas fa-info-circle';
+        }
+
+        toast.innerHTML = `
+            <div class="toast-icon ${type}">
+                <i class="${iconClass}"></i>
+            </div>
+            <div class="toast-content">
+                <div class="toast-title">${title}</div>
+                <div class="toast-message">${message}</div>
+            </div>
+            <button class="toast-close" onclick="this.closest('.toast-notification').remove()">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+
+        toastContainer.appendChild(toast);
+
+        setTimeout(() => {
+            if (toast && toast.parentNode) {
+                toast.classList.add('fade-out');
+                setTimeout(() => {
+                    if (toast && toast.parentNode) toast.remove();
+                }, 300);
+            }
+        }, duration);
+    }
+
+    // ========== CUSTOM CONFIRMATION MODAL ==========
+    let pendingAction = null;
+    let pendingUserId = null;
+    let pendingUserName = null;
+
+    function showConfirmationModal(action, userId, userName) {
+        const modal = document.getElementById('confirmationModal');
+        const modalHeader = document.getElementById('modalHeader');
+        const modalMessage = document.getElementById('modalMessage');
+        const confirmBtn = document.getElementById('confirmActionBtn');
+
+        pendingAction = action;
+        pendingUserId = userId;
+        pendingUserName = userName;
+
+        let title = '';
+        let message = '';
+        let iconClass = '';
+        let confirmClass = '';
+
+        switch(action) {
+            case 'activate':
+                title = 'Activate User';
+                message = `Are you sure you want to activate "${userName}"? The user will be able to log in to the system.`;
+                iconClass = 'fas fa-check-circle';
+                modalHeader.className = 'custom-modal-header info';
+                confirmClass = '';
+                break;
+            case 'deactivate':
+                title = 'Deactivate User';
+                message = `Are you sure you want to deactivate "${userName}"? The user will no longer be able to log in.`;
+                iconClass = 'fas fa-ban';
+                modalHeader.className = 'custom-modal-header warning';
+                confirmClass = 'warning';
+                break;
+            case 'delete':
+                title = 'Delete User';
+                message = `Are you sure you want to permanently delete "${userName}"? This action cannot be undone.`;
+                iconClass = 'fas fa-trash-alt';
+                modalHeader.className = 'custom-modal-header danger';
+                confirmClass = 'danger';
+                break;
+            default:
+                return;
+        }
+
+        modalHeader.innerHTML = `<i class="${iconClass}"></i><h3>${title}</h3>`;
+        modalMessage.textContent = message;
+        confirmBtn.className = `custom-modal-btn confirm ${confirmClass}`;
+        modal.classList.add('active');
+    }
+
+    function closeConfirmationModal() {
+        const modal = document.getElementById('confirmationModal');
+        modal.classList.remove('active');
+        pendingAction = null;
+        pendingUserId = null;
+        pendingUserName = null;
+    }
+
+    function executeConfirmedAction() {
+        if (!pendingAction || !pendingUserId) return;
+
+        let form = null;
+        let url = '';
+
+        switch(pendingAction) {
+            case 'activate':
+            case 'deactivate':
+                url = `/admin/users/${pendingUserId}/toggle-status`;
+                form = document.createElement('form');
+                form.method = 'POST';
+                form.action = url;
+                form.innerHTML = `
+                    @csrf
+                `;
+                break;
+            case 'delete':
+                url = `/admin/users/${pendingUserId}`;
+                form = document.createElement('form');
+                form.method = 'POST';
+                form.action = url;
+                form.innerHTML = `
+                    @csrf
+                    @method('DELETE')
+                `;
+                break;
+            default:
+                return;
+        }
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    document.getElementById('confirmActionBtn').addEventListener('click', function() {
+        executeConfirmedAction();
+    });
+
+    // Close modal when clicking outside
+    window.addEventListener('click', function(event) {
+        const modal = document.getElementById('confirmationModal');
+        if (event.target === modal) {
+            closeConfirmationModal();
+        }
+    });
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeConfirmationModal();
+        }
+    });
+
+    // ========== CHECK FOR SESSION TOAST ==========
+    @if(session('toast'))
+        document.addEventListener('DOMContentLoaded', function() {
+            showToast(
+                "{{ session('toast.type') }}",
+                "{{ session('toast.title') }}",
+                "{{ session('toast.message') }}"
+            );
+        });
+    @endif
 </script>
 @endpush

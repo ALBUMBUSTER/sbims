@@ -123,19 +123,31 @@
                     $certTotal = max($statistics['total'], 1);
                 @endphp
                 <div class="chart-stat-item">
-                    <span class="stat-label"><span class="legend-dot pending"></span> Pending:</span>
+                    <span class="stat-label">
+                        <span class="legend-dot pending-dot"></span>
+                        Pending:
+                    </span>
                     <span class="stat-value">{{ $certPending }} ({{ round(($certPending / $certTotal) * 100, 1) }}%)</span>
                 </div>
                 <div class="chart-stat-item">
-                    <span class="stat-label"><span class="legend-dot approved"></span> Approved:</span>
+                    <span class="stat-label">
+                        <span class="legend-dot approved-dot"></span>
+                        Approved:
+                    </span>
                     <span class="stat-value">{{ $certApproved }} ({{ round(($certApproved / $certTotal) * 100, 1) }}%)</span>
                 </div>
                 <div class="chart-stat-item">
-                    <span class="stat-label"><span class="legend-dot released"></span> Released:</span>
+                    <span class="stat-label">
+                        <span class="legend-dot released-dot"></span>
+                        Released:
+                    </span>
                     <span class="stat-value">{{ $certReleased }} ({{ round(($certReleased / $certTotal) * 100, 1) }}%)</span>
                 </div>
                 <div class="chart-stat-item">
-                    <span class="stat-label"><span class="legend-dot rejected"></span> Rejected:</span>
+                    <span class="stat-label">
+                        <span class="legend-dot rejected-dot"></span>
+                        Rejected:
+                    </span>
                     <span class="stat-value">{{ $certRejected }} ({{ round(($certRejected / $certTotal) * 100, 1) }}%)</span>
                 </div>
             </div>
@@ -152,37 +164,26 @@
             <div class="chart-mini-table">
                 @php
                     $typeColors = ['#667eea', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#3b82f6'];
+                    $typeColorMap = [
+                        'Clearance' => '#667eea',
+                        'Indigency' => '#10b981',
+                        'Residency' => '#f59e0b'
+                    ];
                 @endphp
                 @foreach($statistics['by_type'] as $index => $type)
+                @php
+                    $typeColor = $typeColorMap[$type->certificate_type] ?? $typeColors[$index % count($typeColors)];
+                @endphp
                 <div class="chart-stat-item">
-                    <span class="stat-label"><span class="legend-dot" style="background: {{ $typeColors[$index % count($typeColors)] }};"></span> {{ $type->certificate_type }}:</span>
-                    <span class="stat-value">{{ $type->total }} ({{ round(($type->total / $statistics['total']) * 100, 1) }}%)</span>
+                    <span class="stat-label">
+                        <span class="legend-dot" style="background: {{ $typeColor }};"></span>
+                        {{ $type->certificate_type }}:
+                    </span>
+                    <span class="stat-value">{{ $type->total }} ({{ round(($type->total / max($statistics['total'], 1)) * 100, 1) }}%)</span>
                 </div>
                 @endforeach
             </div>
         </div>
-
-        <!-- Monthly Trend Line Chart (Commented out) -->
-        {{-- <div class="chart-card full-width">
-            <div class="chart-header">
-                <h3><i class="fas fa-chart-line"></i> Monthly Certificate Requests (Last 6 Months)</h3>
-            </div>
-            <div class="chart-body">
-                <canvas id="monthlyTrendChart" width="800" height="250"></canvas>
-            </div>
-            <div class="trend-stats">
-                @foreach($statistics['monthly_trend'] as $trend)
-                <div class="trend-stat-item">
-                    <span class="trend-label">{{ date('M Y', mktime(0, 0, 0, $trend->month, 1, $trend->year)) }}</span>
-                    <span class="trend-value">{{ $trend->total }} requests</span>
-                    <div class="trend-bar">
-                        <div class="trend-bar-fill" style="width: {{ round(($trend->total / $statistics['monthly_trend']->max('total')) * 100, 1) }}%;"></div>
-                    </div>
-                    <span class="trend-percentage">{{ round(($trend->total / $statistics['monthly_trend']->max('total')) * 100, 1) }}%</span>
-                </div>
-                @endforeach
-            </div>
-        </div> --}}
     </div>
 
     <!-- Detailed Data Tables - 2x2 Grid Layout -->
@@ -200,15 +201,20 @@
                             <th>Certificate Type</th>
                             <th>Count</th>
                             <th>Percentage</th>
-                        </tr>
-                    </thead>
+                        </thead>
                     <tbody>
                         @foreach($statistics['by_type'] as $type)
-                        <tr>
-                            <td>{{ $type->certificate_type }}</td>
+                         <tr>
+                            <td>
+                                @php
+                                    $typeColor = $typeColorMap[$type->certificate_type] ?? '#667eea';
+                                @endphp
+                                {{-- <span class="legend-dot" style="background: {{ $typeColor }}; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px;"></span> --}}
+                                {{ $type->certificate_type }}
+                            </td>
                             <td>{{ $type->total }}</td>
-                            <td>{{ round(($type->total / $statistics['total']) * 100, 1) }}%</td>
-                        </tr>
+                            <td>{{ round(($type->total / max($statistics['total'], 1)) * 100, 1) }}%</td>
+                         </tr>
                         @endforeach
                     </tbody>
                 </table>
@@ -224,19 +230,19 @@
             <div class="detail-body">
                 <table class="mini-table">
                     <thead>
-                        <tr>
+                         <tr>
                             <th>Month</th>
                             <th>Year</th>
                             <th>Count</th>
-                        </tr>
+                         </tr>
                     </thead>
                     <tbody>
                         @foreach($statistics['monthly_trend'] as $trend)
-                        <tr>
+                         <tr>
                             <td>{{ date('F', mktime(0, 0, 0, $trend->month, 1)) }}</td>
                             <td>{{ $trend->year }}</td>
                             <td>{{ $trend->total }}</td>
-                        </tr>
+                         </tr>
                         @endforeach
                     </tbody>
                 </table>
@@ -252,33 +258,45 @@
             <div class="detail-body">
                 <table class="mini-table">
                     <thead>
-                        <tr>
+                         <tr>
                             <th>Status</th>
                             <th>Count</th>
                             <th>Percentage</th>
-                        </tr>
+                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td><span class="pending" style="margin-right: 0.3rem;"></span> Pending</td>
+                         <tr>
+                            <td>
+                                {{-- <span class="legend-dot pending-dot" style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; margin-right: 6px;"></span> --}}
+                                Pending
+                            </td>
                             <td>{{ $certPending }}</td>
                             <td>{{ round(($certPending / $certTotal) * 100, 1) }}%</td>
-                        </tr>
-                        <tr>
-                            <td><span class="approved" style="margin-right: 0.3rem;"></span> Approved</td>
+                         </tr>
+                         <tr>
+                            <td>
+                                {{-- <span class="legend-dot approved-dot" style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #10b981; margin-right: 6px;"></span> --}}
+                                Approved
+                            </td>
                             <td>{{ $certApproved }}</td>
                             <td>{{ round(($certApproved / $certTotal) * 100, 1) }}%</td>
-                        </tr>
-                        <tr>
-                            <td><span class="released" style="margin-right: 0.3rem;"></span> Released</td>
+                         </tr>
+                         <tr>
+                            <td>
+                                {{-- <span class="legend-dot released-dot" style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #3b82f6; margin-right: 6px;"></span> --}}
+                                Released
+                            </td>
                             <td>{{ $certReleased }}</td>
                             <td>{{ round(($certReleased / $certTotal) * 100, 1) }}%</td>
-                        </tr>
-                        <tr>
-                            <td><span class="rejected" style="margin-right: 0.3rem;"></span> Rejected</td>
+                         </tr>
+                         <tr>
+                            <td>
+                                {{-- <span class="legend-dot rejected-dot" style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #ef4444; margin-right: 6px;"></span> --}}
+                                Rejected
+                            </td>
                             <td>{{ $certRejected }}</td>
                             <td>{{ round(($certRejected / $certTotal) * 100, 1) }}%</td>
-                        </tr>
+                         </tr>
                     </tbody>
                 </table>
             </div>
@@ -312,71 +330,6 @@
             </div>
         </div> --}}
     </div>
-
-    <!-- Certificates List (Commented out) -->
-    {{-- @if($certificates->count() > 0)
-    <div class="card">
-        <div class="card-header">
-            <h3>Certificates List</h3>
-            <span class="record-count">Showing {{ $certificates->firstItem() }} - {{ $certificates->lastItem() }} of {{ $certificates->total() }} records</span>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Certificate #</th>
-                            <th>Resident Name</th>
-                            <th>Certificate Type</th>
-                            <th>Purpose</th>
-                            <th>Status</th>
-                            <th>Request Date</th>
-                            <th>Release Date</th>
-                            <th>Processing Days</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($certificates as $certificate)
-                        <tr>
-                            <td>{{ $certificate->certificate_id }}</td>
-                            <td>
-                                @if($certificate->resident)
-                                    {{ $certificate->resident->first_name }} {{ $certificate->resident->last_name }}
-                                @else
-                                    N/A
-                                @endif
-                            </td>
-                            <td>{{ $certificate->certificate_type }}</td>
-                            <td>{{ Str::limit($certificate->purpose, 20) }}</td>
-                            <td>
-                                <span class="status-badge status-{{ strtolower($certificate->status) }}">
-                                    {{ $certificate->status }}
-                                </span>
-                            </td>
-                            <td>{{ $certificate->created_at ? $certificate->created_at->format('M d, Y') : 'N/A' }}</td>
-                            <td>{{ $certificate->released_at ? $certificate->released_at->format('M d, Y') : 'Not released' }}</td>
-                            <td>
-                                @if($certificate->released_at && $certificate->created_at)
-                                    @php
-                                        $processingDays = $certificate->created_at->diffInDays($certificate->released_at);
-                                    @endphp
-                                    <span class="processing-days">{{ $processingDays }} days</span>
-                                @else
-                                    <span class="text-muted">-</span>
-                                @endif
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="pagination-wrapper">
-                {{ $certificates->appends(request()->query())->links() }}
-            </div>
-        </div>
-    </div>
-    @endif --}}
 </div>
 @endsection
 
@@ -683,17 +636,17 @@
 /* ==================== */
 /* Legend Dots          */
 /* ==================== */
-/*enable if needed the dots*/
-/* .legend-dot {
+.legend-dot {
     display: inline-block;
     width: 10px;
     height: 10px;
     border-radius: 50%;
+    flex-shrink: 0;
 }
-.legend-dot.pending { background: #f59e0b; }
-.legend-dot.approved { background: #10b981; }
-.legend-dot.released { background: #3b82f6; }
-.legend-dot.rejected { background: #ef4444; } */
+.pending-dot { background: #f59e0b; }
+.approved-dot { background: #10b981; }
+.released-dot { background: #3b82f6; }
+.rejected-dot { background: #ef4444; }
 
 /* ==================== */
 /* Trend Stats          */
@@ -1015,53 +968,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-
-    /**
-     * Monthly Trend Line Chart (Commented out)
-     */
-    // if (document.getElementById('monthlyTrendChart') && statistics.monthly_trend.length > 0) {
-    //     const monthLabels = statistics.monthly_trend.map(item => {
-    //         const date = new Date(item.year, item.month - 1, 1);
-    //         return date.toLocaleString('default', { month: 'short' });
-    //     });
-    //     const monthData = statistics.monthly_trend.map(item => item.total);
-
-    //     new Chart(document.getElementById('monthlyTrendChart'), {
-    //         type: 'line',
-    //         data: {
-    //             labels: monthLabels,
-    //             datasets: [{
-    //                 label: 'Number of Requests',
-    //                 data: monthData,
-    //                 borderColor: '#667eea',
-    //                 backgroundColor: 'rgba(102, 126, 234, 0.1)',
-    //                 tension: 0.4,
-    //                 fill: true,
-    //                 pointBackgroundColor: '#667eea',
-    //                 pointBorderColor: '#fff',
-    //                 pointBorderWidth: 2,
-    //                 pointRadius: 4,
-    //                 pointHoverRadius: 6
-    //             }]
-    //         },
-    //         options: {
-    //             responsive: true,
-    //             maintainAspectRatio: false,
-    //             plugins: { legend: { display: false } },
-    //             scales: {
-    //                 y: {
-    //                     beginAtZero: true,
-    //                     grid: { color: '#e2e8f0' },
-    //                     ticks: { stepSize: 1, font: { size: 9 } }
-    //                 },
-    //                 x: {
-    //                     grid: { display: false },
-    //                     ticks: { font: { size: 9 } }
-    //                 }
-    //             }
-    //         }
-    //     });
-    // }
 });
 </script>
 @endpush

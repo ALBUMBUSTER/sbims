@@ -887,9 +887,9 @@
             <div class="table-header">
                 <h3>Activity Logs</h3>
                 <div class="table-header-actions">
-                    <button type="button" class="delete-btn" id="bulkDeleteBtn" disabled onclick="openBulkDeleteModal()">
+                    {{-- <button type="button" class="delete-btn" id="bulkDeleteBtn" disabled onclick="openBulkDeleteModal()">
                         <i class="fas fa-trash-alt"></i> Delete Selected (<span id="selectedCount">0</span>)
-                    </button>
+                    </button> --}}
                 </div>
             </div>
 
@@ -899,9 +899,9 @@
                     <table>
                         <thead>
                             <tr>
-                                <th class="checkbox-column">
+                                {{-- <th class="checkbox-column">
                                     <input type="checkbox" class="select-all-checkbox" id="selectAll" onclick="toggleSelectAll(this)">
-                                </th>
+                                </th> --}}
                                 <th>Timestamp</th>
                                 <th>User</th>
                                 <th>Role</th>
@@ -914,9 +914,9 @@
                         <tbody id="logsTableBody">
                             @foreach($logs as $log)
                             <tr class="log-row" id="log-row-{{ $log->id }}">
-                                <td class="checkbox-column">
+                                {{-- <td class="checkbox-column">
                                     <input type="checkbox" value="{{ $log->id }}" class="log-checkbox" onclick="updateBulkDeleteButton()">
-                                </td>
+                                </td> --}}
                                 <td>{{ $log->created_at->format('M j, Y g:i A') }}</td>
                                 <td>
                                     <div class="user-info">

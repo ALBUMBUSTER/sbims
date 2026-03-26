@@ -96,6 +96,42 @@
         margin-top: 0.25rem;
     }
 
+    .warning-message {
+        background: #fef3c7;
+        border: 1px solid #fcd34d;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        margin-bottom: 1rem;
+        color: #92400e;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .warning-message i {
+        font-size: 1rem;
+        color: #f59e0b;
+    }
+
+    .info-message {
+        background: #dbeafe;
+        border: 1px solid #3b82f6;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        margin-bottom: 1rem;
+        color: #1e40af;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .info-message i {
+        font-size: 1rem;
+        color: #3b82f6;
+    }
+
     @media (max-width: 768px) {
         .form-row {
             grid-template-columns: 1fr;
@@ -163,14 +199,62 @@
 
                     <div class="form-group">
                         <label for="role_id">Role *</label>
-                        <select id="role_id" name="role_id" required>
-                            <option value="">Select Role</option>
-                            <option value="1" {{ old('role_id', $user->role_id ?? '') == 1 ? 'selected' : '' }}>Admin</option>
-                            <option value="2" {{ old('role_id', $user->role_id ?? '') == 2 ? 'selected' : '' }}>Captain</option>
-                            <option value="3" {{ old('role_id', $user->role_id ?? '') == 3 ? 'selected' : '' }}>Secretary</option>
-                            <option value="4" {{ old('role_id', $user->role_id ?? '') == 4 ? 'selected' : '' }}>Clerk</option>
-                        </select>
+                        @php
+                            $hasCaptain = \App\Models\User::where('role_id', 2)->where('is_active', true)->exists();
+                            $currentUserRole = isset($user) ? $user->role_id : null;
+                            $isEditingCaptain = isset($user) && $user->role_id == 2;
+                        @endphp
+
+                        @if($hasCaptain && !$isEditingCaptain)
+                            {{-- <div class="warning-message">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                A captain already exists in the system. Only one captain is allowed per barangay.
+                            </div> --}}
+                            <select id="role_id" name="role_id" required>
+                                <option value="">Select Role</option>
+                                <option value="1" {{ old('role_id', $user->role_id ?? '') == 1 ? 'selected' : '' }}>Admin</option>
+                                <option value="3" {{ old('role_id', $user->role_id ?? '') == 3 ? 'selected' : '' }}>Secretary</option>
+                                <option value="4" {{ old('role_id', $user->role_id ?? '') == 4 ? 'selected' : '' }}>Clerk</option>
+                            </select>
+                        @elseif($hasCaptain && $isEditingCaptain)
+                            {{-- <div class="info-message">
+                                <i class="fas fa-info-circle"></i>
+                                You are editing the current captain. You can change the role if needed.
+                            </div> --}}
+                            <select id="role_id" name="role_id" required>
+                                <option value="">Select Role</option>
+                                <option value="1" {{ old('role_id', $user->role_id ?? '') == 1 ? 'selected' : '' }}>Admin</option>
+                                <option value="2" {{ old('role_id', $user->role_id ?? '') == 2 ? 'selected' : '' }}>Captain</option>
+                                <option value="3" {{ old('role_id', $user->role_id ?? '') == 3 ? 'selected' : '' }}>Secretary</option>
+                                <option value="4" {{ old('role_id', $user->role_id ?? '') == 4 ? 'selected' : '' }}>Clerk</option>
+                            </select>
+                        @else
+                            <select id="role_id" name="role_id" required>
+                                <option value="">Select Role</option>
+                                <option value="1" {{ old('role_id', $user->role_id ?? '') == 1 ? 'selected' : '' }}>Admin</option>
+                                <option value="2" {{ old('role_id', $user->role_id ?? '') == 2 ? 'selected' : '' }}>Captain</option>
+                                <option value="3" {{ old('role_id', $user->role_id ?? '') == 3 ? 'selected' : '' }}>Secretary</option>
+                                <option value="4" {{ old('role_id', $user->role_id ?? '') == 4 ? 'selected' : '' }}>Clerk</option>
+                            </select>
+                        @endif
                         @error('role_id')
+                            <div class="error-message">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+
+                <!-- Term End Date Field - Only for Captain -->
+                <div class="form-row" id="termEndDateGroup" style="display: none;">
+                    <div class="form-group">
+                        <label for="term_end_date">Term End Date</label>
+                        <input type="date" id="term_end_date" name="term_end_date"
+                               value="{{ old('term_end_date', isset($user) ? $user->term_end_date : '') }}"
+                               class="form-control">
+                        <div class="help-text">
+                            <i class="fas fa-calendar-alt"></i>
+                            Enter the date when this captain's term ends. The account will be automatically deactivated on this date.
+                        </div>
+                        @error('term_end_date')
                             <div class="error-message">{{ $message }}</div>
                         @enderror
                     </div>
@@ -264,37 +348,45 @@
         const questionSelect = document.getElementById('security_question');
         const customQuestionGroup = document.getElementById('customQuestionGroup');
         const customQuestionInput = document.getElementById('custom_question');
+        const roleSelect = document.getElementById('role_id');
+        const termEndDateGroup = document.getElementById('termEndDateGroup');
 
         function toggleCustomQuestion() {
             if (questionSelect.value === 'custom') {
                 customQuestionGroup.style.display = 'block';
                 customQuestionInput.required = true;
-                // Don't change the name, we'll handle it in the controller
             } else {
                 customQuestionGroup.style.display = 'none';
                 customQuestionInput.required = false;
             }
         }
 
+        function toggleTermEndDateField() {
+            if (roleSelect && termEndDateGroup) {
+                if (roleSelect.value == '2') { // Captain role
+                    termEndDateGroup.style.display = 'block';
+                } else {
+                    termEndDateGroup.style.display = 'none';
+                }
+            }
+        }
+
         questionSelect.addEventListener('change', toggleCustomQuestion);
-        toggleCustomQuestion(); // Initial check
+        toggleCustomQuestion();
+
+        roleSelect.addEventListener('change', toggleTermEndDateField);
+        toggleTermEndDateField();
 
         // Handle form submission for custom question
         document.querySelector('form').addEventListener('submit', function(e) {
             if (questionSelect.value === 'custom') {
-                // Set the select value to the custom input value
                 const customQuestion = customQuestionInput.value.trim();
                 if (customQuestion) {
-                    // Create a new hidden input with the custom question
                     const hiddenInput = document.createElement('input');
                     hiddenInput.type = 'hidden';
                     hiddenInput.name = 'security_question';
                     hiddenInput.value = customQuestion;
-
-                    // Disable the original select so it doesn't get submitted
                     questionSelect.disabled = true;
-
-                    // Append the hidden input
                     this.appendChild(hiddenInput);
                 } else {
                     e.preventDefault();

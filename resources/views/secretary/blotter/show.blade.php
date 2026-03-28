@@ -46,7 +46,6 @@
                 @endphp
 
                 @if($isClerk)
-                    {{-- Clerk sees read-only status display --}}
                     <div class="status-readonly">
                         <div class="current-status-display">
                             <span class="status-label">Current Status:</span>
@@ -60,7 +59,6 @@
                         </div>
                     </div>
                 @else
-                    {{-- Secretary/Admin sees full status update form --}}
                     <form action="{{ route('secretary.blotter.status', $blotter) }}" method="POST" class="status-form">
                         @csrf
                         @method('PATCH')
@@ -124,100 +122,101 @@
 
         <!-- Case Details Grid -->
         <div class="details-grid">
-<!-- Complainant Information -->
-<div class="detail-card">
-    <div class="detail-header">
-        <x-heroicon-o-user class="detail-icon" />
-        <h3>Complainant Information</h3>
-    </div>
-    <div class="detail-body">
-        @if($blotter->complainants->count() > 0)
-            @foreach($blotter->complainants as $index => $complainant)
-                <div class="party-detail-row {{ $index > 0 ? 'mt-3' : '' }}">
-                    <div class="party-header">
-                        <span class="party-number">Complainant {{ $index + 1 }}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Name:</span>
-                        <span class="detail-value">{{ $complainant->name }}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Address:</span>
-                        <span class="detail-value">{{ $complainant->address ?? 'N/A' }}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Contact:</span>
-                        <span class="detail-value">{{ $complainant->contact_number ?? 'N/A' }}</span>
-                    </div>
+            <!-- Complainant Information -->
+            <div class="detail-card">
+                <div class="detail-header">
+                    <x-heroicon-o-user class="detail-icon" />
+                    <h3>Complainant Information</h3>
                 </div>
-            @endforeach
-        @else
-            <div class="detail-row">
-                <span class="detail-value">No complainant information available</span>
+                <div class="detail-body">
+                    @if($blotter->complainants->count() > 0)
+                        @foreach($blotter->complainants as $index => $complainant)
+                            <div class="party-detail-row {{ $index > 0 ? 'mt-3' : '' }}">
+                                <div class="party-header">
+                                    <span class="party-number">Complainant {{ $index + 1 }}</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Name:</span>
+                                    <span class="detail-value">{{ $complainant->name }}</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Address:</span>
+                                    <span class="detail-value">{{ $complainant->address ?? 'N/A' }}</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Contact:</span>
+                                    <span class="detail-value">{{ $complainant->contact_number ?? 'N/A' }}</span>
+                                </div>
+                            </div>
+                        @endforeach
+                    @else
+                        <div class="detail-row">
+                            <span class="detail-value">No complainant information available</span>
+                        </div>
+                    @endif
+                </div>
             </div>
-        @endif
-    </div>
-</div>
 
-<!-- Respondent Information -->
-<div class="detail-card">
-    <div class="detail-header">
-        <x-heroicon-o-user-group class="detail-icon" />
-        <h3>Respondent Information</h3>
-    </div>
-    <div class="detail-body">
-        @if($blotter->respondents->count() > 0)
-            @foreach($blotter->respondents as $index => $respondent)
-                <div class="party-detail-row {{ $index > 0 ? 'mt-3' : '' }}">
-                    <div class="party-header">
-                        <span class="party-number">Respondent {{ $index + 1 }}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Name:</span>
-                        <span class="detail-value">{{ $respondent->name }}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Address:</span>
-                        <span class="detail-value">{{ $respondent->address ?? 'N/A' }}</span>
-                    </div>
+            <!-- Respondent Information -->
+            <div class="detail-card">
+                <div class="detail-header">
+                    <x-heroicon-o-user-group class="detail-icon" />
+                    <h3>Respondent Information</h3>
                 </div>
-            @endforeach
-        @else
-            <div class="detail-row">
-                <span class="detail-value">No respondent information available</span>
+                <div class="detail-body">
+                    @if($blotter->respondents->count() > 0)
+                        @foreach($blotter->respondents as $index => $respondent)
+                            <div class="party-detail-row {{ $index > 0 ? 'mt-3' : '' }}">
+                                <div class="party-header">
+                                    <span class="party-number">Respondent {{ $index + 1 }}</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Name:</span>
+                                    <span class="detail-value">{{ $respondent->name }}</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Address:</span>
+                                    <span class="detail-value">{{ $respondent->address ?? 'N/A' }}</span>
+                                </div>
+                            </div>
+                        @endforeach
+                    @else
+                        <div class="detail-row">
+                            <span class="detail-value">No respondent information available</span>
+                        </div>
+                    @endif
+                </div>
             </div>
-        @endif
-    </div>
-</div>
 
-<!-- Witness Information (Optional) -->
-@if($blotter->witnesses->count() > 0)
-<div class="detail-card">
-    <div class="detail-header">
-        <x-heroicon-o-eye class="detail-icon" />
-        <h3>Witness Information</h3>
-    </div>
-    <div class="detail-body">
-        @foreach($blotter->witnesses as $index => $witness)
-            <div class="party-detail-row {{ $index > 0 ? 'mt-3' : '' }}">
-                <div class="party-header">
-                    <span class="party-number">Witness {{ $index + 1 }}</span>
+            <!-- Witness Information (Optional) -->
+            @if($blotter->witnesses->count() > 0)
+            <div class="detail-card">
+                <div class="detail-header">
+                    <x-heroicon-o-eye class="detail-icon" />
+                    <h3>Witness Information</h3>
                 </div>
-                <div class="detail-row">
-                    <span class="detail-label">Name:</span>
-                    <span class="detail-value">{{ $witness->name }}</span>
+                <div class="detail-body">
+                    @foreach($blotter->witnesses as $index => $witness)
+                        <div class="party-detail-row {{ $index > 0 ? 'mt-3' : '' }}">
+                            <div class="party-header">
+                                <span class="party-number">Witness {{ $index + 1 }}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Name:</span>
+                                <span class="detail-value">{{ $witness->name }}</span>
+                            </div>
+                            @if($witness->additional_info)
+                            <div class="detail-row full-width">
+                                <span class="detail-label">Statement:</span>
+                                <span class="detail-value">{{ $witness->additional_info }}</span>
+                            </div>
+                            @endif
+                        </div>
+                    @endforeach
                 </div>
-                @if($witness->additional_info)
-                <div class="detail-row full-width">
-                    <span class="detail-label">Statement:</span>
-                    <span class="detail-value">{{ $witness->additional_info }}</span>
-                </div>
-                @endif
             </div>
-        @endforeach
-    </div>
-</div>
-@endif
+            @endif
+
             <!-- Incident Details -->
             <div class="detail-card full-width">
                 <div class="detail-header">
@@ -315,7 +314,143 @@
                     </div>
                 </div>
             </div>
+
+            <!-- ========== HEARING TRACKING SECTION ========== -->
+            <div class="detail-card full-width">
+                <div class="detail-header">
+                    <i class="fas fa-gavel"></i>
+                    <h3>Hearing Tracking</h3>
+                </div>
+                <div class="detail-body">
+                    @if($blotter->status == 'Pending' || $blotter->status == 'Ongoing')
+                        <div class="hearing-info">
+                            <div class="hearing-stats">
+                                <div class="stat-box">
+                                    <span class="stat-label">Stage</span>
+                                    <span class="stat-value">{{ ucfirst($blotter->hearing_stage) }}</span>
+                                </div>
+                                <div class="stat-box">
+                                    <span class="stat-label">Hearings Missed</span>
+                                    <span class="stat-value {{ $blotter->hearing_count >= 2 ? 'text-warning' : '' }}">
+                                        {{ $blotter->hearing_count }} / 3
+                                    </span>
+                                </div>
+                                @if($blotter->next_hearing_date)
+                                <div class="stat-box">
+                                    <span class="stat-label">Next Hearing</span>
+                                    <span class="stat-value">
+                                        {{ $blotter->next_hearing_date->format('M d, Y') }}
+                                        @if($blotter->isHearingOverdue())
+                                            <span class="badge-danger">Overdue!</span>
+                                        @endif
+                                    </span>
+                                </div>
+                                @endif
+                                @if($blotter->deadline_date)
+                                <div class="stat-box">
+                                    <span class="stat-label">Stage Deadline</span>
+                                    <span class="stat-value {{ $blotter->getDaysUntilDeadline() <= 3 ? 'text-danger' : '' }}">
+                                        {{ $blotter->deadline_date->format('M d, Y') }}
+                                        ({{ $blotter->getDaysUntilDeadline() }} days left)
+                                    </span>
+                                </div>
+                                @endif
+                            </div>
+
+                            @if(!$blotter->cfa_issued && $blotter->hearing_count < 3)
+                            <div class="hearing-actions">
+                                <button class="btn-record" onclick="openHearingModal()">
+                                    <i class="fas fa-check-circle"></i> Record Hearing
+                                </button>
+                                <button class="btn-schedule" onclick="openScheduleModal()">
+                                    <i class="fas fa-calendar-alt"></i> Schedule Hearing
+                                </button>
+                            </div>
+                            @endif
+
+                            @if($blotter->cfa_issued)
+                            <div class="alert-cfa">
+                                <i class="fas fa-file-alt"></i>
+                                <strong>Certificate to File Action (CFA) Issued</strong>
+                                on {{ $blotter->cfa_issued_date->format('M d, Y') }}
+                                <br>This case may now be filed in regular court.
+                            </div>
+                            @endif
+                        </div>
+                    @else
+                        <div class="alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            Hearing tracking is only available for pending or ongoing cases.
+                        </div>
+                    @endif
+                </div>
+            </div>
+            <!-- ========== END HEARING TRACKING SECTION ========== -->
         </div>
+    </div>
+</div>
+
+<!-- Record Hearing Modal -->
+<div id="hearingModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Record Hearing</h3>
+            <button type="button" class="close" onclick="closeHearingModal()">&times;</button>
+        </div>
+        <form action="{{ route('secretary.blotter.hearing.record', $blotter) }}" method="POST">
+            @csrf
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Did the Respondent attend?</label>
+                    <select name="respondent_attended" class="form-control" required>
+                        <option value="1">Yes</option>
+                        <option value="0">No</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Did the Complainant attend?</label>
+                    <select name="complainant_attended" class="form-control" required>
+                        <option value="1">Yes</option>
+                        <option value="0">No</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Hearing Notes</label>
+                    <textarea name="hearing_notes" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeHearingModal()">Cancel</button>
+                <button type="submit" class="btn-primary">Save Hearing Record</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Schedule Hearing Modal -->
+<div id="scheduleModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Schedule Hearing</h3>
+            <button type="button" class="close" onclick="closeScheduleModal()">&times;</button>
+        </div>
+        <form action="{{ route('secretary.blotter.hearing.schedule', $blotter) }}" method="POST">
+            @csrf
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Hearing Date</label>
+                    <input type="date" name="hearing_date" class="form-control" min="{{ date('Y-m-d', strtotime('+1 day')) }}" required>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea name="hearing_notes" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeScheduleModal()">Cancel</button>
+                <button type="submit" class="btn-primary">Schedule</button>
+            </div>
+        </form>
     </div>
 </div>
 @endsection
@@ -349,6 +484,23 @@ function showToast(message, type = 'success') {
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
+
+// Hearing Modal Functions
+function openHearingModal() {
+    document.getElementById('hearingModal').style.display = 'flex';
+}
+
+function closeHearingModal() {
+    document.getElementById('hearingModal').style.display = 'none';
+}
+
+function openScheduleModal() {
+    document.getElementById('scheduleModal').style.display = 'flex';
+}
+
+function closeScheduleModal() {
+    document.getElementById('scheduleModal').style.display = 'none';
+}
 </script>
 
 {{-- Status update functions for non-clerk users --}}
@@ -358,13 +510,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const resolutionField = document.getElementById('resolution-field');
     const radioButtons = document.querySelectorAll('input[name="status"]');
 
-    // Set initial state
     const selectedStatus = document.querySelector('input[name="status"]:checked');
     if (selectedStatus) {
         toggleResolution(selectedStatus.value);
     }
 
-    // Add change event to all radio buttons
     radioButtons.forEach(radio => {
         radio.addEventListener('change', function() {
             toggleResolution(this.value);
@@ -424,7 +574,58 @@ document.addEventListener('DOMContentLoaded', function() {
 
 @push('styles')
 <style>
-    .party-detail-row {
+    /* Stage Deadline Alerts */
+.alert-deadline {
+    background: #fee2e2;
+    border-left: 4px solid #dc2626;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    color: #991b1b;
+}
+
+.alert-expired {
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    color: #92400e;
+}
+
+.stage-info {
+    background: #eef2ff;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    color: #1e40af;
+    font-size: 0.85rem;
+}
+
+.stage-info i {
+    margin-right: 0.5rem;
+}
+
+.extend-actions {
+    margin-top: 1rem;
+}
+
+.btn-extend {
+    padding: 0.5rem 1rem;
+    background: #f59e0b;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.3s;
+}
+
+.btn-extend:hover {
+    background: #d97706;
+    transform: translateY(-1px);
+}
+.party-detail-row {
     margin-bottom: 1rem;
     padding-bottom: 0.5rem;
     border-bottom: 1px solid #f0f0f0;
@@ -451,6 +652,7 @@ document.addEventListener('DOMContentLoaded', function() {
 .mt-3 {
     margin-top: 1rem;
 }
+
 .container-fluid {
     padding: 1.5rem;
 }
@@ -536,7 +738,6 @@ document.addEventListener('DOMContentLoaded', function() {
     padding: 1.5rem;
 }
 
-/* Read-only status for clerk */
 .status-readonly {
     padding: 1rem;
 }
@@ -572,7 +773,6 @@ document.addEventListener('DOMContentLoaded', function() {
     color: #f59e0b;
 }
 
-/* Status Update Container */
 .status-update-container {
     display: flex;
     justify-content: space-between;
@@ -582,7 +782,6 @@ document.addEventListener('DOMContentLoaded', function() {
     flex-wrap: wrap;
 }
 
-/* Radio Button Group */
 .radio-group {
     display: flex;
     flex-wrap: wrap;
@@ -620,24 +819,11 @@ document.addEventListener('DOMContentLoaded', function() {
     font-weight: 500;
 }
 
-/* Radio Label Colors */
-.status-pending-radio {
-    color: #856404;
-}
+.status-pending-radio { color: #856404; }
+.status-ongoing-radio { color: #004085; }
+.status-settled-radio { color: #155724; }
+.status-referred-radio { color: #553c9a; }
 
-.status-ongoing-radio {
-    color: #004085;
-}
-
-.status-settled-radio {
-    color: #155724;
-}
-
-.status-referred-radio {
-    color: #553c9a;
-}
-
-/* Update Status Button */
 .btn-update-status {
     padding: 0.6rem 1.8rem;
     background: #667eea;
@@ -662,7 +848,6 @@ document.addEventListener('DOMContentLoaded', function() {
     box-shadow: 0 4px 6px rgba(102, 126, 234, 0.4);
 }
 
-/* Status Badge */
 .status-badge {
     display: inline-block;
     padding: 0.5rem 1rem;
@@ -671,27 +856,11 @@ document.addEventListener('DOMContentLoaded', function() {
     font-weight: 500;
 }
 
-.status-pending {
-    background: #fff3cd;
-    color: #856404;
-}
+.status-pending { background: #fff3cd; color: #856404; }
+.status-ongoing { background: #cce5ff; color: #004085; }
+.status-settled { background: #d4edda; color: #155724; }
+.status-referred { background: #e2d5f1; color: #553c9a; }
 
-.status-ongoing {
-    background: #cce5ff;
-    color: #004085;
-}
-
-.status-settled {
-    background: #d4edda;
-    color: #155724;
-}
-
-.status-referred {
-    background: #e2d5f1;
-    color: #553c9a;
-}
-
-/* Resolution Container */
 .resolution-container {
     margin: 1rem 0;
     padding: 1.5rem;
@@ -744,7 +913,6 @@ document.addEventListener('DOMContentLoaded', function() {
     opacity: 0.7;
 }
 
-/* Required field */
 .required {
     color: #dc2626;
 }
@@ -791,34 +959,17 @@ document.addEventListener('DOMContentLoaded', function() {
     flex-shrink: 0;
 }
 
-.toast-icon.success {
-    color: #10b981;
-}
-
-.toast-icon.error {
-    color: #dc2626;
-}
+.toast-icon.success { color: #10b981; }
+.toast-icon.error { color: #dc2626; }
 
 @keyframes slideUp {
-    from {
-        transform: translate(-50%, 20px);
-        opacity: 0;
-    }
-    to {
-        transform: translate(-50%, 0);
-        opacity: 1;
-    }
+    from { transform: translate(-50%, 20px); opacity: 0; }
+    to { transform: translate(-50%, 0); opacity: 1; }
 }
 
 @keyframes fadeOut {
-    from {
-        opacity: 1;
-        transform: translate(-50%, 0);
-    }
-    to {
-        opacity: 0;
-        transform: translate(-50%, -10px);
-    }
+    from { opacity: 1; transform: translate(-50%, 0); }
+    to { opacity: 0; transform: translate(-50%, -10px); }
 }
 
 /* Details Grid */
@@ -855,9 +1006,7 @@ document.addEventListener('DOMContentLoaded', function() {
     color: #667eea;
 }
 
-.detail-icon.success {
-    color: #10b981;
-}
+.detail-icon.success { color: #10b981; }
 
 .detail-header h3 {
     color: #333;
@@ -947,6 +1096,167 @@ document.addEventListener('DOMContentLoaded', function() {
     color: #667eea;
 }
 
+/* ========== HEARING TRACKING STYLES ========== */
+.hearing-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.stat-box {
+    background: #f8fafc;
+    padding: 0.75rem;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid #e2e8f0;
+}
+
+.stat-box .stat-label {
+    display: block;
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+}
+
+.stat-box .stat-value {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.text-warning {
+    color: #f59e0b;
+}
+
+.text-danger {
+    color: #dc2626;
+}
+
+.badge-danger {
+    background: #fee2e2;
+    color: #dc2626;
+    padding: 0.15rem 0.4rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    margin-left: 0.5rem;
+}
+
+.alert-cfa {
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+
+.alert-info {
+    background: #eef2ff;
+    border-left: 4px solid #3b82f6;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+}
+
+.hearing-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.btn-record, .btn-schedule {
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    border: none;
+}
+
+.btn-record {
+    background: #10b981;
+    color: white;
+}
+
+.btn-schedule {
+    background: #3b82f6;
+    color: white;
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal .modal-content {
+    background: white;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 500px;
+    animation: modalFadeIn 0.3s ease;
+}
+
+.modal .modal-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal .modal-header h3 {
+    margin: 0;
+}
+
+.modal .modal-header .close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #999;
+}
+
+.modal .modal-body {
+    padding: 1.5rem;
+}
+
+.modal .modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.modal-footer .btn-secondary {
+    background: #f3f4f6;
+    color: #4b5563;
+    border: none;
+}
+
+.modal-footer .btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .status-update-container {
@@ -984,6 +1294,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     .detail-label {
         width: 100%;
+    }
+
+    .hearing-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .hearing-actions {
+        flex-direction: column;
     }
 }
 </style>

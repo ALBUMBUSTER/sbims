@@ -53,8 +53,16 @@
                     <span class="detail-value">{{ $resident->gender ?? 'N/A' }}</span>
                 </div>
                 <div class="detail-row">
+                    <span class="detail-label">Civil Status:</span>
+                    <span class="detail-value">{{ $resident->civil_status ?? 'N/A' }}</span>
+                </div>
+                <div class="detail-row">
                     <span class="detail-label">Purok:</span>
                     <span class="detail-value">Purok {{ $resident->purok ?? 'N/A' }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Household #:</span>
+                    <span class="detail-value">{{ $resident->household_number ?? 'N/A' }}</span>
                 </div>
             </div>
         </div>
@@ -70,7 +78,61 @@
                     <span class="detail-label">Contact Number:</span>
                     <span class="detail-value">{{ $resident->contact_number ?? 'N/A' }}</span>
                 </div>
-                <!-- Add other contact fields if they exist in your database -->
+                <div class="detail-row">
+                    <span class="detail-label">Email Address:</span>
+                    <span class="detail-value">{{ $resident->email ?? 'N/A' }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Address:</span>
+                    <span class="detail-value">{{ $resident->address ?? 'N/A' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Family Information -->
+        <div class="detail-card">
+            <div class="detail-header">
+                <x-heroicon-o-heart class="detail-icon" />
+                <h3>Family Information</h3>
+            </div>
+            <div class="detail-body">
+                @if($resident->civil_status === 'Married' && $resident->spouse)
+                    <div class="detail-row">
+                        <span class="detail-label">Spouse:</span>
+                        <span class="detail-value">
+                            <strong>{{ $resident->spouse->full_name }}</strong>
+                            @if($resident->spouse->birthdate)
+                                <span class="child-detail">(Born: {{ \Carbon\Carbon::parse($resident->spouse->birthdate)->format('M d, Y') }})</span>
+                            @endif
+                        </span>
+                    </div>
+                @endif
+
+                @if($resident->children && $resident->children->count() > 0)
+                    <div class="detail-row">
+                        <span class="detail-label">Children:</span>
+                        <div class="detail-value">
+                            @foreach($resident->children as $child)
+                                <div class="child-info">
+                                    <i class="fas fa-child"></i> {{ $child->full_name }}
+                                    @if($child->birthdate)
+                                        <span class="child-detail">(Born: {{ \Carbon\Carbon::parse($child->birthdate)->format('M d, Y') }})</span>
+                                    @endif
+                                    @if($child->gender)
+                                        <span class="child-detail">- {{ $child->gender }}</span>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
+                @if((!$resident->spouse || $resident->civil_status !== 'Married') && (!$resident->children || $resident->children->count() == 0))
+                    <div class="detail-row">
+                        <span class="detail-label"></span>
+                        <span class="detail-value text-muted">No family information recorded</span>
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -97,7 +159,13 @@
                     @if($resident->is_pwd)
                         <div class="status-item">
                             <span class="badge badge-pwd">P</span>
-                            <span>PWD</span>
+                            <span>Person with Disability</span>
+                            @if($resident->pwd_id)
+                                <span class="badge-detail">(ID: {{ $resident->pwd_id }})</span>
+                            @endif
+                            @if($resident->disability_type)
+                                <span class="badge-detail">- {{ $resident->disability_type }}</span>
+                            @endif
                         </div>
                     @endif
                     @if($resident->is_4ps)
@@ -283,6 +351,41 @@
     font-style: italic;
 }
 
+/* Child Information */
+.child-info {
+    margin-bottom: 0.75rem;
+    padding: 0.5rem;
+    background: #f8fafc;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.child-info:last-child {
+    margin-bottom: 0;
+}
+
+.child-info i {
+    color: #10b981;
+    font-size: 0.9rem;
+}
+
+.child-detail {
+    font-size: 0.8rem;
+    color: #666;
+    margin-left: 0.25rem;
+    font-weight: normal;
+}
+
+.badge-detail {
+    font-size: 0.75rem;
+    color: #666;
+    font-weight: normal;
+    margin-left: 0.5rem;
+}
+
 /* Status Badges - Large version for show page */
 .status-badges-large {
     display: flex;
@@ -294,6 +397,7 @@
     display: flex;
     align-items: center;
     gap: 1rem;
+    flex-wrap: wrap;
 }
 
 .badge {
@@ -385,7 +489,7 @@
         flex-direction: column;
         align-items: flex-start;
     }
-    
+
     .page-actions {
         width: 100%;
         display: flex;
@@ -396,6 +500,35 @@
         flex: 1;
         justify-content: center;
     }
+
+    .detail-row {
+        flex-direction: column;
+    }
+
+    .detail-label {
+        width: 100%;
+        margin-bottom: 0.25rem;
+    }
+
+    .child-info {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 }
 </style>
+@endpush
+
+@push('scripts')
+<script>
+// Add Font Awesome if not already included
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if Font Awesome is already loaded
+    if (!document.querySelector('link[href*="font-awesome"]') && !document.querySelector('link[href*="fontawesome"]')) {
+        const fontAwesome = document.createElement('link');
+        fontAwesome.rel = 'stylesheet';
+        fontAwesome.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+        document.head.appendChild(fontAwesome);
+    }
+});
+</script>
 @endpush

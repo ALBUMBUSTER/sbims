@@ -17,7 +17,8 @@ class Kernel extends ConsoleKernel
                  ->everyMinute()
                  ->withoutOverlapping()
                  ->appendOutputTo(storage_path('logs/backup-scheduler.log'));
-
+        $schedule->command('hearings:check-overdue')->dailyAt('00:00');
+        $schedule->command('blotters:check-deadlines')->dailyAt('00:00');
         // Alternative: Run backup at specific times based on settings
         // This will be handled by the BackupService's runScheduledBackupIfDue method
     }

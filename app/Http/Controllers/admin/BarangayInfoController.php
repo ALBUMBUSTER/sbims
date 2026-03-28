@@ -19,27 +19,23 @@ use Illuminate\Support\Facades\DB;
 
 class BarangayInfoController extends Controller
 {
-    /**
-     * Display barangay information with statistics
-     */
-    public function index()
-    {
-        // Get or create barangay info record
-        $barangayInfo = BarangayInfo::first();
+/**
+ * Display barangay information with statistics
+ */
+public function index()
+{
+    // Sync officials from user accounts
+    $barangayInfo = $this->syncOfficialsFromUsers();
 
-        // If no record exists, create a default one
-        if (!$barangayInfo) {
-            $barangayInfo = BarangayInfo::create([
-                'barangay_name' => 'Libertad',
-                'address' => 'Libertad, Isabel, Leyte'
-            ]);
-        }
+    // Get statistics
+    $statistics = $this->getBarangayStatistics();
 
-        // Get statistics
-        $statistics = $this->getBarangayStatistics();
+    // Also pass the captain and secretary objects to view if needed
+    $captain = User::where('role_id', 2)->where('is_active', true)->first();
+    $secretary = User::where('role_id', 3)->where('is_active', true)->first();
 
-        return view('admin.barangay.index', compact('barangayInfo', 'statistics'));
-    }
+    return view('admin.barangay.index', compact('barangayInfo', 'statistics', 'captain', 'secretary'));
+}
 
     /**
      * Get comprehensive barangay statistics
@@ -54,6 +50,40 @@ class BarangayInfoController extends Controller
 
         // Get officials data from session
         $officialsData = session('officials_data', []);
+
+        // Get all residents for age calculation
+        $residents = Resident::all();
+
+        // ========== AGE GROUP CALCULATIONS ==========
+        $ageGroups = [
+            'age_0_5' => 0,
+            'age_6_12' => 0,
+            'age_13_17' => 0,
+            'age_18_35' => 0,
+            'age_36_59' => 0,
+            'age_60_plus' => 0,
+        ];
+
+        foreach ($residents as $resident) {
+            if ($resident->birthdate) {
+                $age = Carbon::parse($resident->birthdate)->age;
+
+                if ($age <= 5) {
+                    $ageGroups['age_0_5']++;
+                } elseif ($age <= 12) {
+                    $ageGroups['age_6_12']++;
+                } elseif ($age <= 17) {
+                    $ageGroups['age_13_17']++;
+                } elseif ($age <= 35) {
+                    $ageGroups['age_18_35']++;
+                } elseif ($age <= 59) {
+                    $ageGroups['age_36_59']++;
+                } else {
+                    $ageGroups['age_60_plus']++;
+                }
+            }
+        }
+        // ========== END AGE GROUP CALCULATIONS ==========
 
         // Resident Statistics
         $totalResidents = Resident::count();
@@ -98,7 +128,7 @@ class BarangayInfoController extends Controller
         $clearanceCertificates = Certificate::where('certificate_type', 'Clearance')->count();
         $indigencyCertificates = Certificate::where('certificate_type', 'Indigency')->count();
         $residencyCertificates = Certificate::where('certificate_type', 'Residency')->count();
-        $otherCertificates = Certificate::whereNotIn('certificate_type', ['Clearance', 'Indigency', 'Residency',])->count();
+        $otherCertificates = Certificate::whereNotIn('certificate_type', ['Clearance', 'Indigency', 'Residency'])->count();
 
         $pendingCertificates = Certificate::where('status', 'Pending')->count();
         $releasedCertificates = Certificate::where('status', 'Released')->count();
@@ -164,6 +194,15 @@ class BarangayInfoController extends Controller
             'monthly_transactions' => $monthlyTransactions,
             'monthly_certificates' => $monthlyCertificates,
             'monthly_settled' => $monthlySettled,
+
+            // ========== AGE GROUP STATS ==========
+            'age_0_5' => $ageGroups['age_0_5'],
+            'age_6_12' => $ageGroups['age_6_12'],
+            'age_13_17' => $ageGroups['age_13_17'],
+            'age_18_35' => $ageGroups['age_18_35'],
+            'age_36_59' => $ageGroups['age_36_59'],
+            'age_60_plus' => $ageGroups['age_60_plus'],
+            // ========== END AGE GROUP STATS ==========
         ];
 
         return $statistics;
@@ -229,55 +268,80 @@ class BarangayInfoController extends Controller
             ->with('success', 'Barangay information updated successfully.');
     }
 
-    /**
-     * Update barangay officials
-     */
-    public function updateOfficials(Request $request)
-    {
-        $validated = $request->validate([
-            'barangay_captain' => 'nullable|string|max:100',
-            'barangay_secretary' => 'nullable|string|max:100',
-            'barangay_treasurer' => 'nullable|string|max:100',
-            'kagawads_count' => 'nullable|integer|min:0|max:20',
-            'sk_chairman' => 'nullable|string|max:100',
-            'tanods_count' => 'nullable|integer|min:0|max:50',
-        ]);
+/**
+ * Update barangay officials
+ */
+public function updateOfficials(Request $request)
+{
+    $validated = $request->validate([
+        'barangay_captain' => 'nullable|string|max:100',
+        'barangay_secretary' => 'nullable|string|max:100',
+        'barangay_treasurer' => 'nullable|string|max:100',
+        'kagawads_count' => 'nullable|integer|min:0|max:20',
+        'sk_chairman' => 'nullable|string|max:100',
+        'tanods_count' => 'nullable|integer|min:0|max:50',
+    ]);
 
-        // Get the barangay info record
-        $barangayInfo = BarangayInfo::first();
+    // Get the barangay info record
+    $barangayInfo = BarangayInfo::first();
 
-        if (!$barangayInfo) {
-            $barangayInfo = new BarangayInfo();
-        }
-
-        // Update captain and secretary in the main table
-        $barangayInfo->barangay_captain = $validated['barangay_captain'] ?? $barangayInfo->barangay_captain;
-        $barangayInfo->barangay_secretary = $validated['barangay_secretary'] ?? $barangayInfo->barangay_secretary;
-        $barangayInfo->save();
-
-        // Store the other values in session
-        $officialsData = [
-            'barangay_treasurer' => $validated['barangay_treasurer'] ?? null,
-            'kagawads_count' => $validated['kagawads_count'] ?? null,
-            'sk_chairman' => $validated['sk_chairman'] ?? null,
-            'tanods_count' => $validated['tanods_count'] ?? null,
-        ];
-
-        session(['officials_data' => $officialsData]);
-
-        // Log the action
-        ActivityLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'update',
-            'description' => "Updated barangay officials information",
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent()
-        ]);
-
-        return redirect()->route('admin.barangay.index')
-            ->with('success', 'Barangay officials updated successfully.');
+    if (!$barangayInfo) {
+        $barangayInfo = new BarangayInfo();
     }
 
+    // Update captain in barangay info
+    if (isset($validated['barangay_captain']) && !empty($validated['barangay_captain'])) {
+        $barangayInfo->barangay_captain = $validated['barangay_captain'];
+
+        // Also update the captain's user account
+        $captainUser = User::where('role_id', 2)->first();
+        if ($captainUser) {
+            $nameParts = explode(' ', $validated['barangay_captain'], 2);
+            $captainUser->first_name = $nameParts[0];
+            $captainUser->last_name = $nameParts[1] ?? '';
+            $captainUser->name = $validated['barangay_captain'];
+            $captainUser->save();
+        }
+    }
+
+    // Update secretary in barangay info
+    if (isset($validated['barangay_secretary']) && !empty($validated['barangay_secretary'])) {
+        $barangayInfo->barangay_secretary = $validated['barangay_secretary'];
+
+        // Also update the secretary's user account
+        $secretaryUser = User::where('role_id', 3)->first();
+        if ($secretaryUser) {
+            $nameParts = explode(' ', $validated['barangay_secretary'], 2);
+            $secretaryUser->first_name = $nameParts[0];
+            $secretaryUser->last_name = $nameParts[1] ?? '';
+            $secretaryUser->name = $validated['barangay_secretary'];
+            $secretaryUser->save();
+        }
+    }
+
+    $barangayInfo->save();
+
+    // Store the other values in session
+    $officialsData = [
+        'barangay_treasurer' => $validated['barangay_treasurer'] ?? null,
+        'kagawads_count' => $validated['kagawads_count'] ?? null,
+        'sk_chairman' => $validated['sk_chairman'] ?? null,
+        'tanods_count' => $validated['tanods_count'] ?? null,
+    ];
+
+    session(['officials_data' => $officialsData]);
+
+    ActivityLog::create([
+        'user_id' => Auth::id(),
+        'action' => 'update',
+        'description' => "Updated barangay officials information",
+        'ip_address' => $request->ip(),
+        'user_agent' => $request->userAgent()
+    ]);
+
+    return redirect()->route('admin.barangay.index')
+        ->with('success', 'Barangay officials updated successfully.');
+}
     /**
      * Update statistics manually (for testing/overrides)
      */
@@ -326,4 +390,47 @@ class BarangayInfoController extends Controller
         return redirect()->route('admin.barangay.index')
             ->with('success', 'Barangay statistics updated successfully.');
     }
+    /**
+ * Sync officials from user accounts
+ * This ensures barangay captain and secretary are always up to date
+ */
+private function syncOfficialsFromUsers()
+{
+    $barangayInfo = BarangayInfo::first();
+
+    if (!$barangayInfo) {
+        $barangayInfo = BarangayInfo::create([
+            'barangay_name' => 'Libertad',
+            'address' => 'Libertad, Isabel, Leyte'
+        ]);
+    }
+
+    $updated = false;
+
+    // Get captain from users table (role_id = 2)
+    $captain = User::where('role_id', 2)
+        ->where('is_active', true)
+        ->first();
+
+    if ($captain && $captain->full_name !== $barangayInfo->barangay_captain) {
+        $barangayInfo->barangay_captain = $captain->full_name;
+        $updated = true;
+    }
+
+    // Get secretary from users table (role_id = 3)
+    $secretary = User::where('role_id', 3)
+        ->where('is_active', true)
+        ->first();
+
+    if ($secretary && $secretary->full_name !== $barangayInfo->barangay_secretary) {
+        $barangayInfo->barangay_secretary = $secretary->full_name;
+        $updated = true;
+    }
+
+    if ($updated) {
+        $barangayInfo->save();
+    }
+
+    return $barangayInfo;
+}
 }

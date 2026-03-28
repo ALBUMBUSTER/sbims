@@ -12,28 +12,25 @@ use App\Helpers\NotificationHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class BlotterController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Blotter::with(['complainant', 'parties']);
-        $query = Blotter::with(['complainants', 'respondents']); // Add this
-
+        $query = Blotter::with(['complainants', 'respondents']);
 
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('case_id', 'like', "%{$search}%")
-                  ->orWhere('respondent_name', 'like', "%{$search}%")
                   ->orWhere('incident_type', 'like', "%{$search}%")
                   ->orWhere('incident_location', 'like', "%{$search}%")
-                  ->orWhereHas('complainant', function($cq) use ($search) {
-                      $cq->where('first_name', 'like', "%{$search}%")
-                         ->orWhere('last_name', 'like', "%{$search}%");
+                  ->orWhereHas('complainants', function($cq) use ($search) {
+                      $cq->where('name', 'like', "%{$search}%");
                   })
-                  ->orWhereHas('parties', function($pq) use ($search) {
-                      $pq->where('name', 'like', "%{$search}%");
+                  ->orWhereHas('respondents', function($rq) use ($search) {
+                      $rq->where('name', 'like', "%{$search}%");
                   });
             });
         }
@@ -100,13 +97,13 @@ class BlotterController extends Controller
         }
 
         // Combine date and time
-    $incidentDateTime = $validated['incident_date'] . ' ' . $validated['incident_time'];
+        $incidentDateTime = $validated['incident_date'] . ' ' . $validated['incident_time'];
 
-    // Add additional validation: check if combined datetime is not in future
-    $incidentDateTimeObj = \Carbon\Carbon::parse($incidentDateTime);
-    if ($incidentDateTimeObj->isFuture()) {
-        return back()->withErrors(['incident_date' => 'Incident date and time cannot be in the future.'])->withInput();
-    }
+        // Add additional validation: check if combined datetime is not in future
+        $incidentDateTimeObj = Carbon::parse($incidentDateTime);
+        if ($incidentDateTimeObj->isFuture()) {
+            return back()->withErrors(['incident_date' => 'Incident date and time cannot be in the future.'])->withInput();
+        }
 
         DB::beginTransaction();
 
@@ -120,11 +117,14 @@ class BlotterController extends Controller
                 'incident_date' => $incidentDateTime,
                 'incident_location' => $validated['incident_location'],
                 'description' => $validated['description'],
-                // Make original columns nullable
                 'complainant_id' => null,
                 'respondent_name' => null,
                 'respondent_address' => null,
             ]);
+
+            // ========== START MEDIATION PROCESS (15-15-30 RULE) ==========
+            $blotter->startMediation();
+            // ========== END MEDIATION PROCESS ==========
 
             // Save complainants
             foreach ($validated['complainants'] as $complainant) {
@@ -160,7 +160,7 @@ class BlotterController extends Controller
                 }
             }
 
-            // Get complainant names for notification
+            // Get names for notification
             $complainantNames = $blotter->complainants->pluck('name')->implode(', ');
             $respondentNames = $blotter->respondents->pluck('name')->implode(', ');
 
@@ -210,7 +210,7 @@ class BlotterController extends Controller
 
     public function show(Blotter $blotter)
     {
-        $blotter->load(['complainant', 'parties']);
+        $blotter->load(['complainants', 'respondents', 'witnesses']);
         return view('secretary.blotter.show', compact('blotter'));
     }
 
@@ -223,7 +223,6 @@ class BlotterController extends Controller
 
     public function update(Request $request, Blotter $blotter)
     {
-        // Similar validation as store but with existing blotter
         $validated = $request->validate([
             'incident_type' => 'required|string|max:255',
             'other_incident_type' => 'nullable|required_if:incident_type,Other|string',
@@ -402,7 +401,126 @@ class BlotterController extends Controller
             ->with('success', 'Blotter case status updated successfully.');
     }
 
-    // ... (keep all your existing archive, restore, forceDelete methods)
+    /**
+     * Record hearing attendance
+     */
+    public function recordHearing(Request $request, Blotter $blotter)
+    {
+        $request->validate([
+            'respondent_attended' => 'required|boolean',
+            'complainant_attended' => 'required|boolean',
+            'hearing_notes' => 'nullable|string',
+        ]);
+
+        $result = $blotter->recordAttendance(
+            $request->respondent_attended,
+            $request->complainant_attended
+        );
+
+        // ========== NOTIFICATIONS ==========
+        $currentUserId = Auth::id();
+
+        if (!$request->respondent_attended) {
+            $missedCount = $blotter->hearing_count;
+
+            if ($missedCount >= 3) {
+                NotificationHelper::toCaptainsExceptCurrent(
+                    $currentUserId,
+                    'CFA Issued',
+                    'Case #' . $blotter->case_id . ' - Respondent missed 3 hearings. Certificate to File Action issued.',
+                    'warning',
+                    route('captain.blotters.show', $blotter->id)
+                );
+
+                NotificationHelper::toSecretariesExceptCurrent(
+                    $currentUserId,
+                    'CFA Issued',
+                    'Case #' . $blotter->case_id . ' - Certificate to File Action issued.',
+                    'warning',
+                    route('secretary.blotter.show', $blotter->id)
+                );
+            } else {
+                $remaining = 3 - $missedCount;
+                NotificationHelper::toCaptainsExceptCurrent(
+                    $currentUserId,
+                    'Missed Hearing',
+                    'Case #' . $blotter->case_id . ' - Respondent missed hearing. ' . $remaining . ' more absence(s) before CFA.',
+                    'warning',
+                    route('captain.blotters.show', $blotter->id)
+                );
+            }
+        } elseif ($result === true && $blotter->status == 'Settled') {
+            // Case settled notification
+            NotificationHelper::toCaptainsExceptCurrent(
+                $currentUserId,
+                'Case Settled',
+                'Case #' . $blotter->case_id . ' has been settled through ' . ucfirst($blotter->hearing_stage) . '.',
+                'success',
+                route('captain.blotters.show', $blotter->id)
+            );
+        }
+        // ========== END NOTIFICATIONS ==========
+
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'RECORD_HEARING',
+            'description' => 'Recorded hearing for case #' . $blotter->case_id .
+                             ' - Respondent attended: ' . ($request->respondent_attended ? 'Yes' : 'No') .
+                             ', Complainant attended: ' . ($request->complainant_attended ? 'Yes' : 'No'),
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
+        return redirect()->route('secretary.blotter.show', $blotter)
+            ->with('success', 'Hearing recorded successfully.');
+    }
+
+    /**
+     * Schedule next hearing
+     */
+    public function scheduleHearing(Request $request, Blotter $blotter)
+    {
+        $request->validate([
+            'hearing_date' => 'required|date|after:today',
+            'hearing_notes' => 'nullable|string',
+        ]);
+
+        $daysFromNow = Carbon::now()->diffInDays($request->hearing_date);
+        $blotter->scheduleNextHearing($daysFromNow);
+
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'SCHEDULE_HEARING',
+            'description' => 'Scheduled hearing for case #' . $blotter->case_id . ' on ' . $request->hearing_date,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
+        return redirect()->route('secretary.blotter.show', $blotter)
+            ->with('success', 'Hearing scheduled successfully.');
+    }
+
+    /**
+     * Extend conciliation deadline (15 more days)
+     */
+    public function extendDeadline(Request $request, Blotter $blotter)
+    {
+        if ($blotter->extendConciliation()) {
+            ActivityLog::create([
+                'user_id' => Auth::id(),
+                'action' => 'EXTEND_DEADLINE',
+                'description' => 'Extended deadline for case #' . $blotter->case_id . ' by 15 days',
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent()
+            ]);
+
+            return redirect()->route('secretary.blotter.show', $blotter)
+                ->with('success', 'Deadline extended by 15 days.');
+        }
+
+        return redirect()->route('secretary.blotter.show', $blotter)
+            ->with('error', 'Cannot extend deadline for this case.');
+    }
 
     public function archive(Request $request, Blotter $blotter)
     {
@@ -433,7 +551,86 @@ class BlotterController extends Controller
             ->with('success', 'Blotter case archived successfully.');
     }
 
-    // ... keep all other methods (archived, restore, forceDelete, destroy, generateCaseId) the same
+    public function archived(Request $request)
+    {
+        if (Auth::user()->role_id == 4) {
+            return redirect()->route('secretary.blotter.index')
+                ->with('error', 'You do not have permission to view archived cases.');
+        }
+
+        $query = Blotter::onlyTrashed()->with('complainants', 'respondents');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('case_id', 'like', "%{$search}%")
+                  ->orWhere('incident_type', 'like', "%{$search}%")
+                  ->orWhereHas('complainants', function($cq) use ($search) {
+                      $cq->where('name', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('respondents', function($rq) use ($search) {
+                      $rq->where('name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $archived = $query->orderBy('deleted_at', 'desc')->paginate(15);
+
+        return view('secretary.blotter.archived', compact('archived'));
+    }
+
+    public function restore(Request $request, $id)
+    {
+        if (Auth::user()->role_id == 4) {
+            return redirect()->route('secretary.blotter.index')
+                ->with('error', 'You do not have permission to restore cases.');
+        }
+
+        $blotter = Blotter::onlyTrashed()->findOrFail($id);
+        $blotter->restore();
+
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'RESTORE_BLOTTER',
+            'description' => 'Restored blotter case ' . $blotter->case_id,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
+        return redirect()->route('secretary.blotter.archived')
+            ->with('success', 'Blotter case restored successfully.');
+    }
+
+    public function forceDelete(Request $request, $id)
+    {
+        $userRole = Auth::user()->role_id;
+
+        if (!in_array($userRole, [1])) {
+            return redirect()->route('secretary.blotter.archived')
+                ->with('error', 'You do not have permission to permanently delete cases.');
+        }
+
+        $blotter = Blotter::onlyTrashed()->findOrFail($id);
+        $caseId = $blotter->case_id;
+
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'FORCE_DELETE_BLOTTER',
+            'description' => 'Permanently deleted blotter case ' . $caseId,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
+        $blotter->forceDelete();
+
+        return redirect()->route('secretary.blotter.archived')
+            ->with('success', 'Blotter case permanently deleted.');
+    }
+
+    public function destroy(Request $request, Blotter $blotter)
+    {
+        return $this->archive($request, $blotter);
+    }
 
     private function generateCaseId()
     {

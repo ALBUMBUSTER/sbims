@@ -10,7 +10,8 @@ use Carbon\Carbon;
 class Resident extends Model
 {
     use HasFactory;
-    use SoftDeletes; // Add this trait
+    use SoftDeletes;
+
     protected $fillable = [
         'resident_id',
         'first_name',
@@ -37,15 +38,54 @@ class Resident extends Model
         'profile_photo',
         'archived_at',
     ];
-    protected $dates = ['deleted_at']; // Add this if using older Laravel versions
+
+    protected $dates = ['deleted_at'];
+
     protected $casts = [
         'birthdate' => 'date',
         'is_voter' => 'boolean',
         'is_senior' => 'boolean',
         'is_pwd' => 'boolean',
         'is_4ps' => 'boolean',
-        'archived_at' => 'datetime', // Add this
+        'archived_at' => 'datetime',
     ];
+
+    /**
+     * Check for duplicate resident
+     * @param array $data
+     * @return Resident|null
+     */
+    public static function checkDuplicate($data)
+    {
+        $query = self::query()
+            ->where('first_name', $data['first_name'])
+            ->where('last_name', $data['last_name'])
+            ->where('birthdate', $data['birthdate']);
+
+        // Include middle name in duplicate check if provided
+        if (!empty($data['middle_name'])) {
+            $query->where('middle_name', $data['middle_name']);
+        }
+
+        return $query->first();
+    }
+
+    /**
+     * Check for duplicate during import (case insensitive)
+     */
+    public static function checkDuplicateImport($data)
+    {
+        $query = self::query()
+            ->whereRaw('LOWER(first_name) = ?', [strtolower($data['first_name'])])
+            ->whereRaw('LOWER(last_name) = ?', [strtolower($data['last_name'])])
+            ->where('birthdate', $data['birthdate']);
+
+        if (!empty($data['middle_name'])) {
+            $query->whereRaw('LOWER(middle_name) = ?', [strtolower($data['middle_name'])]);
+        }
+
+        return $query->first();
+    }
 
     /**
      * Get the user account associated with the resident
@@ -69,6 +109,26 @@ class Resident extends Model
     public function complainantBlotters()
     {
         return $this->hasMany(Blotter::class, 'complainant_id');
+    }
+
+    /**
+     * Family relationships
+     */
+    public function familyRelationships()
+    {
+        return $this->hasMany(FamilyRelationship::class);
+    }
+
+    public function spouse()
+    {
+        return $this->hasOne(FamilyRelationship::class)
+            ->where('relationship_type', 'spouse');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(FamilyRelationship::class)
+            ->where('relationship_type', 'child');
     }
 
     /**
@@ -103,8 +163,6 @@ class Resident extends Model
         });
     }
 
-    /* ==================== ARCHIVE SCOPES ==================== */
-
     /**
      * Scope to get only active (non-archived) residents
      */
@@ -120,5 +178,4 @@ class Resident extends Model
     {
         return $query->whereNotNull('archived_at');
     }
-
 }

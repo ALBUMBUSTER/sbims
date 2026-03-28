@@ -131,19 +131,25 @@
             <div class="form-section">
                 <h2>Address Information</h2>
 
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="purok">Purok <span class="required">*</span></label>
-                        <input type="text"
-                               id="purok"
-                               name="purok"
-                               value="{{ old('purok', $resident->purok) }}"
-                               class="form-control @error('purok') is-invalid @enderror"
-                               required>
-                        @error('purok')
-                            <span class="error-message">{{ $message }}</span>
-                        @enderror
-                    </div>
+<div class="form-group">
+    <label for="purok">Purok <span class="required">*</span></label>
+    <select id="purok"
+            name="purok"
+            class="form-control @error('purok') is-invalid @enderror"
+            required>
+        <option value="">Select Purok</option>
+        <option value="1" {{ old('purok', $resident->purok) == '1' ? 'selected' : '' }}>Purok 1</option>
+        <option value="2" {{ old('purok', $resident->purok) == '2' ? 'selected' : '' }}>Purok 2</option>
+        <option value="3" {{ old('purok', $resident->purok) == '3' ? 'selected' : '' }}>Purok 3</option>
+        <option value="4" {{ old('purok', $resident->purok) == '4' ? 'selected' : '' }}>Purok 4</option>
+        <option value="5" {{ old('purok', $resident->purok) == '5' ? 'selected' : '' }}>Purok 5</option>
+        <option value="6" {{ old('purok', $resident->purok) == '6' ? 'selected' : '' }}>Purok 6</option>
+        <option value="7" {{ old('purok', $resident->purok) == '7' ? 'selected' : '' }}>Purok 7</option>
+    </select>
+    @error('purok')
+        <span class="error-message">{{ $message }}</span>
+    @enderror
+</div>
 
                     <div class="form-group">
                         <label for="household_number">Household Number</label>

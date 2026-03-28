@@ -8,6 +8,8 @@ use App\Models\Certificate;
 use App\Models\Resident;
 use Illuminate\Support\Facades\Auth;
 use App\Models\ActivityLog;
+use App\Models\BarangayInfo;  // ADD THIS LINE
+
 
 class TemplateController extends Controller
 {
@@ -107,53 +109,76 @@ public function printCertificate(Certificate $certificate)
         return storage_path('app/templates/' . $filename);
     }
 
-    /**
-     * Prepare data for template placeholders
-     */
-    private function prepareTemplateData($certificate, $resident)
-    {
-        // Format full name with middle initial
-        $fullName = $resident->first_name . ' ' . $resident->last_name;
-        if ($resident->middle_name) {
-            $fullName = $resident->first_name . ' ' . $resident->middle_name[0] . '. ' . $resident->last_name;
-        }
+/**
+ * Prepare data for template placeholders
+ */
+private function prepareTemplateData($certificate, $resident)
+{
+    // Get barangay info from database
+    $barangayInfo = BarangayInfo::first();
 
-        // Get age from birthdate
-        $age = $resident->birthdate ? $resident->birthdate->age : '___';
-
-        // Gender prefix for certificate
-        $genderPrefix = $resident->gender === 'Male' ? 'Filipino' : 'Filipina';
-        $title = $resident->gender === 'Male' ? 'Mr.' : 'Ms.';
-
-        // Format date
-        $today = now();
-
-        return [
-            'full_name' => $fullName,
-            'first_name' => $resident->first_name,
-            'last_name' => $resident->last_name,
-            'middle_name' => $resident->middle_name ?? '',
-            'age' => $age,
-            'civil_status' => $resident->civil_status ?? 'Single',
-            'gender' => $genderPrefix,
-            'gender_title' => $title,
-            'purok' => $resident->purok ?? '___',
-            'address' => $resident->address ?? '',
-            'purpose' => $certificate->purpose,
-            'certificate_no' => $certificate->certificate_id,
-            'certificate_id' => $certificate->certificate_id,
-            'day' => $today->format('jS'),
-            'month' => $today->format('F'),
-            'year' => $today->year,
-            'issued_date' => $today->format('F d, Y'),
-            'captain_name' => 'REYNALDO M. ROCHE',
-            'captain_full_name' => 'HON. REYNALDO M. ROCHE',
-            'barangay' => 'Libertad',
-            'municipality' => 'Isabel, Leyte',
-            'barangay_full' => 'Barangay Libertad, Isabel, Leyte',
-        ];
+    // Format full name with middle initial
+    $fullName = $resident->first_name . ' ' . $resident->last_name;
+    if ($resident->middle_name) {
+        $fullName = $resident->first_name . ' ' . $resident->middle_name[0] . '. ' . $resident->last_name;
     }
 
+    // Get age from birthdate
+    $age = $resident->birthdate ? $resident->birthdate->age : '___';
+
+    // Gender prefix for certificate
+    $genderPrefix = $resident->gender === 'Male' ? 'Filipino' : 'Filipina';
+    $title = $resident->gender === 'Male' ? 'Mr.' : 'Ms.';
+
+    // Format date
+    $today = now();
+
+    // Get captain's name from database - NO FALLBACKS, MUST BE SET IN DATABASE
+    $captainName = $barangayInfo && $barangayInfo->barangay_captain
+        ? strtoupper($barangayInfo->barangay_captain)
+        : 'BARANGAY CAPTAIN NAME NOT SET'; // This will alert if not set
+
+    // Get barangay name from database
+    $barangayName = $barangayInfo && $barangayInfo->barangay_name
+        ? $barangayInfo->barangay_name
+        : 'Libertad';
+
+    // Get address/contact info from database
+    $barangayAddress = $barangayInfo && $barangayInfo->address
+        ? $barangayInfo->address
+        : '';
+
+    // Build full address
+    $barangayFull = "Barangay {$barangayName}, Isabel, Leyte";
+    if ($barangayAddress) {
+        $barangayFull = $barangayAddress;
+    }
+
+    return [
+        'full_name' => $fullName,
+        'first_name' => $resident->first_name,
+        'last_name' => $resident->last_name,
+        'middle_name' => $resident->middle_name ?? '',
+        'age' => $age,
+        'civil_status' => $resident->civil_status ?? 'Single',
+        'gender' => $genderPrefix,
+        'gender_title' => $title,
+        'purok' => $resident->purok ?? '___',
+        'address' => $resident->address ?? '',
+        'purpose' => $certificate->purpose,
+        'certificate_no' => $certificate->certificate_id,
+        'certificate_id' => $certificate->certificate_id,
+        'day' => $today->format('jS'),
+        'month' => $today->format('F'),
+        'year' => $today->year,
+        'issued_date' => $today->format('F d, Y'),
+        'captain_name' => 'HON. ' . $captainName,  // This will be used in template
+        'captain_full_name' => 'HON. ' . $captainName,  // For compatibility
+        'barangay' => $barangayName,
+        'municipality' => 'Isabel, Leyte',
+        'barangay_full' => $barangayFull,
+    ];
+}
     /**
      * Generate filename for certificate
      */

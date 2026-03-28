@@ -34,6 +34,7 @@ Route::middleware(['auth'])->group(function () {
     // Secretary Routes
     Route::prefix('secretary')->name('secretary.')->group(function () {
     // Dashboard & Activities
+    Route::post('/residents/check-duplicate', [ResidentController::class, 'checkDuplicate'])->name('residents.check-duplicate');
     Route::get('/dashboard', [DashboardController::class, 'secretary'])->name('dashboard');
     Route::get('/activities', [DashboardController::class, 'activities'])->name('activities');
 
@@ -93,6 +94,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/summary', [ReportController::class, 'summary'])->name('summary');
         Route::post('/export', [ReportController::class, 'export'])->name('export');
     });
+    // Hearing routes
+        Route::post('/blotter/{blotter}/hearing/record', [BlotterController::class, 'recordHearing'])->name('blotter.hearing.record');
+        Route::post('/blotter/{blotter}/hearing/schedule', [BlotterController::class, 'scheduleHearing'])->name('blotter.hearing.schedule');
+        Route::post('/blotter/{blotter}/deadline/extend', [BlotterController::class, 'extendDeadline'])->name('blotter.deadline.extend');
 });
     // Admin Routes
         Route::prefix('admin')->name('admin.')->group(function () {

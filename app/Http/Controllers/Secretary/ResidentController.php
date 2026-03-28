@@ -4,14 +4,14 @@ namespace App\Http\Controllers\Secretary;
 
 use App\Http\Controllers\Controller;
 use App\Models\Resident;
+use App\Models\FamilyRelationship;
 use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use App\Helpers\NotificationHelper;
-
+use Carbon\Carbon;
 
 class ResidentController extends Controller
 {
@@ -21,39 +21,28 @@ class ResidentController extends Controller
     }
 
     /* ==================== HELPER METHODS ==================== */
-    /**
-     * Check if current user is a clerk (role_id = 4)
-     */
+
     private function isClerk()
     {
         return Auth::user()->role_id == 4;
     }
 
-    /**
-     * Check if current user is a secretary or admin (allowed full access)
-     */
     private function isSecretaryOrAdmin()
     {
         $role = Auth::user()->role_id;
-        return $role == 1 || $role == 3; // 1 = Admin, 3 = Secretary
+        return $role == 1 || $role == 3;
     }
 
-    /**
-     * Generate a unique resident ID
-     * Format: RES-YYYYMM-XXXX (e.g., RES-202502-0001)
-     */
     private function generateResidentId()
     {
         $year = date('Y');
         $month = date('m');
 
-        // Get the latest resident ID for this year/month
         $latest = Resident::where('resident_id', 'LIKE', "RES-{$year}{$month}-%")
                           ->orderBy('resident_id', 'desc')
                           ->first();
 
         if ($latest) {
-            // Extract the sequence number and increment
             $parts = explode('-', $latest->resident_id);
             $sequence = intval(end($parts)) + 1;
         } else {
@@ -63,15 +52,10 @@ class ResidentController extends Controller
         return 'RES-' . $year . $month . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
     }
 
-    /**
-     * Generate a unique PWD ID
-     * Format: PWD-YYYY-XXXXX (e.g., PWD-2024-00001)
-     */
     public function generatePwdId()
     {
         $year = date('Y');
 
-        // Get the latest PWD ID for this year
         $latestPwd = Resident::where('pwd_id', 'LIKE', "PWD-{$year}-%")
                              ->where('is_pwd', true)
                              ->orderBy('pwd_id', 'desc')
@@ -89,9 +73,6 @@ class ResidentController extends Controller
         return response()->json(['id' => $pwdId]);
     }
 
-    /**
-     * Format date for database (handles multiple input formats)
-     */
     private function formatDateForDB($date)
     {
         if (empty($date)) return null;
@@ -108,7 +89,6 @@ class ResidentController extends Controller
             }
         }
 
-        // Try strtotime as last resort
         $timestamp = strtotime($date);
         if ($timestamp !== false) {
             return date('Y-m-d', $timestamp);
@@ -117,9 +97,6 @@ class ResidentController extends Controller
         return null;
     }
 
-    /**
-     * Format gender (handles variations like M, Male, Lalaki)
-     */
     private function formatGender($gender)
     {
         $gender = strtolower(trim($gender));
@@ -135,9 +112,6 @@ class ResidentController extends Controller
         return ucfirst($gender);
     }
 
-    /**
-     * Format civil status (handles variations)
-     */
     private function formatCivilStatus($status)
     {
         if (empty($status)) return 'Single';
@@ -156,17 +130,13 @@ class ResidentController extends Controller
 
     /* ==================== CRUD OPERATIONS ==================== */
 
-    /**
-     * Display a listing of residents with search and filter functionality.
-     */
     public function index(Request $request)
     {
         $query = Resident::active();
 
-        // Search by multiple fields
         if ($request->has('search') && !empty($request->search)) {
             $search = $request->search;
-            $query = Resident::query(); // This automatically excludes soft-deleted records
+            $query = Resident::query();
             $query->where(function($q) use ($search) {
                 $q->where('first_name', 'LIKE', "%{$search}%")
                   ->orWhere('last_name', 'LIKE', "%{$search}%")
@@ -177,7 +147,6 @@ class ResidentController extends Controller
             });
         }
 
-        // Filter by status (voter, senior, pwd, 4ps)
         if ($request->has('filter') && !empty($request->filter) && $request->filter != 'all') {
             switch ($request->filter) {
                 case 'voter':
@@ -195,7 +164,6 @@ class ResidentController extends Controller
             }
         }
 
-        // Filter by civil status
         if ($request->has('civil_filter') && !empty($request->civil_filter) && $request->civil_filter != 'all') {
             $civilStatus = ucfirst(strtolower($request->civil_filter));
             $query->where('civil_status', $civilStatus);
@@ -205,9 +173,6 @@ class ResidentController extends Controller
         return view('secretary.residents.index', compact('residents'));
     }
 
-    /**
-     * Show the form for creating a new resident.
-     */
     public function create()
     {
         $generatedId = $this->generateResidentId();
@@ -217,17 +182,11 @@ class ResidentController extends Controller
         return view('secretary.residents.create', compact('generatedId', 'generatedPwdId'));
     }
 
-    /**
-     * Generate ID for AJAX request (used in create form)
-     */
     public function generateId()
     {
         return response()->json(['id' => $this->generateResidentId()]);
     }
 
-    /**
-     * Store a newly created resident in storage.
-     */
     public function store(Request $request)
     {
         try {
@@ -250,24 +209,72 @@ class ResidentController extends Controller
                 'is_pwd' => 'sometimes|boolean',
                 'pwd_id' => 'nullable|required_if:is_pwd,true|string|max:50',
                 'disability_type' => 'nullable|required_if:is_pwd,true|string|max:100',
-                 // 'pwd_id' => 'nullable|required_if:is_pwd,true|string|max:50|unique:residents,pwd_id',
+                'spouse_name' => 'nullable|string|max:255',
+                'children' => 'nullable|array',
+                'children.*.name' => 'nullable|string|max:255',
+                'children.*.birthdate' => 'nullable|date',
+                'children.*.gender' => 'nullable|in:Male,Female',
             ]);
+            // CHECK FOR DUPLICATE RESIDENT
+            $duplicate = Resident::checkDuplicate($validated);
 
-            // Convert checkbox values to integers
+            if ($duplicate) {
+            $duplicateName = $duplicate->full_name;
+            $duplicateId = $duplicate->resident_id;
+            $duplicateAge = $duplicate->age;
+
+            $errorMessage = "A resident with the same name and birthdate already exists.\n\n";
+            $errorMessage .= "Existing Resident:\n";
+            $errorMessage .= "• Name: {$duplicateName}\n";
+            $errorMessage .= "• Resident ID: {$duplicateId}\n";
+            $errorMessage .= "• Age: {$duplicateAge} years old\n";
+            $errorMessage .= "• Purok: {$duplicate->purok}\n\n";
+            $errorMessage .= "Please check if this is a duplicate entry or use a different name.";
+
+            return redirect()->back()
+                ->withInput()
+                ->with('duplicate_error', $errorMessage)
+                ->with('duplicate_resident', $duplicate)
+                ->with('error', 'Duplicate resident found!');
+            }
+
             $validated['is_voter'] = $request->has('is_voter') ? 1 : 0;
             $validated['is_4ps'] = $request->has('is_4ps') ? 1 : 0;
             $validated['is_senior'] = $request->has('is_senior') ? 1 : 0;
             $validated['is_pwd'] = $request->has('is_pwd') ? 1 : 0;
 
-            // Clear PWD fields if not PWD
             if (!$validated['is_pwd']) {
-                $validated['pwd_id'] = null;
-                $validated['disability_type'] = null;
+            $validated['pwd_id'] = null;
+            $validated['disability_type'] = null;
             }
 
-            $resident = Resident::create($validated);
+        $spouseName = $request->spouse_name ?? null;
+        $children = $request->children ?? [];
 
-            // Build status description for activity log
+        $resident = Resident::create($validated);
+
+            // Save spouse relationship
+            if ($validated['civil_status'] === 'Married' && !empty($spouseName)) {
+                $resident->familyRelationships()->create([
+                    'relationship_type' => 'spouse',
+                    'full_name' => $spouseName,
+                    'birthdate' => null,
+                    'gender' => null,
+                ]);
+            }
+
+            // Save children relationships
+            foreach ($children as $child) {
+                if (!empty($child['name'])) {
+                    $resident->familyRelationships()->create([
+                        'relationship_type' => 'child',
+                        'full_name' => $child['name'],
+                        'birthdate' => !empty($child['birthdate']) ? $child['birthdate'] : null,
+                        'gender' => !empty($child['gender']) ? $child['gender'] : null,
+                    ]);
+                }
+            }
+
             $statuses = [];
             if ($validated['is_voter']) $statuses[] = 'Voter';
             if ($validated['is_senior']) $statuses[] = 'Senior';
@@ -275,7 +282,6 @@ class ResidentController extends Controller
             if ($validated['is_pwd']) $statuses[] = 'PWD';
             $statusText = !empty($statuses) ? ' (' . implode(', ', $statuses) . ')' : '';
 
-            // Log the activity
             ActivityLog::create([
                 'user_id' => Auth::id(),
                 'action' => 'CREATE_RESIDENT',
@@ -295,29 +301,23 @@ class ResidentController extends Controller
         }
     }
 
-
-    /**
-     * Display the specified resident.
-     */
     public function show(Resident $resident)
     {
+        $resident->load(['spouse', 'children']);
         return view('secretary.residents.show', compact('resident'));
     }
 
-    /**
-     * Show the form for editing the specified resident.
-     */
     public function edit(Resident $resident)
     {
-        return view('secretary.residents.edit', compact('resident'));
+        $resident->load(['spouse', 'children']);
+        $spouse = $resident->spouse;
+        $children = $resident->children;
+
+        return view('secretary.residents.edit', compact('resident', 'spouse', 'children'));
     }
 
-    /**
-     * Update the specified resident in storage.
-     */
     public function update(Request $request, Resident $resident)
     {
-        // Clerks cannot update residents
         if ($this->isClerk()) {
             return redirect()->route('secretary.residents.show', $resident)
                 ->with('error', 'You do not have permission to update residents.');
@@ -343,21 +343,23 @@ class ResidentController extends Controller
                 'is_pwd' => 'sometimes|boolean',
                 'pwd_id' => 'nullable|string|max:50',
                 'disability_type' => 'nullable|string|max:100',
+                'spouse_name' => 'nullable|string|max:255',
+                'children' => 'nullable|array',
+                'children.*.name' => 'nullable|string|max:255',
+                'children.*.birthdate' => 'nullable|date',
+                'children.*.gender' => 'nullable|in:Male,Female',
             ]);
 
-            // Convert checkbox values to integers
             $validated['is_voter'] = $request->has('is_voter') ? 1 : 0;
             $validated['is_4ps'] = $request->has('is_4ps') ? 1 : 0;
             $validated['is_senior'] = $request->has('is_senior') ? 1 : 0;
             $validated['is_pwd'] = $request->has('is_pwd') ? 1 : 0;
 
-            // Clear PWD fields if not PWD
             if (!$validated['is_pwd']) {
                 $validated['pwd_id'] = null;
                 $validated['disability_type'] = null;
             }
 
-            // Store old values for comparison (for activity log)
             $oldData = [
                 'first_name' => $resident->first_name,
                 'last_name' => $resident->last_name,
@@ -370,7 +372,39 @@ class ResidentController extends Controller
 
             $resident->update($validated);
 
-            // Build description of what changed for activity log
+            // Update spouse relationship
+            if ($validated['civil_status'] === 'Married' && $request->has('spouse_name') && !empty($request->spouse_name)) {
+                $spouse = $resident->spouse;
+                if ($spouse) {
+                    $spouse->update(['full_name' => $request->spouse_name]);
+                } else {
+                    $resident->familyRelationships()->create([
+                        'relationship_type' => 'spouse',
+                        'full_name' => $request->spouse_name,
+                    ]);
+                }
+            } else {
+                if ($resident->spouse) {
+                    $resident->spouse->delete();
+                }
+            }
+
+            // Update children relationships
+            $resident->children()->delete();
+
+            if ($request->has('children') && is_array($request->children)) {
+                foreach ($request->children as $child) {
+                    if (!empty($child['name'])) {
+                        $resident->familyRelationships()->create([
+                            'relationship_type' => 'child',
+                            'full_name' => $child['name'],
+                            'birthdate' => !empty($child['birthdate']) ? $child['birthdate'] : null,
+                            'gender' => !empty($child['gender']) ? $child['gender'] : null,
+                        ]);
+                    }
+                }
+            }
+
             $changes = [];
             if ($oldData['first_name'] !== $validated['first_name'] || $oldData['last_name'] !== $validated['last_name']) {
                 $changes[] = 'name updated';
@@ -403,7 +437,6 @@ class ResidentController extends Controller
                 $description .= ' - ' . implode('; ', $changes);
             }
 
-            // Log the activity
             ActivityLog::create([
                 'user_id' => Auth::id(),
                 'action' => 'UPDATE_RESIDENT',
@@ -422,12 +455,8 @@ class ResidentController extends Controller
         }
     }
 
-    /**
-     * Remove the specified resident from storage.
-     */
     public function destroy(Request $request, Resident $resident)
     {
-        // Clerks cannot delete residents
         if ($this->isClerk()) {
             return redirect()->route('secretary.residents.index')
                 ->with('error', 'You do not have permission to delete residents.');
@@ -438,7 +467,6 @@ class ResidentController extends Controller
             $residentId = $resident->resident_id;
             $purok = $resident->purok;
 
-            // Log before deletion
             ActivityLog::create([
                 'user_id' => Auth::id(),
                 'action' => 'DELETE_RESIDENT',
@@ -457,19 +485,124 @@ class ResidentController extends Controller
         }
     }
 
-    /* ==================== SMART IMPORT FUNCTIONS ==================== */
+    public function archive(Request $request, Resident $resident)
+    {
+        if ($this->isClerk()) {
+            return redirect()->route('secretary.residents.index')
+                ->with('error', 'You do not have permission to archive residents.');
+        }
+        try {
+            $residentName = $resident->first_name . ' ' . $resident->last_name;
+            $residentId = $resident->resident_id;
 
-    /**
-     * Show the import form
-     */
+            $resident->delete();
+
+            ActivityLog::create([
+                'user_id' => Auth::id(),
+                'action' => 'ARCHIVE_RESIDENT',
+                'description' => 'Archived resident: ' . $residentName . ' (ID: ' . $residentId . ')',
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent()
+            ]);
+
+            return redirect()->route('secretary.residents.index')
+                ->with('success', 'Resident archived successfully!');
+
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Error archiving resident: ' . $e->getMessage());
+        }
+    }
+
+    public function restore(Request $request, $id)
+    {
+        if ($this->isClerk()) {
+            return redirect()->route('secretary.residents.archived')
+                ->with('error', 'You do not have permission to restore residents.');
+        }
+        try {
+            $resident = Resident::withTrashed()->findOrFail($id);
+            $residentName = $resident->first_name . ' ' . $resident->last_name;
+
+            $resident->restore();
+
+            ActivityLog::create([
+                'user_id' => Auth::id(),
+                'action' => 'RESTORE_RESIDENT',
+                'description' => 'Restored resident: ' . $residentName . ' (ID: ' . $resident->resident_id . ')',
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent()
+            ]);
+
+            return redirect()->route('secretary.residents.archived')
+                ->with('success', 'Resident restored successfully!');
+
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Error restoring resident: ' . $e->getMessage());
+        }
+    }
+
+    public function forceDelete(Request $request, $id)
+    {
+        if ($this->isClerk()) {
+            return redirect()->route('secretary.residents.archived')
+                ->with('error', 'You do not have permission to permanently delete residents.');
+        }
+        try {
+            $resident = Resident::withTrashed()->findOrFail($id);
+            $residentName = $resident->first_name . ' ' . $resident->last_name;
+
+            $resident->forceDelete();
+
+            ActivityLog::create([
+                'user_id' => Auth::id(),
+                'action' => 'FORCE_DELETE_RESIDENT',
+                'description' => 'Permanently deleted resident: ' . $residentName,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent()
+            ]);
+
+            return redirect()->route('secretary.residents.archived')
+                ->with('success', 'Resident permanently deleted!');
+
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Error deleting resident: ' . $e->getMessage());
+        }
+    }
+
+    public function archived(Request $request)
+    {
+        if ($this->isClerk()) {
+            return redirect()->route('secretary.residents.index')
+                ->with('error', 'You do not have permission to view archived residents.');
+        }
+        $query = Resident::onlyTrashed();
+
+        if ($request->has('search') && !empty($request->search)) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('first_name', 'LIKE', "%{$search}%")
+                  ->orWhere('last_name', 'LIKE', "%{$search}%")
+                  ->orWhere('middle_name', 'LIKE', "%{$search}%")
+                  ->orWhere('address', 'LIKE', "%{$search}%")
+                  ->orWhere('contact_number', 'LIKE', "%{$search}%")
+                  ->orWhere('resident_id', 'LIKE', "%{$search}%");
+            });
+        }
+
+        $archivedResidents = $query->orderBy('deleted_at', 'desc')->paginate(15);
+
+        return view('secretary.residents.archived', compact('archivedResidents'));
+    }
+
+    // Import methods (keep your existing import methods here)
     public function showImportForm()
     {
         return view('secretary.residents.import');
     }
 
-    /**
-     * Upload and parse CSV file for smart import
-     */
     public function uploadImport(Request $request)
     {
         $request->validate([
@@ -479,31 +612,24 @@ class ResidentController extends Controller
         $file = $request->file('import_file');
         $path = $file->getRealPath();
 
-        // Parse CSV file
         $data = [];
         $headers = [];
 
         if (($handle = fopen($path, 'r')) !== FALSE) {
-            // Get headers (first row)
             $headers = fgetcsv($handle, 1000, ',');
 
-            // Clean headers (remove BOM, trim, lowercase)
             $headers = array_map(function($header) {
-                // Remove UTF-8 BOM and trim
                 $header = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $header);
                 $header = trim($header);
                 return $header;
             }, $headers);
 
-            // Get sample data (next 5 rows for preview)
             $sampleData = [];
             $rowCount = 0;
             while (($row = fgetcsv($handle, 1000, ',')) !== FALSE && $rowCount < 5) {
-                // Ensure row has same number of columns as headers
                 if (count($row) >= count($headers)) {
                     $sampleData[] = array_slice($row, 0, count($headers));
                 } else {
-                    // Pad with empty values
                     $row = array_pad($row, count($headers), '');
                     $sampleData[] = $row;
                 }
@@ -512,10 +638,7 @@ class ResidentController extends Controller
             fclose($handle);
         }
 
-        // Detect potential column matches
         $suggestedMapping = $this->detectColumnMapping($headers);
-
-        // Store file path in session for later processing
         $filePath = $file->store('temp_imports');
 
         return view('secretary.residents.import-map', compact(
@@ -526,21 +649,16 @@ class ResidentController extends Controller
         ));
     }
 
-    /**
-     * Detect column mapping based on header names
-     */
     private function detectColumnMapping($headers)
     {
         $mapping = [];
 
-        // Define possible field names and their variations
         $fieldPatterns = [
             'first_name' => ['first name', 'firstname', 'given name', 'fname', 'first', 'given'],
             'last_name' => ['last name', 'lastname', 'surname', 'family name', 'lname', 'last'],
             'middle_name' => ['middle name', 'middlename', 'middle initial', 'mname', 'middle'],
-            'suffix' => ['suffix', 'name suffix', 'extension', 'ext'],
             'birthdate' => ['birthdate', 'birth date', 'date of birth', 'dob', 'birthday', 'birth'],
-            'gender' => ['gender', 'sex','male','female','other','m','f','o'],
+            'gender' => ['gender', 'sex'],
             'civil_status' => ['civil status', 'marital status', 'status', 'civil'],
             'purok' => ['purok', 'zone', 'area', 'sitio'],
             'contact_number' => ['contact number', 'contact', 'phone', 'mobile', 'telephone', 'cellphone', 'cp number'],
@@ -560,16 +678,14 @@ class ResidentController extends Controller
 
             foreach ($fieldPatterns as $field => $patterns) {
                 foreach ($patterns as $pattern) {
-                    // Check if pattern is in header
                     if (strpos($headerLower, $pattern) !== false) {
-                        $score = strlen($pattern); // Longer matches score higher
+                        $score = strlen($pattern);
                         if ($score > $bestScore) {
                             $bestScore = $score;
                             $bestMatch = $field;
                         }
                     }
 
-                    // Check for exact match
                     if ($headerLower === $pattern) {
                         $bestScore = 100;
                         $bestMatch = $field;
@@ -584,9 +700,6 @@ class ResidentController extends Controller
         return $mapping;
     }
 
-    /**
-     * Process column mapping from user input
-     */
     public function processMapping(Request $request)
     {
         $request->validate([
@@ -599,7 +712,6 @@ class ResidentController extends Controller
         $mapping = $request->mapping;
         $hasHeader = $request->boolean('has_header', true);
 
-        // Parse file and preview data with mapping
         $previewData = $this->parseFileWithMapping($filePath, $mapping, $hasHeader);
 
         return view('secretary.residents.import-preview', [
@@ -611,9 +723,6 @@ class ResidentController extends Controller
         ]);
     }
 
-    /**
-     * Parse file with given mapping and return preview data
-     */
     private function parseFileWithMapping($filePath, $mapping, $hasHeader)
     {
         $data = [
@@ -625,13 +734,11 @@ class ResidentController extends Controller
         if (($handle = fopen($filePath, 'r')) !== FALSE) {
             $rowNumber = 0;
 
-            // Skip header if exists
             if ($hasHeader) {
                 $data['headers'] = fgetcsv($handle, 1000, ',');
                 $rowNumber++;
             }
 
-            // Process next 10 rows for preview
             $previewRows = 0;
             while (($row = fgetcsv($handle, 1000, ',')) !== FALSE && $previewRows < 10) {
                 $mappedRow = [];
@@ -640,21 +747,15 @@ class ResidentController extends Controller
                 foreach ($mapping as $index => $field) {
                     if ($field !== 'skip' && isset($row[$index])) {
                         $value = trim($row[$index]);
-
-                        // Transform value based on field type
                         $transformedValue = $this->transformImportValue($field, $value);
-
-                        // Validate based on field type
                         $validation = $this->validateImportField($field, $transformedValue, $rowNumber);
                         if ($validation !== true) {
                             $errors[$field] = $validation;
                         }
-
                         $mappedRow[$field] = $transformedValue;
                     }
                 }
 
-                // Check for duplicates
                 $duplicateCheck = $this->checkForDuplicate($mappedRow);
                 if ($duplicateCheck) {
                     $errors['duplicate'] = $duplicateCheck;
@@ -676,9 +777,6 @@ class ResidentController extends Controller
         return $data;
     }
 
-    /**
-     * Transform import value based on field type
-     */
     private function transformImportValue($field, $value)
     {
         if (empty($value)) {
@@ -688,32 +786,24 @@ class ResidentController extends Controller
         switch ($field) {
             case 'gender':
                 return $this->formatGender($value);
-
             case 'civil_status':
                 return $this->formatCivilStatus($value);
-
             case 'birthdate':
                 return $this->formatDateForDB($value);
-
             case 'is_voter':
             case 'is_senior':
             case 'is_pwd':
             case 'is_4ps':
                 $value = strtolower(trim($value));
-                return in_array($value, ['yes', 'y', '1', 'true', 'on', 'voter', 'senior', 'pwd', '4ps']) ? 1 : 0;
-
+                return in_array($value, ['yes', 'y', '1', 'true', 'on']) ? 1 : 0;
             default:
                 return $value;
         }
     }
 
-    /**
-     * Validate import field
-     */
     private function validateImportField($field, $value, $rowNumber)
     {
         if (empty($value)) {
-            // Required fields check
             $requiredFields = ['first_name', 'last_name', 'birthdate', 'gender'];
             if (in_array($field, $requiredFields)) {
                 return ucfirst(str_replace('_', ' ', $field)) . ' is required';
@@ -752,9 +842,6 @@ class ResidentController extends Controller
         return true;
     }
 
-    /**
-     * Check for duplicate resident
-     */
     private function checkForDuplicate($data)
     {
         if (empty($data['first_name']) || empty($data['last_name']) || empty($data['birthdate'])) {
@@ -773,9 +860,6 @@ class ResidentController extends Controller
         return null;
     }
 
-    /**
-     * Calculate import statistics
-     */
     private function calculateImportStats($previewData)
     {
         $total = count($previewData['rows']);
@@ -791,9 +875,6 @@ class ResidentController extends Controller
         ];
     }
 
-    /**
-     * Confirm and process import
-     */
     public function confirmImport(Request $request)
     {
         $request->validate([
@@ -817,7 +898,6 @@ class ResidentController extends Controller
             $importedResidents = [];
 
             if (($handle = fopen($filePath, 'r')) !== FALSE) {
-                // Skip header if exists
                 if ($hasHeader) {
                     fgetcsv($handle, 1000, ',');
                 }
@@ -827,7 +907,6 @@ class ResidentController extends Controller
                 while (($row = fgetcsv($handle, 1000, ',')) !== FALSE) {
                     $data = [];
 
-                    // Map columns based on user mapping
                     foreach ($mapping as $index => $field) {
                         if ($field !== 'skip' && isset($row[$index])) {
                             $value = trim($row[$index]);
@@ -835,7 +914,6 @@ class ResidentController extends Controller
                         }
                     }
 
-                    // Validate required fields
                     $validator = Validator::make($data, [
                         'first_name' => 'required|string|max:50',
                         'last_name' => 'required|string|max:50',
@@ -848,7 +926,6 @@ class ResidentController extends Controller
                         $skipped++;
                         $failedRows[] = "Row {$rowNumber}: " . implode(', ', $validator->errors()->all());
                     } else {
-                        // Check for duplicate
                         $existing = Resident::where('first_name', $data['first_name'])
                             ->where('last_name', $data['last_name'])
                             ->where('birthdate', $data['birthdate'])
@@ -860,12 +937,10 @@ class ResidentController extends Controller
                             $duplicateRows[] = "Row {$rowNumber}: " . $data['first_name'] . ' ' . $data['last_name'] .
                                               ' (Already exists as ID: ' . $existing->resident_id . ')';
                         } else {
-                            // Generate resident_id if not provided
                             if (empty($data['resident_id'])) {
                                 $data['resident_id'] = $this->generateResidentId();
                             }
 
-                            // Set default values for missing fields
                             $data = array_merge([
                                 'middle_name' => null,
                                 'civil_status' => 'Single',
@@ -891,7 +966,6 @@ class ResidentController extends Controller
                 fclose($handle);
             }
 
-            // Log activity
             if ($imported > 0) {
                 $importedList = implode(', ', array_slice($importedResidents, 0, 5));
                 $moreText = $imported > 5 ? " and " . ($imported - 5) . " more" : "";
@@ -908,10 +982,8 @@ class ResidentController extends Controller
 
             DB::commit();
 
-            // Clean up temp file
             @unlink($filePath);
 
-            // Prepare response message
             $message = "Successfully imported $imported residents.";
             if ($duplicateCount > 0) {
                 $message .= " Skipped $duplicateCount duplicate records.";
@@ -937,13 +1009,10 @@ class ResidentController extends Controller
         }
     }
 
-    /**
-     * Download import template
-     */
     public function downloadTemplate()
     {
         $headers = [
-            'first_name', 'last_name', 'middle_name', 'suffix',
+            'first_name', 'last_name', 'middle_name',
             'birthdate', 'gender', 'civil_status', 'purok',
             'contact_number', 'email', 'address', 'household_number',
             'is_voter', 'is_senior', 'is_pwd', 'is_4ps'
@@ -955,12 +1024,9 @@ class ResidentController extends Controller
         header('Content-Type: text/csv');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
 
-        // Add headers
         fputcsv($handle, $headers);
-
-        // Add sample row
         fputcsv($handle, [
-            'Juan', 'Dela Cruz', 'Santos', '',
+            'Juan', 'Dela Cruz', 'Santos',
             '1990-01-15', 'Male', 'Married', '1',
             '09123456789', 'juan@email.com', 'Purok 1, Barangay Libertad', '101',
             'Yes', 'No', 'No', 'No'
@@ -969,138 +1035,30 @@ class ResidentController extends Controller
         fclose($handle);
         exit;
     }
+    public function checkDuplicate(Request $request)
+{
+    $request->validate([
+        'first_name' => 'required|string',
+        'last_name' => 'required|string',
+        'birthdate' => 'required|date',
+        'middle_name' => 'nullable|string',
+    ]);
 
-    /* ==================== ARCHIVE FUNCTIONS ==================== */
+    $duplicate = Resident::checkDuplicate($request->all());
 
-    /**
-     * Archive the specified resident (soft delete)
-     */
-    public function archive(Request $request, Resident $resident)
-    {
-        // Clerks cannot archive residents
-        if ($this->isClerk()) {
-            return redirect()->route('secretary.residents.index')
-                ->with('error', 'You do not have permission to archive residents.');
-        }
-        try {
-            $residentName = $resident->first_name . ' ' . $resident->last_name;
-            $residentId = $resident->resident_id;
-
-            // Soft delete the resident
-            $resident->delete();
-
-            ActivityLog::create([
-                'user_id' => Auth::id(),
-                'action' => 'ARCHIVE_RESIDENT',
-                'description' => 'Archived resident: ' . $residentName . ' (ID: ' . $residentId . ')',
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent()
-            ]);
-
-            return redirect()->route('secretary.residents.index')
-                ->with('success', 'Resident archived successfully!');
-
-        } catch (\Exception $e) {
-            return redirect()->back()
-                ->with('error', 'Error archiving resident: ' . $e->getMessage());
-        }
+    if ($duplicate) {
+        return response()->json([
+            'exists' => true,
+            'resident' => [
+                'full_name' => $duplicate->full_name,
+                'resident_id' => $duplicate->resident_id,
+                'age' => $duplicate->age,
+                'purok' => $duplicate->purok,
+                'address' => $duplicate->address,
+            ]
+        ]);
     }
 
-    /**
-     * Restore an archived resident
-     */
-    public function restore(Request $request, $id)
-    {
-        // Clerks cannot restore residents
-        if ($this->isClerk()) {
-            return redirect()->route('secretary.residents.archived')
-                ->with('error', 'You do not have permission to restore residents.');
-        }
-        try {
-            $resident = Resident::withTrashed()->findOrFail($id);
-            $residentName = $resident->first_name . ' ' . $resident->last_name;
-
-            $resident->restore();
-
-            ActivityLog::create([
-                'user_id' => Auth::id(),
-                'action' => 'RESTORE_RESIDENT',
-                'description' => 'Restored resident: ' . $residentName . ' (ID: ' . $resident->resident_id . ')',
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent()
-            ]);
-
-            return redirect()->route('secretary.residents.archived')
-                ->with('success', 'Resident restored successfully!');
-
-        } catch (\Exception $e) {
-            return redirect()->back()
-                ->with('error', 'Error restoring resident: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Permanently delete an archived resident
-     */
-    public function forceDelete(Request $request, $id)
-    {
-        // Clerks cannot permanently delete residents
-        if ($this->isClerk()) {
-            return redirect()->route('secretary.residents.archived')
-                ->with('error', 'You do not have permission to permanently delete residents.');
-        }
-        try {
-            $resident = Resident::withTrashed()->findOrFail($id);
-            $residentName = $resident->first_name . ' ' . $resident->last_name;
-
-            // Force delete permanently
-            $resident->forceDelete();
-
-            ActivityLog::create([
-                'user_id' => Auth::id(),
-                'action' => 'FORCE_DELETE_RESIDENT',
-                'description' => 'Permanently deleted resident: ' . $residentName,
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent()
-            ]);
-
-            return redirect()->route('secretary.residents.archived')
-                ->with('success', 'Resident permanently deleted!');
-
-        } catch (\Exception $e) {
-            return redirect()->back()
-                ->with('error', 'Error deleting resident: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Display archived residents
-     */
-    public function archived(Request $request)
-    {
-        // Clerks cannot view archived residents
-        if ($this->isClerk()) {
-            return redirect()->route('secretary.residents.index')
-                ->with('error', 'You do not have permission to view archived residents.');
-        }
-        $query = Resident::onlyTrashed(); // Use onlyTrashed() instead of archived() scope
-
-        // Search functionality
-        if ($request->has('search') && !empty($request->search)) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('first_name', 'LIKE', "%{$search}%")
-                  ->orWhere('last_name', 'LIKE', "%{$search}%")
-                  ->orWhere('middle_name', 'LIKE', "%{$search}%")
-                  ->orWhere('address', 'LIKE', "%{$search}%")
-                  ->orWhere('contact_number', 'LIKE', "%{$search}%")
-                  ->orWhere('resident_id', 'LIKE', "%{$search}%");
-            });
-        }
-
-        $archivedResidents = $query->orderBy('deleted_at', 'desc')->paginate(15);
-
-        return view('secretary.residents.archived', compact('archivedResidents'));
-    }
-
+    return response()->json(['exists' => false]);
+}
 }

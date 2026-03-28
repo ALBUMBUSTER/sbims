@@ -438,7 +438,10 @@ class CertificateController extends Controller
     public function print(Certificate $certificate)
     {
         $certificate->load('resident');
-        return view('secretary.certificates.print', compact('certificate'));
+    // Get barangay info (captain's name, etc.)
+    $barangayInfo = \App\Models\BarangayInfo::first(); // Get the first record (since it's a single record)
+
+    return view('secretary.certificates.print', compact('certificate', 'barangayInfo'));
     }
 
     private function generateCertificateNumber()

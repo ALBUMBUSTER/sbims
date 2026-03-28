@@ -37,23 +37,23 @@ class User extends Authenticatable
         'term_end_date' => 'date', // ADD THIS
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($user) {
-            if (empty($user->name) && !empty($user->full_name)) {
-                $user->name = $user->full_name;
-            }
-        });
-
-        static::updating(function ($user) {
-            if (empty($user->name) && !empty($user->full_name)) {
-                $user->name = $user->full_name;
-            }
-        });
+public function setNameAttribute($value)
+{
+    $this->attributes['name'] = $value;
+    // Also set full_name if name is provided
+    if (empty($this->full_name)) {
+        $this->attributes['full_name'] = $value;
     }
+}
 
+public function setFullNameAttribute($value)
+{
+    $this->attributes['full_name'] = $value;
+    // Also set name if full_name is provided
+    if (empty($this->name)) {
+        $this->attributes['name'] = $value;
+    }
+}
     public function setSecurityAnswerAttribute($value)
     {
         if (!empty($value)) {
@@ -167,5 +167,23 @@ public static function calculateCaptainTermEndDate($startDate = null)
 {
     $start = $startDate ? \Carbon\Carbon::parse($startDate) : now();
     return $start->addYears(4)->format('Y-m-d');
+}
+/**
+ * Get the user's full name
+ */
+public function getFullNameAttribute()
+{
+    // First try to use the 'full_name' column if it exists and has value
+    if (!empty($this->full_name)) {
+        return $this->full_name;
+    }
+
+    // Then try 'name' column
+    if (!empty($this->name)) {
+        return $this->name;
+    }
+
+    // Fallback to username if nothing else
+    return $this->username ?? 'User';
 }
 }

@@ -51,6 +51,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/residents/archived', [ResidentController::class, 'archived'])->name('residents.archived');
     Route::post('/residents/{id}/restore', [ResidentController::class, 'restore'])->name('residents.restore');
     Route::delete('/residents/{id}/force-delete', [ResidentController::class, 'forceDelete'])->name('residents.force-delete');
+    // ============================================
+    // DECEASED ROUTES - ADD THESE HERE
+    // ============================================
+    Route::get('/residents/{resident}/mark-deceased', [ResidentController::class, 'markDeceasedForm'])->name('residents.mark-deceased-form');
+    Route::post('/residents/{resident}/mark-deceased', [ResidentController::class, 'markDeceased'])->name('residents.mark-deceased');
+    Route::post('/residents/{resident}/undo-deceased', [ResidentController::class, 'undoDeceased'])->name('residents.undo-deceased');
 
     // Resident Records (Resourceful routes)
     Route::resource('residents', ResidentController::class)->except(['show']);

@@ -37,6 +37,11 @@ class Resident extends Model
         'emergency_contact_number',
         'profile_photo',
         'archived_at',
+        'archived_reason', // ADD THIS
+        'is_deceased',          // ADD THIS
+        'death_date',           // ADD THIS
+        'cause_of_death',       // ADD THIS
+        'death_certificate_number', // ADD THIS
     ];
 
     protected $dates = ['deleted_at'];
@@ -48,7 +53,33 @@ class Resident extends Model
         'is_pwd' => 'boolean',
         'is_4ps' => 'boolean',
         'archived_at' => 'datetime',
+        'archived_reason' => 'string', // ADD THIS
+        'is_deceased' => 'boolean',  // ADD THIS
+        'death_date' => 'date',       // ADD THIS
     ];
+    /**
+ * Scope to get only living residents
+ */
+public function scopeLiving($query)
+{
+    return $query->where('is_deceased', false);
+}
+
+/**
+ * Scope to get deceased residents
+ */
+public function scopeDeceased($query)
+{
+    return $query->where('is_deceased', true);
+}
+
+/**
+ * Check if resident is deceased
+ */
+public function isDeceased()
+{
+    return $this->is_deceased;
+}
 
     /**
      * Check for duplicate resident

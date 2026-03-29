@@ -827,101 +827,163 @@ textarea.form-control {
 
 @push('scripts')
 <script>
+    // Text formatting function for formal writing
+function formatFormalText(text) {
+    if (!text) return '';
+
+    // Split into sentences for better formatting
+    let sentences = text.split(/(?<=[.!?])\s+/);
+
+    let formattedSentences = sentences.map(sentence => {
+        // Split into words
+        let words = sentence.toLowerCase().split(/\s+/);
+
+        // Capitalize first letter of each word
+        let formattedWords = words.map(word => {
+            // Handle special cases (acronyms, etc.)
+            if (word.toUpperCase() === word && word.length > 1) {
+                return word; // Keep acronyms as is
+            }
+
+            // Capitalize first letter, rest lowercase
+            return word.charAt(0).toUpperCase() + word.slice(1);
+        });
+
+        return formattedWords.join(' ');
+    });
+
+    return formattedSentences.join(' ');
+}
+
+// Auto-format purpose text as user types
+function setupAutoFormatting() {
+    const purposeTextarea = document.getElementById('purpose');
+    const purposeCategory = document.getElementById('purpose_category');
+
+    // Format when user leaves the field
+    purposeTextarea.addEventListener('blur', function() {
+        if (this.value.trim()) {
+            const formatted = formatFormalText(this.value);
+            if (formatted !== this.value) {
+                this.value = formatted;
+                // Trigger input event to update any dependent logic
+                this.dispatchEvent(new Event('input'));
+            }
+        }
+    });
+
+    // Format when purpose is selected from dropdown
+    purposeCategory.addEventListener('change', function() {
+        if (this.value && this.value !== 'Other') {
+            const formatted = formatFormalText(this.value);
+            purposeTextarea.value = formatted;
+        }
+    });
+}
+
+// Function to format all text inputs in a form
+function formatAllTextInputs(form) {
+    const textInputs = form.querySelectorAll('input[type="text"], textarea');
+    textInputs.forEach(input => {
+        if (input.value.trim()) {
+            input.value = formatFormalText(input.value);
+        }
+    });
+}
 // Residents data for autocomplete
 const residents = <?php echo json_encode($residents); ?>;
 
-// Common purposes for each certificate type
 const purposeOptions = {
     'Clearance': [
-        'Employment application',
-        'Local employment',
-        'Overseas employment (OFW)',
-        'Business permit application',
-        'School enrollment',
-        'Scholarship application',
-        'Travel requirements',
-        'Bank account opening',
-        'Loan application',
-        'Government ID application',
-        'Driver\'s license application',
-        'Passport application',
-        'Visa application',
-        'Civil service eligibility',
-        'Job promotion',
-        'Training/seminar attendance',
-        'Police clearance requirement',
-        'NBI clearance requirement',
-        'SSS/GSIS requirements',
-        'Pag-IBIG requirements',
-        'PhilHealth requirements',
-        'Voter\'s registration',
-        'Marriage license application',
-        'Court requirement',
-        'Notarial document requirement'
+        'Employment Application',
+        'Local Employment',
+        'Overseas Employment (OFW)',
+        'Business Permit Application',
+        'School Enrollment',
+        'Scholarship Application',
+        'Travel Requirements',
+        'Bank Account Opening',
+        'Loan Application',
+        'Government ID Application',
+        'Driver\'s License Application',
+        'Passport Application',
+        'Visa Application',
+        'Civil Service Eligibility',
+        'Job Promotion',
+        'Training/Seminar Attendance',
+        'Police Clearance Requirement',
+        'NBI Clearance Requirement',
+        'SSS/GSIS Requirements',
+        'Pag-IBIG Requirements',
+        'PhilHealth Requirements',
+        'Voter\'s Registration',
+        'Marriage License Application',
+        'Court Requirement',
+        'Notarial Document Requirement'
     ],
     'Indigency': [
-        'Medical assistance',
-        'Hospital bill assistance',
-        'Financial assistance from LGU',
-        'Scholarship grant (financial aid)',
-        'Social welfare programs (4Ps)',
-        'Food assistance',
-        'Burial assistance',
-        'Medicine assistance',
-        'Senior citizen benefits',
-        'PWD benefits',
-        'Solo parent benefits',
-        'Disaster relief assistance',
-        'Educational assistance',
-        'Livelihood program application',
-        'Housing assistance',
-        'Utility bill discount application',
-        'Legal aid qualification',
-        'Free legal assistance',
-        'Public attorney\'s office (PAO) assistance',
-        'Health center services',
-        'Government hospital charity ward',
-        'DSWD programs',
-        'Food stamp program',
+        'Medical Assistance',
+        'Hospital Bill Assistance',
+        'Financial Assistance from LGU',
+        'Scholarship Grant (Financial Aid)',
+        'Social Welfare Programs (4Ps)',
+        'Food Assistance',
+        'Burial Assistance',
+        'Medicine Assistance',
+        'Senior Citizen Benefits',
+        'PWD Benefits',
+        'Solo Parent Benefits',
+        'Disaster Relief Assistance',
+        'Educational Assistance',
+        'Livelihood Program Application',
+        'Housing Assistance',
+        'Utility Bill Discount Application',
+        'Legal Aid Qualification',
+        'Free Legal Assistance',
+        'Public Attorney\'s Office (PAO) Assistance',
+        'Health Center Services',
+        'Government Hospital Charity Ward',
+        'DSWD Programs',
+        'Food Stamp Program',
         'Tulong Panghanapbuhay sa Ating Disadvantaged/Displaced Workers (TUPAD)',
-        'Emergency cash assistance'
+        'Emergency Cash Assistance'
     ],
     'Residency': [
-        'Proof of residency requirement',
-        'Voter\'s registration',
-        'School enrollment (transfer students)',
-        'Local employment (proof of residency)',
-        'Business registration',
-        'Barangay ID application',
-        'Tax identification number (TIN) application',
-        'Postal ID application',
-        'Driver\'s license (address verification)',
-        'Voter\'s ID application',
-        'Senior citizen ID application',
-        'PWD ID application',
-        'Utility connection application (water/electricity)',
-        'Internet connection application',
-        'Bank account address verification',
-        'Loan application (address verification)',
-        'Credit card application',
-        'Insurance application',
-        'Government service eligibility',
-        'Residency verification for court cases',
-        'Adoption requirements',
-        'Foster care application',
-        'Relocation/transfer verification',
-        'Community tax certificate (cedula) application',
-        'Barangay assembly participation'
+        'Proof of Residency Requirement',
+        'Voter\'s Registration',
+        'School Enrollment (Transfer Students)',
+        'Local Employment (Proof of Residency)',
+        'Business Registration',
+        'Barangay ID Application',
+        'Tax Identification Number (TIN) Application',
+        'Postal ID Application',
+        'Driver\'s License (Address Verification)',
+        'Voter\'s ID Application',
+        'Senior Citizen ID Application',
+        'PWD ID Application',
+        'Utility Connection Application (Water/Electricity)',
+        'Internet Connection Application',
+        'Bank Account Address Verification',
+        'Loan Application (Address Verification)',
+        'Credit Card Application',
+        'Insurance Application',
+        'Government Service Eligibility',
+        'Residency Verification for Court Cases',
+        'Adoption Requirements',
+        'Foster Care Application',
+        'Relocation/Transfer Verification',
+        'Community Tax Certificate (Cedula) Application',
+        'Barangay Assembly Participation'
     ]
 };
 
 document.addEventListener('DOMContentLoaded', function() {
     // Setup search functionality
     setupResidentSearch();
-
     // Setup purpose dropdown based on certificate type
     setupPurposeDropdown();
-
+    // Setup auto-formatting for purpose text
+    setupAutoFormatting();
     // Preview button click handler
     document.getElementById('previewBtn').addEventListener('click', function() {
         if (validateForm()) {
@@ -933,6 +995,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('certificateForm').addEventListener('submit', function(e) {
         e.preventDefault();
         if (validateForm()) {
+            formatAllTextInputs(this);
             showPreview();
         }
     });

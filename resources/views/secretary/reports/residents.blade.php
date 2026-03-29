@@ -25,6 +25,9 @@
                 @if(request('date_to'))
                     <input type="hidden" name="date_to" value="{{ request('date_to') }}">
                 @endif
+                @if(request('category'))
+                    <input type="hidden" name="category" value="{{ request('category') }}">
+                @endif
                 <button type="submit" class="btn-primary">
                     <i class="fas fa-file-excel icon-small"></i>
                     Export to Excel
@@ -33,7 +36,7 @@
         </div>
     </div>
 
-    <!-- Filter Section -->
+    <!-- Filter Section with Category Filter -->
     <div class="filters-section">
         <form action="{{ route('secretary.reports.residents') }}" method="GET" class="filters-form">
             <div class="filter-group">
@@ -44,20 +47,59 @@
                 <label for="date_to">To Date</label>
                 <input type="date" name="date_to" id="date_to" value="{{ request('date_to') }}" class="filter-input">
             </div>
+            <div class="filter-group">
+                <label for="category">Filter by Category</label>
+                <select name="category" id="category" class="filter-input" onchange="this.form.submit()">
+                    <option value="all" {{ request('category') == 'all' || !request('category') ? 'selected' : '' }}>All Residents</option>
+                    <option value="senior" {{ request('category') == 'senior' ? 'selected' : '' }}>Senior Citizens (60+)</option>
+                    <option value="pwd" {{ request('category') == 'pwd' ? 'selected' : '' }}>Persons with Disability (PWD)</option>
+                    <option value="voter" {{ request('category') == 'voter' ? 'selected' : '' }}>Registered Voters</option>
+                    <option value="4ps" {{ request('category') == '4ps' ? 'selected' : '' }}>4Ps Members</option>
+                    <option value="male" {{ request('category') == 'male' ? 'selected' : '' }}>Male Residents</option>
+                    <option value="female" {{ request('category') == 'female' ? 'selected' : '' }}>Female Residents</option>
+                    <option value="children" {{ request('category') == 'children' ? 'selected' : '' }}>Children (0-17 years)</option>
+                    <option value="adult" {{ request('category') == 'adult' ? 'selected' : '' }}>Adults (18-59 years)</option>
+                </select>
+            </div>
             <div class="filter-actions">
-                <button type="submit" class="btn-filter">Generate</button>
                 <a href="{{ route('secretary.reports.residents') }}" class="btn-clear">Reset</a>
             </div>
         </form>
     </div>
+
+    <!-- Category Info Badge -->
+    @if(request('category') && request('category') != 'all')
+    <div class="category-info">
+        <i class="fas fa-filter"></i>
+        <span>Showing:
+            @switch(request('category'))
+                @case('senior') <strong>Senior Citizens (60 years and above)</strong> @break
+                @case('pwd') <strong>Persons with Disability (PWD)</strong> @break
+                @case('voter') <strong>Registered Voters</strong> @break
+                @case('4ps') <strong>4Ps Members</strong> @break
+                @case('male') <strong>Male Residents</strong> @break
+                @case('female') <strong>Female Residents</strong> @break
+                @case('children') <strong>Children (0-17 years old)</strong> @break
+                @case('adult') <strong>Adults (18-59 years old)</strong> @break
+            @endswitch
+        </span>
+        <span class="category-count">{{ $statistics['filtered_total'] ?? $statistics['total'] }} residents found</span>
+    </div>
+    @endif
 
     <!-- Key Statistics Cards -->
     <div class="stats-grid">
         <div class="stat-card total">
             <div class="stat-icon"><x-heroicon-o-users /></div>
             <div class="stat-content">
-                <span class="stat-label">Total Residents</span>
-                <span class="stat-value">{{ $statistics['total'] }}</span>
+                <span class="stat-label">
+                    @if(request('category') && request('category') != 'all')
+                        Filtered Residents
+                    @else
+                        Total Residents
+                    @endif
+                </span>
+                <span class="stat-value">{{ $statistics['filtered_total'] ?? $statistics['total'] }}</span>
             </div>
         </div>
         <div class="stat-card male">
@@ -98,16 +140,16 @@
             <div class="chart-mini-table">
                 <div class="chart-stat-item">
                     <span class="stat-label"><span class="legend-dot male"></span> Male:</span>
-                    <span class="stat-value">{{ $statistics['by_gender']['male'] }} ({{ round(($statistics['by_gender']['male'] / $statistics['total']) * 100, 1) }}%)</span>
+                    <span class="stat-value">{{ $statistics['by_gender']['male'] }} ({{ round(($statistics['by_gender']['male'] / ($statistics['filtered_total'] ?? $statistics['total'])) * 100, 1) }}%)</span>
                 </div>
                 <div class="chart-stat-item">
                     <span class="stat-label"><span class="legend-dot female"></span> Female:</span>
-                    <span class="stat-value">{{ $statistics['by_gender']['female'] }} ({{ round(($statistics['by_gender']['female'] / $statistics['total']) * 100, 1) }}%)</span>
+                    <span class="stat-value">{{ $statistics['by_gender']['female'] }} ({{ round(($statistics['by_gender']['female'] / ($statistics['filtered_total'] ?? $statistics['total'])) * 100, 1) }}%)</span>
                 </div>
                 @if(($statistics['by_gender']['other'] ?? 0) > 0)
                 <div class="chart-stat-item">
                     <span class="stat-label"><span class="legend-dot other"></span> Other:</span>
-                    <span class="stat-value">{{ $statistics['by_gender']['other'] }} ({{ round(($statistics['by_gender']['other'] / $statistics['total']) * 100, 1) }}%)</span>
+                    <span class="stat-value">{{ $statistics['by_gender']['other'] }} ({{ round(($statistics['by_gender']['other'] / ($statistics['filtered_total'] ?? $statistics['total'])) * 100, 1) }}%)</span>
                 </div>
                 @endif
             </div>
@@ -134,7 +176,7 @@
                 @endphp
                 <div class="chart-stat-item">
                     <span class="stat-label"><span class="legend-dot {{ $dotClass }}"></span> {{ $status->civil_status }}:</span>
-                    <span class="stat-value">{{ $status->total }} ({{ round(($status->total / $statistics['total']) * 100, 1) }}%)</span>
+                    <span class="stat-value">{{ $status->total }} ({{ round(($status->total / ($statistics['filtered_total'] ?? $statistics['total'])) * 100, 1) }}%)</span>
                 </div>
                 @endforeach
             </div>
@@ -162,7 +204,7 @@
                 @endphp
                 <div class="chart-stat-item">
                     <span class="stat-label"><span class="legend-dot {{ $dotClass }}"></span> {{ $range }}:</span>
-                    <span class="stat-value">{{ $count }} ({{ round(($count / $statistics['total']) * 100, 1) }}%)</span>
+                    <span class="stat-value">{{ $count }} ({{ round(($count / ($statistics['filtered_total'] ?? $statistics['total'])) * 100, 1) }}%)</span>
                 </div>
                 @endforeach
             </div>
@@ -179,15 +221,15 @@
             <div class="chart-mini-table">
                 <div class="chart-stat-item">
                     <span class="stat-label"><span class="legend-dot senior"></span> Senior Citizens:</span>
-                    <span class="stat-value">{{ $statistics['by_status']['seniors'] }} ({{ round(($statistics['by_status']['seniors'] / $statistics['total']) * 100, 1) }}%)</span>
+                    <span class="stat-value">{{ $statistics['by_status']['seniors'] }} ({{ round(($statistics['by_status']['seniors'] / ($statistics['filtered_total'] ?? $statistics['total'])) * 100, 1) }}%)</span>
                 </div>
                 <div class="chart-stat-item">
                     <span class="stat-label"><span class="legend-dot pwd"></span> PWD:</span>
-                    <span class="stat-value">{{ $statistics['by_status']['pwd'] }} ({{ round(($statistics['by_status']['pwd'] / $statistics['total']) * 100, 1) }}%)</span>
+                    <span class="stat-value">{{ $statistics['by_status']['pwd'] }} ({{ round(($statistics['by_status']['pwd'] / ($statistics['filtered_total'] ?? $statistics['total'])) * 100, 1) }}%)</span>
                 </div>
                 <div class="chart-stat-item">
                     <span class="stat-label"><span class="legend-dot fourps"></span> 4Ps Members:</span>
-                    <span class="stat-value">{{ $statistics['by_status']['4ps'] }} ({{ round(($statistics['by_status']['4ps'] / $statistics['total']) * 100, 1) }}%)</span>
+                    <span class="stat-value">{{ $statistics['by_status']['4ps'] }} ({{ round(($statistics['by_status']['4ps'] / ($statistics['filtered_total'] ?? $statistics['total'])) * 100, 1) }}%)</span>
                 </div>
             </div>
         </div>
@@ -197,7 +239,7 @@
     <div class="chart-card full-width">
         <div class="chart-header">
             <h3><i class="fas fa-map-pin"></i> Population by Purok</h3>
-            <div class="chart-total">Total: {{ $statistics['total'] }} residents</div>
+            <div class="chart-total">Total: {{ $statistics['filtered_total'] ?? $statistics['total'] }} residents</div>
         </div>
         <div class="chart-body">
             <canvas id="purokChart" width="800" height="300"></canvas>
@@ -208,9 +250,9 @@
                 <span class="purok-label">Purok {{ $purok->purok }}</span>
                 <span class="purok-value">{{ $purok->total }} residents</span>
                 <div class="purok-bar">
-                    <div class="purok-bar-fill" style="width: {{ round(($purok->total / $statistics['total']) * 100, 1) }}%;"></div>
+                    <div class="purok-bar-fill" style="width: {{ round(($purok->total / ($statistics['filtered_total'] ?? $statistics['total'])) * 100, 1) }}%;"></div>
                 </div>
-                <span class="purok-percentage">{{ round(($purok->total / $statistics['total']) * 100, 1) }}%</span>
+                <span class="purok-percentage">{{ round(($purok->total / ($statistics['filtered_total'] ?? $statistics['total'])) * 100, 1) }}%</span>
             </div>
             @endforeach
         </div>
@@ -228,19 +270,19 @@
                 <div class="table-responsive">
                     <table class="mini-table">
                         <thead>
-                            <tr>
+                             <tr>
                                 <th>Purok</th>
                                 <th>Count</th>
                                 <th>Percentage</th>
-                            </tr>
+                             </tr>
                         </thead>
                         <tbody>
                             @foreach($statistics['by_purok'] as $purok)
-                            <tr>
+                             <tr>
                                 <td data-label="Purok">Purok {{ $purok->purok }}</td>
                                 <td data-label="Count">{{ $purok->total }}</td>
-                                <td data-label="Percentage">{{ round(($purok->total / $statistics['total']) * 100, 1) }}%</td>
-                            </tr>
+                                <td data-label="Percentage">{{ round(($purok->total / ($statistics['filtered_total'] ?? $statistics['total'])) * 100, 1) }}%</td>
+                             </tr>
                             @endforeach
                         </tbody>
                     </table>
@@ -258,19 +300,19 @@
                 <div class="table-responsive">
                     <table class="mini-table">
                         <thead>
-                            <tr>
+                             <tr>
                                 <th>Status</th>
                                 <th>Count</th>
                                 <th>Percentage</th>
-                            </tr>
+                             </tr>
                         </thead>
                         <tbody>
                             @foreach($statistics['by_civil_status'] as $status)
-                            <tr>
+                             <tr>
                                 <td data-label="Status">{{ $status->civil_status }}</td>
                                 <td data-label="Count">{{ $status->total }}</td>
-                                <td data-label="Percentage">{{ round(($status->total / $statistics['total']) * 100, 1) }}%</td>
-                            </tr>
+                                <td data-label="Percentage">{{ round(($status->total / ($statistics['filtered_total'] ?? $statistics['total'])) * 100, 1) }}%</td>
+                             </tr>
                             @endforeach
                         </tbody>
                     </table>
@@ -288,19 +330,19 @@
                 <div class="table-responsive">
                     <table class="mini-table">
                         <thead>
-                            <tr>
+                             <tr>
                                 <th>Age Range</th>
                                 <th>Count</th>
                                 <th>Percentage</th>
-                            </tr>
+                             </tr>
                         </thead>
                         <tbody>
                             @foreach($statistics['age_distribution'] as $range => $count)
-                            <tr>
+                             <tr>
                                 <td data-label="Age Range">{{ $range }}</td>
                                 <td data-label="Count">{{ $count }}</td>
-                                <td data-label="Percentage">{{ round(($count / $statistics['total']) * 100, 1) }}%</td>
-                            </tr>
+                                <td data-label="Percentage">{{ round(($count / ($statistics['filtered_total'] ?? $statistics['total'])) * 100, 1) }}%</td>
+                             </tr>
                             @endforeach
                         </tbody>
                     </table>
@@ -318,28 +360,28 @@
                 <div class="table-responsive">
                     <table class="mini-table">
                         <thead>
-                            <tr>
+                             <tr>
                                 <th>Category</th>
                                 <th>Count</th>
                                 <th>Percentage</th>
-                            </tr>
+                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
+                             <tr>
                                 <td data-label="Category">Senior Citizens</td>
                                 <td data-label="Count">{{ $statistics['by_status']['seniors'] }}</td>
-                                <td data-label="Percentage">{{ round(($statistics['by_status']['seniors'] / $statistics['total']) * 100, 1) }}%</td>
-                            </tr>
-                            <tr>
+                                <td data-label="Percentage">{{ round(($statistics['by_status']['seniors'] / ($statistics['filtered_total'] ?? $statistics['total'])) * 100, 1) }}%</td>
+                             </tr>
+                             <tr>
                                 <td data-label="Category">PWD</td>
                                 <td data-label="Count">{{ $statistics['by_status']['pwd'] }}</td>
-                                <td data-label="Percentage">{{ round(($statistics['by_status']['pwd'] / $statistics['total']) * 100, 1) }}%</td>
-                            </tr>
-                            <tr>
+                                <td data-label="Percentage">{{ round(($statistics['by_status']['pwd'] / ($statistics['filtered_total'] ?? $statistics['total'])) * 100, 1) }}%</td>
+                             </tr>
+                             <tr>
                                 <td data-label="Category">4Ps Members</td>
                                 <td data-label="Count">{{ $statistics['by_status']['4ps'] }}</td>
-                                <td data-label="Percentage">{{ round(($statistics['by_status']['4ps'] / $statistics['total']) * 100, 1) }}%</td>
-                            </tr>
+                                <td data-label="Percentage">{{ round(($statistics['by_status']['4ps'] / ($statistics['filtered_total'] ?? $statistics['total'])) * 100, 1) }}%</td>
+                             </tr>
                         </tbody>
                     </table>
                 </div>
@@ -451,7 +493,7 @@
     background: white;
     border-radius: 10px;
     padding: 1.5rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 .filters-form {
@@ -504,6 +546,36 @@
     align-items: center;
 }
 .btn-clear:hover { background: #cbd5e0; }
+
+/* ==================== */
+/* Category Info Badge  */
+/* ==================== */
+.category-info {
+    background: #eef2ff;
+    border-left: 4px solid #667eea;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+.category-info i {
+    color: #667eea;
+}
+.category-info span {
+    color: #4a5568;
+    font-size: 0.9rem;
+}
+.category-count {
+    background: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 600;
+    color: #667eea;
+}
 
 /* ==================== */
 /* Statistics Cards     */
@@ -848,18 +920,15 @@
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-
     .details-grid {
         grid-template-columns: 1fr;
         gap: 1rem;
     }
-
     .purok-stat-item {
         grid-template-columns: 70px 80px 1fr 50px;
         gap: 0.5rem;
         font-size: 0.85rem;
     }
-
     .chart-mini-table {
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     }
@@ -868,7 +937,6 @@
     .mini-table thead {
         display: none;
     }
-
     .mini-table,
     .mini-table tbody,
     .mini-table tr,
@@ -876,14 +944,12 @@
         display: block;
         width: 100%;
     }
-
     .mini-table tr {
         margin-bottom: 1rem;
         border: 1px solid #e2e8f0;
         border-radius: 5px;
         padding: 0.5rem;
     }
-
     .mini-table td {
         display: flex;
         justify-content: space-between;
@@ -892,11 +958,9 @@
         border-bottom: 1px dashed #edf2f7;
         text-align: right;
     }
-
     .mini-table td:last-child {
         border-bottom: none;
     }
-
     .mini-table td::before {
         content: attr(data-label);
         font-weight: 600;
@@ -904,7 +968,6 @@
         text-align: left;
         padding-right: 1rem;
     }
-
     .mini-table td:last-child::before {
         font-weight: 600;
     }
@@ -915,36 +978,29 @@
         flex-direction: column;
         align-items: flex-start;
     }
-
     .page-actions {
         width: 100%;
         flex-direction: column;
         align-items: stretch;
     }
-
     .page-actions form {
         width: 100%;
     }
-
     .page-actions .btn-primary,
     .page-actions .btn-secondary {
         width: 100%;
         justify-content: center;
     }
-
     .filters-form {
         flex-direction: column;
         align-items: stretch;
     }
-
     .filter-group {
         width: 100%;
     }
-
     .filter-actions {
         width: 100%;
     }
-
     .btn-filter,
     .btn-clear {
         flex: 1;
@@ -956,41 +1012,33 @@
     .stats-grid {
         grid-template-columns: 1fr;
     }
-
     .purok-stat-item {
         grid-template-columns: 1fr;
         gap: 0.3rem;
     }
-
     .purok-label,
     .purok-value,
     .purok-percentage {
         text-align: left;
     }
-
     .purok-bar {
         width: 100%;
     }
-
     .chart-mini-table {
         grid-template-columns: 1fr;
     }
-
     .chart-stat-item {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.5rem;
     }
-
     .chart-stat-item .stat-value {
         width: 100%;
     }
-
     .chart-header {
         flex-direction: column;
         align-items: flex-start;
     }
-
     .chart-total {
         align-self: flex-start;
     }
@@ -1008,7 +1056,6 @@
     .details-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-
     .detail-card {
         max-height: 300px;
     }
@@ -1021,7 +1068,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Safely get total count for percentage calculations
-    const totalResidents = {{ $statistics['total'] ?? 1 }};
+    const totalResidents = {{ $statistics['filtered_total'] ?? $statistics['total'] }};
 
     /* ==================== */
     /* Gender Chart         */

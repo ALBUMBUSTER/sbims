@@ -133,6 +133,32 @@ class ResidentController extends Controller
     public function index(Request $request)
     {
         $query = Resident::active();
+        $query = Resident::query()->whereNull('archived_at');
+            // Add deceased filter handling
+            if ($request->has('filter') && !empty($request->filter) && $request->filter != 'all') {
+            switch ($request->filter) {
+            case 'voter':
+                $query->where('is_voter', 1);
+                break;
+            case 'senior':
+                $query->where('is_senior', 1);
+                break;
+            case 'pwd':
+                $query->where('is_pwd', 1);
+                break;
+            case '4ps':
+                $query->where('is_4ps', 1);
+                break;
+            case 'deceased':  // ADD THIS
+                $query->where('is_deceased', 1);
+                break;
+        }
+    } else {
+        // By default, show living residents (not deceased) unless filter is applied
+        if (!$request->has('filter') || $request->filter == 'all') {
+            $query->where('is_deceased', 0);
+        }
+    }
 
         if ($request->has('search') && !empty($request->search)) {
             $search = $request->search;
@@ -484,35 +510,47 @@ class ResidentController extends Controller
             return redirect()->back()->with('error', 'Error deleting resident: ' . $e->getMessage());
         }
     }
-
-    public function archive(Request $request, Resident $resident)
-    {
-        if ($this->isClerk()) {
-            return redirect()->route('secretary.residents.index')
-                ->with('error', 'You do not have permission to archive residents.');
-        }
-        try {
-            $residentName = $resident->first_name . ' ' . $resident->last_name;
-            $residentId = $resident->resident_id;
-
-            $resident->delete();
-
-            ActivityLog::create([
-                'user_id' => Auth::id(),
-                'action' => 'ARCHIVE_RESIDENT',
-                'description' => 'Archived resident: ' . $residentName . ' (ID: ' . $residentId . ')',
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent()
-            ]);
-
-            return redirect()->route('secretary.residents.index')
-                ->with('success', 'Resident archived successfully!');
-
-        } catch (\Exception $e) {
-            return redirect()->back()
-                ->with('error', 'Error archiving resident: ' . $e->getMessage());
-        }
+public function archive(Request $request, Resident $resident)
+{
+    if ($this->isClerk()) {
+        return redirect()->route('secretary.residents.index')
+            ->with('error', 'You do not have permission to archive residents.');
     }
+
+    // Validate archive reason
+    $request->validate([
+        'archive_reason' => 'required|string|min:5|max:500',
+    ]);
+
+    try {
+        $residentName = $resident->first_name . ' ' . $resident->last_name;
+        $residentId = $resident->resident_id;
+        $archiveReason = $request->archive_reason;
+
+        // Update resident with archive reason before soft delete
+        $resident->archived_reason = $archiveReason;
+        $resident->save();
+
+        // Soft delete the resident
+        $resident->delete();
+
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'ARCHIVE_RESIDENT',
+            'description' => 'Archived resident: ' . $residentName .
+                            ' (ID: ' . $residentId . ') - Reason: ' . $archiveReason,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
+        return redirect()->route('secretary.residents.index')
+            ->with('success', 'Resident archived successfully! Reason: ' . $archiveReason);
+
+    } catch (\Exception $e) {
+        return redirect()->back()
+            ->with('error', 'Error archiving resident: ' . $e->getMessage());
+    }
+}
 
     public function restore(Request $request, $id)
     {
@@ -1060,5 +1098,98 @@ class ResidentController extends Controller
     }
 
     return response()->json(['exists' => false]);
+}
+/**
+ * Show form to mark resident as deceased
+ */
+public function markDeceasedForm(Resident $resident)
+{
+    if ($this->isClerk()) {
+        return redirect()->route('secretary.residents.show', $resident)
+            ->with('error', 'You do not have permission to mark residents as deceased.');
+    }
+
+    return view('secretary.residents.mark-deceased', compact('resident'));
+}
+
+/**
+ * Mark resident as deceased
+ */
+public function markDeceased(Request $request, Resident $resident)
+{
+    if ($this->isClerk()) {
+        return redirect()->route('secretary.residents.show', $resident)
+            ->with('error', 'You do not have permission to mark residents as deceased.');
+    }
+
+    $request->validate([
+        'death_date' => 'required|date|before_or_equal:today',
+        'cause_of_death' => 'required|string|min:5|max:500',
+        'death_certificate_number' => 'nullable|string|max:100',
+    ]);
+
+    try {
+        $resident->update([
+            'is_deceased' => true,
+            'death_date' => $request->death_date,
+            'cause_of_death' => $request->cause_of_death,
+            'death_certificate_number' => $request->death_certificate_number,
+        ]);
+
+        $residentName = $resident->full_name;
+
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'MARK_DECEASED',
+            'description' => "Marked resident {$residentName} (ID: {$resident->resident_id}) as deceased. " .
+                            "Date: {$request->death_date}, Cause: {$request->cause_of_death}",
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
+        return redirect()->route('secretary.residents.show', $resident)
+            ->with('success', 'Resident marked as deceased successfully.');
+
+    } catch (\Exception $e) {
+        return redirect()->back()
+            ->with('error', 'Error marking resident as deceased: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Remove deceased status (if marked by mistake)
+ */
+public function undoDeceased(Request $request, Resident $resident)
+{
+    if ($this->isClerk()) {
+        return redirect()->route('secretary.residents.show', $resident)
+            ->with('error', 'You do not have permission to undo deceased status.');
+    }
+
+    try {
+        $resident->update([
+            'is_deceased' => false,
+            'death_date' => null,
+            'cause_of_death' => null,
+            'death_certificate_number' => null,
+        ]);
+
+        $residentName = $resident->full_name;
+
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'UNDO_DECEASED',
+            'description' => "Removed deceased status from resident {$residentName} (ID: {$resident->resident_id})",
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
+        return redirect()->route('secretary.residents.show', $resident)
+            ->with('success', 'Deceased status removed successfully.');
+
+    } catch (\Exception $e) {
+        return redirect()->back()
+            ->with('error', 'Error removing deceased status: ' . $e->getMessage());
+    }
 }
 }

@@ -65,7 +65,7 @@
             <div class="table-responsive">
                 <table class="table">
                     <thead>
-                        <tr>
+                         <tr>
                             <th>Case ID</th>
                             <th>Complainant</th>
                             <th>Respondent</th>
@@ -73,21 +73,41 @@
                             <th>Status</th>
                             <th>Archived Date</th>
                             <th>Actions</th>
-                        </tr>
+                         </tr>
                     </thead>
                     <tbody>
                         @forelse($archived as $case)
-                        <tr>
+                         <tr>
                             <td>
                                 <span class="case-id">{{ $case->case_id }}</span>
                             </td>
                             <td>
                                 <div class="user-info">
-                                    <span class="user-avatar">{{ substr($case->complainant->first_name ?? 'U', 0, 1) }}{{ substr($case->complainant->last_name ?? 'N', 0, 1) }}</span>
-                                    <span>{{ $case->complainant->first_name ?? '' }} {{ $case->complainant->last_name ?? '' }}</span>
+                                    @php
+                                        // Get the first complainant's name
+                                        $firstComplainant = $case->complainants->first();
+                                        $complainantName = $firstComplainant ? $firstComplainant->name : 'N/A';
+                                        $complainantInitials = $firstComplainant ?
+                                            substr($firstComplainant->name, 0, 1) : '?';
+                                    @endphp
+                                    <span class="user-avatar">{{ $complainantInitials }}</span>
+                                    <span>{{ $complainantName }}</span>
                                 </div>
+                                @if($case->complainants->count() > 1)
+                                    <small class="text-muted">+{{ $case->complainants->count() - 1 }} more</small>
+                                @endif
                             </td>
-                            <td>{{ $case->respondent_name }}</td>
+                            <td>
+                                @php
+                                    // Get the first respondent's name
+                                    $firstRespondent = $case->respondents->first();
+                                    $respondentName = $firstRespondent ? $firstRespondent->name : 'N/A';
+                                @endphp
+                                <span>{{ $respondentName }}</span>
+                                @if($case->respondents->count() > 1)
+                                    <small class="text-muted">+{{ $case->respondents->count() - 1 }} more</small>
+                                @endif
+                            </td>
                             <td>
                                 <span class="incident-type">{{ $case->incident_type }}</span>
                             </td>
@@ -96,7 +116,7 @@
                                     {{ $case->status }}
                                 </span>
                             </td>
-                            <td>{{ $case->deleted_at->format('M d, Y h:i A') }}</td>
+                            <td>{{ $case->deleted_at ? $case->deleted_at->format('M d, Y h:i A') : 'N/A' }}</td>
                             <td>
                                 <div class="action-buttons">
                                     <button type="button" class="btn-icon restore-btn" title="Restore"
@@ -120,9 +140,9 @@
                                     @endif
                                 </div>
                             </td>
-                        </tr>
+                         </tr>
                         @empty
-                        <tr>
+                         <tr>
                             <td colspan="7" class="text-center">
                                 <div class="empty-state">
                                     <i class="fas fa-archive"></i>
@@ -130,7 +150,7 @@
                                     <p>Archived blotter cases will appear here.</p>
                                 </div>
                             </td>
-                        </tr>
+                         </tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -357,6 +377,12 @@
     font-size: 0.8rem;
 }
 
+.text-muted {
+    color: #6b7280;
+    font-size: 0.7rem;
+    margin-left: 0.5rem;
+}
+
 .case-id {
     font-family: monospace;
     font-weight: 600;
@@ -385,9 +411,11 @@
 }
 
 .status-pending { background: #fff3cd; color: #856404; }
+.status-ongoing { background: #cce5ff; color: #004085; }
 .status-investigating { background: #cce5ff; color: #004085; }
 .status-hearings { background: #e2d5f1; color: #553c9a; }
 .status-settled { background: #d4edda; color: #155724; }
+.status-referred { background: #e2d5f1; color: #553c9a; }
 .status-dropped { background: #fee2e2; color: #991b1b; }
 
 .action-buttons {
@@ -567,6 +595,8 @@
 
 @push('scripts')
 <script>
+let currentAction = null;
+let currentFormId = null;
 
 function confirmRestore(id) {
     currentAction = 'restore';

@@ -80,6 +80,7 @@
                             <th>Birth Date</th>
                             <th>Purok</th>
                             <th>Archived Date</th>
+                            <th>Archive Reason</th>  <!-- ADD THIS -->
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -99,10 +100,18 @@
                             <td>{{ $resident->birthdate ? \Carbon\Carbon::parse($resident->birthdate)->format('M d, Y') : '' }}</td>
                             <td><span class="purok-badge">Purok {{ $resident->purok }}</span></td>
                             <td>
-                            <span class="archived-date">
-                            {{ $resident->deleted_at ? \Carbon\Carbon::parse($resident->deleted_at)->format('M d, Y h:i A') : ($resident->archived_at ? \Carbon\Carbon::parse($resident->archived_at)->format('M d, Y h:i A') : 'N/A') }}
-                            </span>
-                            </td>
+    <span class="archived-date">
+        {{ $resident->deleted_at ? \Carbon\Carbon::parse($resident->deleted_at)->format('M d, Y h:i A') :
+           ($resident->archived_at ? \Carbon\Carbon::parse($resident->archived_at)->format('M d, Y h:i A') : 'N/A') }}
+    </span>
+</td>
+<td>
+    <div class="archive-reason" style="max-width: 250px;">
+        <span class="reason-badge" style="display: inline-block; padding: 0.3rem 0.6rem; background: #f3e8ff; color: #8b5cf6; border-radius: 6px; font-size: 0.85rem;">
+            {{ $resident->archived_reason ?: 'No reason provided' }}
+        </span>
+    </div>
+</td>
                             <td>
                                 <div class="action-buttons">
                                     <button type="button" class="btn-icon restore-btn" title="Restore" onclick="confirmRestore('{{ $resident->id }}')">

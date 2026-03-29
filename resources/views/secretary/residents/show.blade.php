@@ -14,6 +14,22 @@
                 <x-heroicon-o-arrow-left class="icon-small" />
                 Back to List
             </a>
+
+            @if(!$resident->is_deceased)
+            <a href="{{ route('secretary.residents.mark-deceased-form', $resident) }}" class="btn-deceased">
+                <i class="fas fa-cross"></i>
+                Mark as Deceased
+            </a>
+            @else
+            {{-- <form action="{{ route('secretary.residents.undo-deceased', $resident) }}" method="POST" style="display: inline;">
+                @csrf
+                <button type="submit" class="btn-undo-deceased" onclick="return confirm('Are you sure you want to remove the deceased status? This action will restore the resident to active status.')">
+                    <i class="fas fa-undo-alt"></i>
+                    Undo Deceased Status
+                </button>
+            </form> --}}
+            @endif
+
             <a href="{{ route('secretary.residents.edit', $resident) }}" class="btn-primary">
                 <x-heroicon-o-pencil class="icon-small" />
                 Edit Resident
@@ -36,6 +52,9 @@
                         @if($resident->middle_name)
                             <span class="middle-name">{{ $resident->middle_name[0] }}.</span>
                         @endif
+                        @if($resident->suffix)
+                            <span class="suffix">{{ $resident->suffix }}</span>
+                        @endif
                     </span>
                 </div>
                 <div class="detail-row">
@@ -43,6 +62,7 @@
                     <span class="detail-value">
                         @if($resident->birthdate)
                             {{ \Carbon\Carbon::parse($resident->birthdate)->format('F d, Y') }}
+                            <span class="age-detail">({{ $resident->age }} years old)</span>
                         @else
                             <span class="text-muted">Not provided</span>
                         @endif
@@ -64,6 +84,12 @@
                     <span class="detail-label">Household #:</span>
                     <span class="detail-value">{{ $resident->household_number ?? 'N/A' }}</span>
                 </div>
+                @if($resident->address)
+                <div class="detail-row">
+                    <span class="detail-label">Address:</span>
+                    <span class="detail-value">{{ $resident->address }}</span>
+                </div>
+                @endif
             </div>
         </div>
 
@@ -82,10 +108,19 @@
                     <span class="detail-label">Email Address:</span>
                     <span class="detail-value">{{ $resident->email ?? 'N/A' }}</span>
                 </div>
+                @if($resident->emergency_contact_name || $resident->emergency_contact_number)
                 <div class="detail-row">
-                    <span class="detail-label">Address:</span>
-                    <span class="detail-value">{{ $resident->address ?? 'N/A' }}</span>
+                    <span class="detail-label">Emergency Contact:</span>
+                    <span class="detail-value">
+                        @if($resident->emergency_contact_name)
+                            <strong>{{ $resident->emergency_contact_name }}</strong>
+                        @endif
+                        @if($resident->emergency_contact_number)
+                            <span class="contact-detail">({{ $resident->emergency_contact_number }})</span>
+                        @endif
+                    </span>
                 </div>
+                @endif
             </div>
         </div>
 
@@ -144,6 +179,16 @@
             </div>
             <div class="detail-body">
                 <div class="status-badges-large">
+                    @if($resident->is_deceased)
+                    <div class="status-item">
+                        <span class="badge badge-deceased">D</span>
+                        <span>Deceased</span>
+                        @if($resident->death_date)
+                            <span class="badge-detail">(Died: {{ \Carbon\Carbon::parse($resident->death_date)->format('M d, Y') }})</span>
+                        @endif
+                    </div>
+                    @endif
+
                     @if($resident->is_voter)
                         <div class="status-item">
                             <span class="badge badge-voter">V</span>
@@ -174,7 +219,7 @@
                             <span>4Ps Member</span>
                         </div>
                     @endif
-                    @if(!$resident->is_voter && !$resident->is_senior && !$resident->is_pwd && !$resident->is_4ps)
+                    @if(!$resident->is_deceased && !$resident->is_voter && !$resident->is_senior && !$resident->is_pwd && !$resident->is_4ps)
                         <div class="status-item">
                             <span class="text-muted">No special status</span>
                         </div>
@@ -182,6 +227,62 @@
                 </div>
             </div>
         </div>
+
+        <!-- Deceased Information Card - Only shows if resident is deceased -->
+        @if($resident->is_deceased)
+        <div class="detail-card deceased-card">
+            <div class="detail-header">
+                <i class="fas fa-cross detail-icon" style="color: #6b7280;"></i>
+                <h3>Deceased Information</h3>
+            </div>
+            <div class="detail-body">
+                <div class="detail-row">
+                    <span class="detail-label">Date of Death:</span>
+                    <span class="detail-value">
+                        <strong>{{ $resident->death_date ? \Carbon\Carbon::parse($resident->death_date)->format('F d, Y') : 'N/A' }}</strong>
+                        @if($resident->death_date)
+<span class="age-detail">(Age at death: {{ (int) \Carbon\Carbon::parse($resident->birthdate)->diffInYears(\Carbon\Carbon::parse($resident->death_date)) }} years)</span>                        @endif
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Cause of Death:</span>
+                    <span class="detail-value">{{ $resident->cause_of_death ?: 'N/A' }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Death Certificate No.:</span>
+                    <span class="detail-value">{{ $resident->death_certificate_number ?: 'N/A' }}</span>
+                </div>
+                @if($resident->archived_reason && $resident->archived_reason !== 'Marked as deceased')
+                <div class="detail-row">
+                    <span class="detail-label">Archive Reason:</span>
+                    <span class="detail-value">{{ $resident->archived_reason }}</span>
+                </div>
+                @endif
+            </div>
+        </div>
+        @endif
+
+        <!-- Archive Information - Shows if resident is archived -->
+        @if($resident->archived_at && !$resident->is_deceased)
+        <div class="detail-card archived-card">
+            <div class="detail-header">
+                <i class="fas fa-archive detail-icon" style="color: #f59e0b;"></i>
+                <h3>Archive Information</h3>
+            </div>
+            <div class="detail-body">
+                <div class="detail-row">
+                    <span class="detail-label">Archived Date:</span>
+                    <span class="detail-value">{{ \Carbon\Carbon::parse($resident->archived_at)->format('F d, Y h:i A') }}</span>
+                </div>
+                @if($resident->archived_reason)
+                <div class="detail-row">
+                    <span class="detail-label">Archive Reason:</span>
+                    <span class="detail-value">{{ $resident->archived_reason }}</span>
+                </div>
+                @endif
+            </div>
+        </div>
+        @endif
 
         <!-- System Information -->
         <div class="detail-card">
@@ -196,6 +297,7 @@
                         <div class="timeline-date">{{ \Carbon\Carbon::parse($resident->created_at)->format('M d, Y h:i A') }}</div>
                         <div class="timeline-content">
                             <strong>Record Created</strong>
+                            <span class="timeline-user">by {{ $resident->creator ? $resident->creator->name : 'System' }}</span>
                         </div>
                     </div>
                     @endif
@@ -208,6 +310,24 @@
                         </div>
                     </div>
                     @endif
+
+                    @if($resident->deleted_at && !$resident->is_deceased)
+                    <div class="timeline-item">
+                        <div class="timeline-date">{{ \Carbon\Carbon::parse($resident->deleted_at)->format('M d, Y h:i A') }}</div>
+                        <div class="timeline-content">
+                            <strong>Archived</strong>
+                        </div>
+                    </div>
+                    @endif
+
+                    @if($resident->deleted_at && $resident->is_deceased)
+                    <div class="timeline-item">
+                        <div class="timeline-date">{{ \Carbon\Carbon::parse($resident->deleted_at)->format('M d, Y h:i A') }}</div>
+                        <div class="timeline-content">
+                            <strong>Marked as Deceased & Archived</strong>
+                        </div>
+                    </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -217,6 +337,75 @@
 
 @push('styles')
 <style>
+/* Deceased Card Styles */
+.deceased-card {
+    border-left: 4px solid #6b7280;
+}
+
+.deceased-card .detail-header {
+    background: #f3f4f6;
+}
+
+.deceased-card .detail-header i,
+.deceased-card .detail-icon {
+    color: #6b7280;
+}
+
+/* Archived Card Styles */
+.archived-card {
+    border-left: 4px solid #f59e0b;
+}
+
+.archived-card .detail-header {
+    background: #fef3c7;
+}
+
+.archived-card .detail-header i,
+.archived-card .detail-icon {
+    color: #f59e0b;
+}
+
+/* Button Styles */
+.btn-deceased {
+    background: #6b7280;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 5px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s;
+}
+
+.btn-deceased:hover {
+    background: #4b5563;
+    color: white;
+    transform: translateY(-1px);
+}
+
+.btn-undo-deceased {
+    background: #f59e0b;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 5px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s;
+}
+
+.btn-undo-deceased:hover {
+    background: #d97706;
+    transform: translateY(-1px);
+}
+
 .container-fluid {
     padding: 1.5rem;
 }
@@ -263,6 +452,7 @@
 .btn-primary:hover {
     opacity: 0.9;
     color: white;
+    transform: translateY(-1px);
 }
 
 .btn-secondary {
@@ -273,6 +463,7 @@
 
 .btn-secondary:hover {
     background: #eef2ff;
+    transform: translateY(-1px);
 }
 
 /* Details Grid */
@@ -287,6 +478,12 @@
     border-radius: 10px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.detail-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 .detail-header {
@@ -328,7 +525,7 @@
 }
 
 .detail-label {
-    width: 120px;
+    width: 140px;
     color: #666;
     font-size: 0.9rem;
     flex-shrink: 0;
@@ -340,10 +537,23 @@
     flex: 1;
 }
 
-.middle-name {
+.middle-name, .suffix {
     color: #666;
     font-size: 0.9rem;
     margin-left: 0.25rem;
+}
+
+.age-detail {
+    font-size: 0.85rem;
+    color: #667eea;
+    margin-left: 0.5rem;
+    font-weight: normal;
+}
+
+.contact-detail {
+    font-size: 0.85rem;
+    color: #666;
+    margin-left: 0.5rem;
 }
 
 .text-muted {
@@ -421,6 +631,13 @@
     padding: 0 12px;
     border-radius: 20px;
 }
+.badge-deceased {
+    background: #6b7280;
+    color: white;
+    width: auto;
+    padding: 0 12px;
+    border-radius: 20px;
+}
 
 /* Timeline */
 .timeline {
@@ -474,6 +691,12 @@
     color: #667eea;
 }
 
+.timeline-user {
+    font-size: 0.8rem;
+    color: #999;
+    margin-left: 0.5rem;
+}
+
 .icon-small {
     width: 16px;
     height: 16px;
@@ -493,11 +716,14 @@
     .page-actions {
         width: 100%;
         display: flex;
-        gap: 1rem;
+        flex-direction: column;
+        gap: 0.75rem;
     }
 
-    .btn-primary, .btn-secondary {
-        flex: 1;
+    .page-actions a,
+    .page-actions form,
+    .page-actions button {
+        width: 100%;
         justify-content: center;
     }
 
@@ -513,6 +739,25 @@
     .child-info {
         flex-direction: column;
         align-items: flex-start;
+    }
+
+    .status-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .page-actions,
+    .btn-deceased,
+    .btn-undo-deceased {
+        display: none;
+    }
+
+    .detail-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
     }
 }
 </style>

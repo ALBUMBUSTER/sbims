@@ -967,6 +967,146 @@ h3:first-of-type {
 </style>
 
 <script>
+    // ========== TEXT FORMATTING FUNCTIONS ==========
+// Format text to Title Case (first letter of each word capitalized)
+function formatFormalText(text) {
+    if (!text) return '';
+
+    // Split into sentences for better formatting
+    let sentences = text.split(/(?<=[.!?])\s+/);
+
+    let formattedSentences = sentences.map(sentence => {
+        // Split into words
+        let words = sentence.toLowerCase().split(/\s+/);
+
+        // Capitalize first letter of each word
+        let formattedWords = words.map(word => {
+            // Handle special cases (acronyms, abbreviations)
+            if (word.toUpperCase() === word && word.length > 1) {
+                return word; // Keep acronyms as is
+            }
+
+            // Handle hyphenated words
+            if (word.includes('-')) {
+                return word.split('-').map(part =>
+                    part.charAt(0).toUpperCase() + part.slice(1)
+                ).join('-');
+            }
+
+            // Capitalize first letter, rest lowercase
+            return word.charAt(0).toUpperCase() + word.slice(1);
+        });
+
+        return formattedWords.join(' ');
+    });
+
+    return formattedSentences.join(' ');
+}
+
+// Format location address (specific format for addresses)
+function formatLocationText(text) {
+    if (!text) return '';
+
+    // Capitalize first letter of each word
+    let words = text.toLowerCase().split(/\s+/);
+    let formattedWords = words.map(word => {
+        // Common words that should stay lowercase in addresses
+        const lowercaseWords = ['of', 'and', 'the', 'in', 'on', 'at', 'by', 'for'];
+
+        if (lowercaseWords.includes(word) && words.indexOf(word) > 0) {
+            return word;
+        }
+
+        return word.charAt(0).toUpperCase() + word.slice(1);
+    });
+
+    return formattedWords.join(' ');
+}
+
+// Auto-format all text inputs in the form
+function setupAutoFormatting() {
+    // Format purpose/description fields
+    const descriptionField = document.getElementById('description');
+    const incidentLocationField = document.getElementById('incident_location');
+    const otherIncidentField = document.getElementById('other_incident_type');
+
+    // Format description on blur
+    if (descriptionField) {
+        descriptionField.addEventListener('blur', function() {
+            if (this.value.trim()) {
+                this.value = formatFormalText(this.value);
+            }
+        });
+    }
+
+    // Format incident location on blur
+    if (incidentLocationField) {
+        incidentLocationField.addEventListener('blur', function() {
+            if (this.value.trim()) {
+                this.value = formatLocationText(this.value);
+            }
+        });
+    }
+
+    // Format other incident type on blur
+    if (otherIncidentField) {
+        otherIncidentField.addEventListener('blur', function() {
+            if (this.value.trim()) {
+                this.value = formatFormalText(this.value);
+            }
+        });
+    }
+
+    // Format party names (complainants, respondents, witnesses)
+    const partyNameFields = document.querySelectorAll('.party-name');
+    partyNameFields.forEach(field => {
+        field.addEventListener('blur', function() {
+            if (this.value.trim()) {
+                this.value = formatFormalText(this.value);
+            }
+        });
+    });
+
+    // Format party addresses
+    const partyAddressFields = document.querySelectorAll('.party-address');
+    partyAddressFields.forEach(field => {
+        field.addEventListener('blur', function() {
+            if (this.value.trim()) {
+                this.value = formatLocationText(this.value);
+            }
+        });
+    });
+
+    // Format witness statements
+    const witnessStatementFields = document.querySelectorAll('textarea[name*="[statement]"]');
+    witnessStatementFields.forEach(field => {
+        field.addEventListener('blur', function() {
+            if (this.value.trim()) {
+                this.value = formatFormalText(this.value);
+            }
+        });
+    });
+}
+
+// Format all text inputs before preview/submission
+function formatAllTextInputs() {
+    const form = document.getElementById('blotterForm');
+    const textInputs = form.querySelectorAll('input[type="text"], textarea');
+
+    textInputs.forEach(input => {
+        if (input.id === 'incident_date' || input.id === 'incident_time') {
+            return; // Skip date and time fields
+        }
+
+        if (input.value.trim()) {
+            if (input.id === 'incident_location' || input.classList.contains('party-address')) {
+                input.value = formatLocationText(input.value);
+            } else {
+                input.value = formatFormalText(input.value);
+            }
+        }
+    });
+}
 // Residents data for autocomplete
 const residents = <?php echo json_encode($residents); ?>;
 
@@ -1056,26 +1196,26 @@ function addParty(type) {
                 </div>
             </div>
         `;
-} else if (type === 'witness') {
-    partyCard.innerHTML = `
-        <div class="party-header">
-            <span class="party-number">Witness ${index + 1}</span>
-            <button type="button" class="btn-remove-party" onclick="removeParty(this)">
-                <i class="fas fa-trash"></i> Remove
-            </button>
-        </div>
-        <div class="party-fields">
-            <div class="form-group">
-                <label>Name *</label>
-                <input type="text" name="witnesses[${index}][name]" required>
+    } else if (type === 'witness') {
+        partyCard.innerHTML = `
+            <div class="party-header">
+                <span class="party-number">Witness ${index + 1}</span>
+                <button type="button" class="btn-remove-party" onclick="removeParty(this)">
+                    <i class="fas fa-trash"></i> Remove
+                </button>
             </div>
-            <div class="form-group">
-                <label>Statement</label>
-                <textarea name="witnesses[${index}][statement]" rows="2"></textarea>
+            <div class="party-fields">
+                <div class="form-group">
+                    <label>Name *</label>
+                    <input type="text" name="witnesses[${index}][name]" class="party-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Statement</label>
+                    <textarea name="witnesses[${index}][statement]" rows="2"></textarea>
+                </div>
             </div>
-        </div>
-    `;
-}
+        `;
+    }
 
     container.appendChild(partyCard);
 
@@ -1085,8 +1225,27 @@ function addParty(type) {
         const resultsDiv = partyCard.querySelector('.search-results');
         setupPartySearch(searchInput, resultsDiv);
     }
-}
 
+    // Add formatting for new party fields
+    const nameField = partyCard.querySelector('.party-name');
+    const addressField = partyCard.querySelector('.party-address');
+
+    if (nameField) {
+        nameField.addEventListener('blur', function() {
+            if (this.value.trim()) {
+                this.value = formatFormalText(this.value);
+            }
+        });
+    }
+
+    if (addressField) {
+        addressField.addEventListener('blur', function() {
+            if (this.value.trim()) {
+                this.value = formatLocationText(this.value);
+            }
+        });
+    }
+}
 function removeParty(button) {
     const partyCard = button.closest('.party-card');
     partyCard.remove();
@@ -1298,11 +1457,39 @@ document.addEventListener('DOMContentLoaded', function() {
         setupPartySearch(searchInput, resultsDiv);
     });
 
+    // Setup auto-formatting
+    setupAutoFormatting();
+        // Add formatting to existing party fields
+    document.querySelectorAll('.party-name').forEach(field => {
+        field.addEventListener('blur', function() {
+            if (this.value.trim()) {
+                this.value = formatFormalText(this.value);
+            }
+        });
+    });
+
+    document.querySelectorAll('.party-address').forEach(field => {
+        field.addEventListener('blur', function() {
+            if (this.value.trim()) {
+                this.value = formatLocationText(this.value);
+            }
+        });
+    });
+
+    document.querySelectorAll('textarea[name*="[statement]"]').forEach(field => {
+        field.addEventListener('blur', function() {
+            if (this.value.trim()) {
+                this.value = formatFormalText(this.value);
+            }
+        });
+    });
     toggleOtherIncident();
 
     // Form submit handler
     document.getElementById('blotterForm').addEventListener('submit', function(e) {
         e.preventDefault();
+        // Format all text before submission
+        formatAllTextInputs();
         if (validateBlotterForm()) {
             this.submit();
         }
@@ -1310,6 +1497,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Preview button handler
     document.getElementById('previewBtn').addEventListener('click', function() {
+        formatAllTextInputs();
         if (validateBlotterForm()) {
             showBlotterPreview();
         }
@@ -1317,6 +1505,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function showBlotterPreview() {
+    // Format all text before showing preview
+    formatAllTextInputs();
     // Get all complainants
     const complainants = [];
     document.querySelectorAll('#complainants-container .party-card').forEach(card => {

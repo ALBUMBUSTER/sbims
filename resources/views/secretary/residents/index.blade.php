@@ -76,6 +76,11 @@
                     <span class="filter-dot fourps"></span>
                     4Ps Members
                 </a>
+                 <a href="{{ route('secretary.residents.index', array_merge(request()->except('filter'), ['filter' => 'deceased'])) }}"
+                    class="filter-btn {{ request('filter') == 'deceased' ? 'active' : '' }}">
+                    <span class="filter-dot deceased"></span>
+                    Deceased
+                </a>
             </div>
         </div>
 
@@ -128,6 +133,11 @@
                             <td>{{ $resident->contact_number ?? 'N/A' }}</td>
                             <td>
                                 <div class="status-badges">
+                                        @if($resident->is_deceased)
+                                        <span class="badge badge-deceased" title="Deceased">
+                                        <i class="fas fa-cross"></i> D
+                                        </span>
+                                        @endif
                                     @if(request('filter') == 'all' || !request('filter'))
                                         {{-- Show all status badges when filter is 'all' or no filter --}}
                                         @if($resident->is_voter) <span class="badge badge-voter" title="Registered Voter">V</span> @endif
@@ -271,10 +281,81 @@
         </div>
     </div>
 </div>
+<!-- Archive Reason Modal -->
+<div id="archiveReasonModal" class="confirm-modal" style="display: none;">
+    <div class="confirm-modal-content" style="max-width: 500px;">
+        <div class="confirm-modal-header">
+            <div class="confirm-icon">
+                <i class="fas fa-archive"></i>
+            </div>
+            <h3>Archive Resident</h3>
+        </div>
+        <form id="archiveReasonForm" method="POST" style="margin: 0;">
+            @csrf
+            <div class="confirm-modal-body">
+                <p>Please provide a reason for archiving this resident:</p>
+                <textarea
+                    name="archive_reason"
+                    id="archive_reason"
+                    class="form-control"
+                    rows="4"
+                    placeholder="e.g., Resident transferred to another barangay, Deceased, Left the area, etc."
+                    required
+                    style="width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 0.5rem; font-family: inherit; resize: vertical;"
+                ></textarea>
+                <small class="help-text" style="display: block; margin-top: 0.5rem; color: #666;">
+                    <i class="fas fa-info-circle"></i> Minimum 5 characters required
+                </small>
+            </div>
+            <div class="confirm-modal-footer">
+                <button type="button" class="btn-cancel" onclick="closeArchiveReasonModal()">Cancel</button>
+                <button type="submit" class="btn-confirm">Confirm Archive</button>
+            </div>
+        </form>
+    </div>
+</div>
 @endsection
 
 @push('styles')
 <style>
+    .filter-dot.deceased { background: #6b7280; }
+
+.badge-deceased {
+    background: #6b7280;
+    color: white;
+    width: auto;
+    padding: 0 8px;
+    border-radius: 15px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.badge-deceased i {
+    font-size: 0.7rem;
+    margin-right: 2px;
+}
+    /* Archive Reason Modal specific styles */
+.confirm-modal-content {
+    max-width: 500px;
+    width: 90%;
+}
+
+.form-control.is-invalid {
+    border-color: #dc2626 !important;
+}
+
+.error-message {
+    color: #dc2626;
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+}
+
+.help-text {
+    display: block;
+    margin-top: 0.5rem;
+    color: #666;
+    font-size: 0.8rem;
+}
 /* Custom Confirmation Modal */
 .confirm-modal {
     position: fixed;
@@ -946,85 +1027,89 @@ function showToast(message, type = 'success') {
 // Variable to store the current resident ID for archiving
 let currentArchiveId = null;
 
-// Archive confirmation function with custom modal
+// Open archive reason modal
 function confirmArchive(residentId) {
-    console.log('Archive clicked for ID:', residentId); // Debug log
-
+    console.log('Archive clicked for ID:', residentId);
     currentArchiveId = residentId;
 
-    // Check if modal elements exist
-    const modal = document.getElementById('confirmModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const confirmMessage = document.getElementById('confirmMessage');
-    const confirmBtn = document.getElementById('confirmArchiveBtn');
+    const modal = document.getElementById('archiveReasonModal');
+    const form = document.getElementById('archiveReasonForm');
+    const textarea = document.getElementById('archive_reason');
 
-    console.log('Modal found:', !!modal);
-    console.log('Modal title found:', !!modalTitle);
-    console.log('Confirm message found:', !!confirmMessage);
-    console.log('Confirm button found:', !!confirmBtn);
-
-    if (!modal) {
-        alert('Error: Modal not found!');
+    if (!modal || !form) {
+        alert('Error: Archive modal not found!');
         return;
     }
 
-    if (modalTitle) modalTitle.textContent = 'Archive Resident';
-    if (confirmMessage) confirmMessage.textContent = 'Are you sure you want to archive this resident? They will be moved to the archive.';
+    // Reset form
+    form.reset();
+    if (textarea) {
+        textarea.value = '';
+        textarea.classList.remove('is-invalid');
+    }
+
+    // Set form action
+    form.action = '/secretary/residents/' + residentId + '/archive';
 
     modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    document.body.style.overflow = 'hidden';
 }
 
-// Close confirmation modal
-function closeConfirmModal() {
-    document.getElementById('confirmModal').style.display = 'none';
-    document.body.style.overflow = ''; // Restore scrolling
+// Close archive reason modal
+function closeArchiveReasonModal() {
+    document.getElementById('archiveReasonModal').style.display = 'none';
+    document.body.style.overflow = '';
     currentArchiveId = null;
 }
 
-// Execute archive
-function executeArchive() {
-    console.log('Execute archive called, currentArchiveId:', currentArchiveId);
-
-    if (currentArchiveId) {
-        const form = document.getElementById('archive-form-' + currentArchiveId);
-        console.log('Form found:', !!form);
-
-        if (form) {
-            form.submit();
-        } else {
-            alert('Error: Archive form not found!');
-        }
-    } else {
-        alert('Error: No resident selected for archiving');
-    }
-    closeConfirmModal();
-}
-
-// Add event listener when DOM is loaded
+// Add form submission validation
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded - setting up event listeners');
+    const archiveForm = document.getElementById('archiveReasonForm');
+    if (archiveForm) {
+        archiveForm.addEventListener('submit', function(e) {
+            const reason = document.getElementById('archive_reason').value.trim();
+            if (reason.length < 5) {
+                e.preventDefault();
+                const textarea = document.getElementById('archive_reason');
+                textarea.classList.add('is-invalid');
+                textarea.style.borderColor = '#dc2626';
 
-    const confirmBtn = document.getElementById('confirmArchiveBtn');
-    if (confirmBtn) {
-        console.log('Confirm button found, adding click listener');
-        confirmBtn.addEventListener('click', executeArchive);
-    } else {
-        console.error('Confirm button NOT found!');
-    }
+                // Show error message
+                let errorMsg = textarea.nextElementSibling;
+                if (!errorMsg || !errorMsg.classList.contains('error-message')) {
+                    errorMsg = document.createElement('div');
+                    errorMsg.className = 'error-message';
+                    errorMsg.style.color = '#dc2626';
+                    errorMsg.style.fontSize = '0.85rem';
+                    errorMsg.style.marginTop = '0.25rem';
+                    textarea.parentNode.insertBefore(errorMsg, textarea.nextSibling);
+                }
+                errorMsg.textContent = 'Please provide a reason (minimum 5 characters)';
 
-    const modal = document.getElementById('confirmModal');
-    if (modal) {
-        modal.addEventListener('click', function(e) {
-            if (e.target === modal) {
-                closeConfirmModal();
+                // Remove error on input
+                textarea.addEventListener('input', function() {
+                    this.classList.remove('is-invalid');
+                    this.style.borderColor = '';
+                    if (errorMsg) errorMsg.remove();
+                }, { once: true });
             }
         });
     }
 
+    // Close modal when clicking outside
+    const modal = document.getElementById('archiveReasonModal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeArchiveReasonModal();
+            }
+        });
+    }
+
+    // Close on Escape key
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && document.getElementById('confirmModal').style.display === 'flex') {
-            closeConfirmModal();
+        if (e.key === 'Escape' && document.getElementById('archiveReasonModal').style.display === 'flex') {
+            closeArchiveReasonModal();
         }
     });
 });

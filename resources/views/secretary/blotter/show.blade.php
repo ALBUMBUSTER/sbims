@@ -32,94 +32,148 @@
     </div>
 
     <div class="details-container">
-        <!-- Status Update Card -->
-        <div class="status-card">
-            <div class="status-header">
-                <h3>Case Status</h3>
-                <span class="status-badge status-{{ strtolower($blotter->status) }}">
-                    {{ $blotter->status }}
-                </span>
-            </div>
-            <div class="status-body">
-                @php
-                    $isClerk = auth()->user()->role_id == 4;
-                @endphp
+<!-- Status Update Card -->
+<div class="status-card">
+    <div class="status-header">
+        <h3>Case Status</h3>
+        <span class="status-badge status-{{ strtolower($blotter->status) }}">
+            {{ $blotter->status }}
+        </span>
+    </div>
+    <div class="status-body">
+        @php
+            $isClerk = auth()->user()->role_id == 4;
+        @endphp
 
-                @if($isClerk)
-                    <div class="status-readonly">
-                        <div class="current-status-display">
-                            <span class="status-label">Current Status:</span>
-                            <span class="status-badge status-{{ strtolower($blotter->status) }}">
-                                {{ $blotter->status }}
-                            </span>
+        @if($isClerk)
+            <div class="status-readonly">
+                <div class="current-status-display">
+                    <span class="status-label">Current Status:</span>
+                    <span class="status-badge status-{{ strtolower($blotter->status) }}">
+                        {{ $blotter->status }}
+                    </span>
+                </div>
+                @if($blotter->status == 'Referred' && $blotter->referred_reason)
+                <div class="referred-reason-display">
+                    <span class="status-label">Referred Reason:</span>
+                    <span class="referred-reason">{{ $blotter->referred_reason }}</span>
+                </div>
+                @endif
+                @if($blotter->status == 'Settled' && $blotter->resolution)
+                <div class="resolution-display">
+                    <span class="status-label">Resolution:</span>
+                    <span class="resolution-text">{{ $blotter->resolution }}</span>
+                </div>
+                @endif
+                <div class="clerk-notice">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Status cannot be changed by clerk. Please contact secretary for status updates.</span>
+                </div>
+            </div>
+        @else
+            <form action="{{ route('secretary.blotter.status', $blotter) }}" method="POST" class="status-form">
+                @csrf
+                @method('PATCH')
+
+                <div class="status-update-container">
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="status" value="Pending"
+                                   {{ $blotter->status == 'Pending' ? 'checked' : '' }}
+                                   onchange="toggleFields(this.value)">
+                            <span class="radio-label status-pending-radio">Pending</span>
+                        </label>
+
+                        <label class="radio-option">
+                            <input type="radio" name="status" value="Ongoing"
+                                   {{ $blotter->status == 'Ongoing' ? 'checked' : '' }}
+                                   onchange="toggleFields(this.value)">
+                            <span class="radio-label status-ongoing-radio">Ongoing</span>
+                        </label>
+
+                        <label class="radio-option">
+                            <input type="radio" name="status" value="Settled"
+                                   {{ $blotter->status == 'Settled' ? 'checked' : '' }}
+                                   onchange="toggleFields(this.value)">
+                            <span class="radio-label status-settled-radio">Settled</span>
+                        </label>
+
+                        <label class="radio-option">
+                            <input type="radio" name="status" value="Referred"
+                                   {{ $blotter->status == 'Referred' ? 'checked' : '' }}
+                                   onchange="toggleFields(this.value)">
+                            <span class="radio-label status-referred-radio">Referred</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn-update-status">
+                        <x-heroicon-o-check-circle class="icon-small" />
+                        Update Status
+                    </button>
+                </div>
+
+                <!-- Resolution Field (for Settled status) -->
+                <div id="resolution-field" class="resolution-container {{ $blotter->status == 'Settled' ? '' : 'hidden' }}">
+                    <div class="resolution-grid">
+                        <div class="form-group">
+                            <label for="resolution">Resolution <span class="required">*</span></label>
+                            <textarea name="resolution" id="resolution" class="form-control" rows="3"
+                                {{ $blotter->status == 'Settled' ? '' : 'disabled' }}>{{ $blotter->resolution }}</textarea>
+                            <small class="form-text text-muted">Describe how the case was resolved</small>
                         </div>
-                        <div class="clerk-notice">
-                            <i class="fas fa-info-circle"></i>
-                            <span>Status cannot be changed by clerk. Please contact secretary for status updates.</span>
+                        <div class="form-group">
+                            <label for="resolved_date">Resolution Date</label>
+                            <input type="date" name="resolved_date" id="resolved_date" class="form-control"
+                                   value="{{ $blotter->resolved_date ? $blotter->resolved_date->format('Y-m-d') : '' }}"
+                                   {{ $blotter->status == 'Settled' ? '' : 'disabled' }}>
                         </div>
                     </div>
-                @else
-                    <form action="{{ route('secretary.blotter.status', $blotter) }}" method="POST" class="status-form">
-                        @csrf
-                        @method('PATCH')
+                </div>
 
-                        <div class="status-update-container">
-                            <div class="radio-group">
-                                <label class="radio-option">
-                                    <input type="radio" name="status" value="Pending"
-                                           {{ $blotter->status == 'Pending' ? 'checked' : '' }}
-                                           onchange="toggleResolution(this.value)">
-                                    <span class="radio-label status-pending-radio">Pending</span>
-                                </label>
-
-                                <label class="radio-option">
-                                    <input type="radio" name="status" value="Ongoing"
-                                           {{ $blotter->status == 'Ongoing' ? 'checked' : '' }}
-                                           onchange="toggleResolution(this.value)">
-                                    <span class="radio-label status-ongoing-radio">Ongoing</span>
-                                </label>
-
-                                <label class="radio-option">
-                                    <input type="radio" name="status" value="Settled"
-                                           {{ $blotter->status == 'Settled' ? 'checked' : '' }}
-                                           onchange="toggleResolution(this.value)">
-                                    <span class="radio-label status-settled-radio">Settled</span>
-                                </label>
-
-                                <label class="radio-option">
-                                    <input type="radio" name="status" value="Referred"
-                                           {{ $blotter->status == 'Referred' ? 'checked' : '' }}
-                                           onchange="toggleResolution(this.value)">
-                                    <span class="radio-label status-referred-radio">Referred</span>
-                                </label>
-                            </div>
-
-                            <button type="submit" class="btn-update-status">
-                                <x-heroicon-o-check-circle class="icon-small" />
-                                Update Status
-                            </button>
+                <!-- Referred Reason Field (for Referred status) -->
+                <div id="referred-field" class="referred-container {{ $blotter->status == 'Referred' ? '' : 'hidden' }}">
+                    <div class="referred-grid">
+                        <div class="form-group full-width">
+                            <label for="referred_reason">Reason for Referral <span class="required">*</span></label>
+                            <textarea name="referred_reason" id="referred_reason" class="form-control" rows="4"
+                                {{ $blotter->status == 'Referred' ? '' : 'disabled' }}>{{ $blotter->referred_reason }}</textarea>
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle"></i>
+                                Specify why this case is being referred (e.g., "Beyond barangay jurisdiction", "Requires court action", "Parties requested referral", etc.)
+                            </small>
                         </div>
-
-                        <div id="resolution-field" class="resolution-container {{ $blotter->status == 'Settled' ? '' : 'hidden' }}">
-                            <div class="resolution-grid">
-                                <div class="form-group">
-                                    <label for="resolution">Resolution <span class="required">*</span></label>
-                                    <textarea name="resolution" id="resolution" class="form-control" rows="3"
-                                        {{ $blotter->status == 'Settled' ? '' : 'disabled' }}>{{ $blotter->resolution }}</textarea>
-                                </div>
-                                <div class="form-group">
-                                    <label for="resolved_date">Resolution Date</label>
-                                    <input type="date" name="resolved_date" id="resolved_date" class="form-control"
-                                           value="{{ $blotter->resolved_date ? $blotter->resolved_date->format('Y-m-d') : '' }}"
-                                           {{ $blotter->status == 'Settled' ? '' : 'disabled' }}>
-                                </div>
-                            </div>
+                        <div class="form-group">
+                            <label for="referred_to">Referred To</label>
+                            <select name="referred_to" id="referred_to" class="form-control"
+                                    {{ $blotter->status == 'Referred' ? '' : 'disabled' }}>
+                                <option value="">Select where referred</option>
+                                <option value="Court" {{ $blotter->referred_to == 'Court' ? 'selected' : '' }}>Court of Law</option>
+                                <option value="Police" {{ $blotter->referred_to == 'Police' ? 'selected' : '' }}>Philippine National Police (PNP)</option>
+                                <option value="Municipal" {{ $blotter->referred_to == 'Municipal' ? 'selected' : '' }}>Municipal Government</option>
+                                <option value="DPC" {{ $blotter->referred_to == 'DPC' ? 'selected' : '' }}>Department of Public Counsel</option>
+                                <option value="DSWD" {{ $blotter->referred_to == 'DSWD' ? 'selected' : '' }}>Department of Social Welfare and Development</option>
+                                <option value="Other" {{ $blotter->referred_to == 'Other' ? 'selected' : '' }}>Other</option>
+                            </select>
                         </div>
-                    </form>
-                @endif
-            </div>
-        </div>
-
+                        <div class="form-group" id="other_referred_container" style="display: none;">
+                            <label for="other_referred">Please specify</label>
+                            <input type="text" name="other_referred" id="other_referred" class="form-control"
+                                   value="{{ $blotter->referred_to == 'Other' ? $blotter->referred_to_other : '' }}"
+                                   {{ $blotter->status == 'Referred' ? '' : 'disabled' }}
+                                   placeholder="Enter the specific agency or office">
+                        </div>
+                        <div class="form-group">
+                            <label for="referred_date">Referral Date</label>
+                            <input type="date" name="referred_date" id="referred_date" class="form-control"
+                                   value="{{ $blotter->referred_date ? $blotter->referred_date->format('Y-m-d') : '' }}"
+                                   {{ $blotter->status == 'Referred' ? '' : 'disabled' }}>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        @endif
+    </div>
+</div>
         <!-- Case Details Grid -->
         <div class="details-grid">
             <!-- Complainant Information -->
@@ -251,31 +305,67 @@
                 </div>
             </div>
 
-            <!-- Resolution Details (if settled) -->
-            @if($blotter->status == 'Settled' && !empty($blotter->resolution))
-            <div class="detail-card full-width">
-                <div class="detail-header">
-                    <x-heroicon-o-check-circle class="detail-icon success" />
-                    <h3>Resolution Details</h3>
-                </div>
-                <div class="detail-body">
-                    <div class="details-info-grid">
-                        <div class="detail-row full-width">
-                            <span class="detail-label">Resolution:</span>
-                            <span class="detail-value">{{ $blotter->resolution }}</span>
-                        </div>
-                        @if($blotter->resolved_date)
-                        <div class="detail-row">
-                            <span class="detail-label">Resolution Date:</span>
-                            <span class="detail-value">
-                                {{ $blotter->resolved_date->format('F d, Y') }}
-                            </span>
-                        </div>
-                        @endif
-                    </div>
-                </div>
+<!-- Resolution Details (if settled) -->
+@if($blotter->status == 'Settled' && !empty($blotter->resolution))
+<div class="detail-card full-width">
+    <div class="detail-header">
+        <x-heroicon-o-check-circle class="detail-icon success" />
+        <h3>Resolution Details</h3>
+    </div>
+    <div class="detail-body">
+        <div class="details-info-grid">
+            <div class="detail-row full-width">
+                <span class="detail-label">Resolution:</span>
+                <span class="detail-value">{{ $blotter->resolution }}</span>
+            </div>
+            @if($blotter->resolved_date)
+            <div class="detail-row">
+                <span class="detail-label">Resolution Date:</span>
+                <span class="detail-value">
+                    {{ $blotter->resolved_date->format('F d, Y') }}
+                </span>
             </div>
             @endif
+        </div>
+    </div>
+</div>
+@endif
+
+<!-- Referral Details (if referred) -->
+@if($blotter->status == 'Referred' && !empty($blotter->referred_reason))
+<div class="detail-card full-width">
+    <div class="detail-header">
+        <i class="fas fa-share-square" style="color: #f59e0b;"></i>
+        <h3>Referral Details</h3>
+    </div>
+    <div class="detail-body">
+        <div class="details-info-grid">
+            <div class="detail-row full-width">
+                <span class="detail-label">Reason for Referral:</span>
+                <span class="detail-value">{{ $blotter->referred_reason }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Referred To:</span>
+                <span class="detail-value">
+                    @if($blotter->referred_to == 'Other')
+                        {{ $blotter->referred_to_other }}
+                    @else
+                        {{ $blotter->referred_to }}
+                    @endif
+                </span>
+            </div>
+            @if($blotter->referred_date)
+            <div class="detail-row">
+                <span class="detail-label">Referral Date:</span>
+                <span class="detail-value">
+                    {{ $blotter->referred_date->format('F d, Y') }}
+                </span>
+            </div>
+            @endif
+        </div>
+    </div>
+</div>
+@endif
 
             <!-- Timeline -->
             <div class="detail-card full-width">
@@ -351,12 +441,11 @@
                                     <span class="stat-label">Stage Deadline</span>
                                     <span class="stat-value {{ $blotter->getDaysUntilDeadline() <= 3 ? 'text-danger' : '' }}">
                                         {{ $blotter->deadline_date->format('M d, Y') }}
-                                        ({{ $blotter->getDaysUntilDeadline() }} days left)
+                                        ({{ intval($blotter->getDaysUntilDeadline()) }} days left)
                                     </span>
                                 </div>
                                 @endif
                             </div>
-
                             @if(!$blotter->cfa_issued && $blotter->hearing_count < 3)
                             <div class="hearing-actions">
                                 <button class="btn-record" onclick="openHearingModal()">
@@ -507,48 +596,76 @@ function closeScheduleModal() {
 @if(auth()->user()->role_id != 4)
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const resolutionField = document.getElementById('resolution-field');
-    const radioButtons = document.querySelectorAll('input[name="status"]');
-
     const selectedStatus = document.querySelector('input[name="status"]:checked');
     if (selectedStatus) {
-        toggleResolution(selectedStatus.value);
+        toggleFields(selectedStatus.value);
     }
 
-    radioButtons.forEach(radio => {
-        radio.addEventListener('change', function() {
-            toggleResolution(this.value);
+    // Handle referred to dropdown for "Other" option
+    const referredTo = document.getElementById('referred_to');
+    const otherContainer = document.getElementById('other_referred_container');
+
+    if (referredTo) {
+        referredTo.addEventListener('change', function() {
+            if (this.value === 'Other') {
+                otherContainer.style.display = 'block';
+            } else {
+                otherContainer.style.display = 'none';
+            }
         });
-    });
+
+        // Initial check
+        if (referredTo.value === 'Other') {
+            otherContainer.style.display = 'block';
+        }
+    }
 });
 
-function toggleResolution(status) {
+function toggleFields(status) {
     const resolutionField = document.getElementById('resolution-field');
+    const referredField = document.getElementById('referred-field');
     const resolution = document.getElementById('resolution');
     const resolvedDate = document.getElementById('resolved_date');
+    const referredReason = document.getElementById('referred_reason');
+    const referredTo = document.getElementById('referred_to');
+    const referredDate = document.getElementById('referred_date');
+    const otherReferred = document.getElementById('other_referred');
 
-    if (resolutionField) {
-        if (status === 'Settled') {
-            resolutionField.classList.remove('hidden');
-            if (resolution) {
-                resolution.disabled = false;
-                resolution.required = true;
-            }
-            if (resolvedDate) {
-                resolvedDate.disabled = false;
-                resolvedDate.required = false;
-            }
-        } else {
-            resolutionField.classList.add('hidden');
-            if (resolution) {
-                resolution.disabled = true;
-                resolution.required = false;
-            }
-            if (resolvedDate) {
-                resolvedDate.disabled = true;
-                resolvedDate.required = false;
-            }
+    // Hide both fields first
+    if (resolutionField) resolutionField.classList.add('hidden');
+    if (referredField) referredField.classList.add('hidden');
+
+    // Disable all fields
+    if (resolution) {
+        resolution.disabled = true;
+        resolution.required = false;
+    }
+    if (resolvedDate) resolvedDate.disabled = true;
+    if (referredReason) {
+        referredReason.disabled = true;
+        referredReason.required = false;
+    }
+    if (referredTo) referredTo.disabled = true;
+    if (referredDate) referredDate.disabled = true;
+    if (otherReferred) otherReferred.disabled = true;
+
+    // Show and enable appropriate field based on status
+    if (status === 'Settled') {
+        if (resolutionField) resolutionField.classList.remove('hidden');
+        if (resolution) {
+            resolution.disabled = false;
+            resolution.required = true;
         }
+        if (resolvedDate) resolvedDate.disabled = false;
+    } else if (status === 'Referred') {
+        if (referredField) referredField.classList.remove('hidden');
+        if (referredReason) {
+            referredReason.disabled = false;
+            referredReason.required = true;
+        }
+        if (referredTo) referredTo.disabled = false;
+        if (referredDate) referredDate.disabled = false;
+        if (otherReferred) otherReferred.disabled = false;
     }
 }
 </script>
@@ -574,6 +691,71 @@ document.addEventListener('DOMContentLoaded', function() {
 
 @push('styles')
 <style>
+    /* Referred Container Styles */
+.referred-container {
+    margin: 1rem 0;
+    padding: 1.5rem;
+    background: #fffbeb;
+    border-radius: 8px;
+    border-left: 4px solid #f59e0b;
+    transition: all 0.3s;
+}
+
+.referred-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.referred-grid .full-width {
+    grid-column: 1 / -1;
+}
+
+/* Referred reason display */
+.referred-reason-display {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: #fffbeb;
+    border-radius: 8px;
+    border-left: 4px solid #f59e0b;
+}
+
+.referred-reason {
+    flex: 1;
+    color: #92400e;
+    line-height: 1.5;
+}
+
+.resolution-display {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: #f0fdf4;
+    border-radius: 8px;
+    border-left: 4px solid #10b981;
+}
+
+.resolution-text {
+    flex: 1;
+    color: #155724;
+    line-height: 1.5;
+}
+
+/* Additional styles */
+.form-text.text-muted {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+}
+
+.form-text.text-muted i {
+    margin-right: 0.25rem;
+}
     /* Stage Deadline Alerts */
 .alert-deadline {
     background: #fee2e2;

@@ -75,17 +75,20 @@ class CertificateController extends Controller
         $residents = Resident::orderBy('first_name')->get();
         return view('secretary.certificates.create', compact('residents'));
     }
+public function store(Request $request)
+{
+    $validated = $request->validate([
+        'resident_id' => 'required|exists:residents,id',
+        'certificate_type' => 'required|in:Clearance,Indigency,Residency',
+        'purpose' => 'required|string',
+        'transaction_fee' => 'nullable|numeric|min:0|max:999999.99',
+    ]);
 
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'resident_id' => 'required|exists:residents,id',
-            'certificate_type' => 'required|in:Clearance,Indigency,Residency',
-            'purpose' => 'required|string',
-            'transaction_fee' => 'nullable|numeric|min:0|max:999999.99',
-        ]);
+    try {
+        // Generate unique certificate ID with retry logic
+        $certificateId = $this->generateUniqueCertificateNumber();
 
-        $validated['certificate_id'] = $this->generateCertificateNumber();
+        $validated['certificate_id'] = $certificateId;
         $validated['status'] = 'Pending';
 
         $certificate = Certificate::create($validated);
@@ -126,8 +129,13 @@ class CertificateController extends Controller
 
         return redirect()->route('secretary.certificates.index')
             ->with('success', 'Certificate created successfully.');
-    }
 
+    } catch (\Exception $e) {
+        return redirect()->back()
+            ->with('error', 'Error creating certificate: ' . $e->getMessage())
+            ->withInput();
+    }
+}
     public function show(Certificate $certificate)
     {
         $certificate->load('resident', 'issuer', 'approver');
@@ -443,24 +451,54 @@ class CertificateController extends Controller
 
     return view('secretary.certificates.print', compact('certificate', 'barangayInfo'));
     }
+/**
+ * Generate a unique certificate number (including archived records)
+ * Format: CERT-YYYYMM-XXXX
+ */
+private function generateCertificateNumber()
+{
+    $year = date('Y');
+    $month = date('m');
+    $prefix = 'CERT';
 
-    private function generateCertificateNumber()
-    {
-        $year = date('Y');
-        $month = date('m');
-        $prefix = 'CERT';
+    // Include soft-deleted records when checking for the latest certificate ID
+    $lastCertificate = Certificate::withTrashed()  // Add withTrashed() to include archived
+        ->where('certificate_id', 'like', "{$prefix}-{$year}{$month}-%")
+        ->orderBy('certificate_id', 'desc')
+        ->first();
 
-        $lastCertificate = Certificate::where('certificate_id', 'like', "{$prefix}-{$year}{$month}-%")
-            ->orderBy('certificate_id', 'desc')
-            ->first();
+    if ($lastCertificate) {
+        $lastNumber = intval(substr($lastCertificate->certificate_id, -4));
+        $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+    } else {
+        $newNumber = '0001';
+    }
 
-        if ($lastCertificate) {
-            $lastNumber = intval(substr($lastCertificate->certificate_id, -4));
-            $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
-        } else {
-            $newNumber = '0001';
+    return "{$prefix}-{$year}{$month}-{$newNumber}";
+}
+
+/**
+ * Generate a unique certificate number with retry logic
+ */
+private function generateUniqueCertificateNumber($maxRetries = 5)
+{
+    for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+        $certificateId = $this->generateCertificateNumber();
+
+        // Check if the ID already exists (including archived/soft-deleted records)
+        $exists = Certificate::withTrashed()->where('certificate_id', $certificateId)->exists();
+
+        if (!$exists) {
+            return $certificateId;
         }
 
-        return "{$prefix}-{$year}{$month}-{$newNumber}";
+        // Log the conflict for debugging
+        \Illuminate\Support\Facades\Log::warning("Certificate ID conflict: {$certificateId} already exists. Retry {$attempt} of {$maxRetries}");
+
+        // Small delay before retry to prevent race conditions
+        usleep(100000); // 0.1 seconds
     }
+
+    throw new \Exception('Unable to generate unique certificate ID after ' . $maxRetries . ' attempts. Please try again.');
+}
 }

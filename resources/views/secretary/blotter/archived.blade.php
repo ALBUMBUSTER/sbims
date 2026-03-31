@@ -75,84 +75,156 @@
                             <th>Actions</th>
                          </tr>
                     </thead>
-                    <tbody>
-                        @forelse($archived as $case)
-                         <tr>
-                            <td>
-                                <span class="case-id">{{ $case->case_id }}</span>
-                            </td>
-                            <td>
-                                <div class="user-info">
-                                    @php
-                                        // Get the first complainant's name
-                                        $firstComplainant = $case->complainants->first();
-                                        $complainantName = $firstComplainant ? $firstComplainant->name : 'N/A';
-                                        $complainantInitials = $firstComplainant ?
-                                            substr($firstComplainant->name, 0, 1) : '?';
-                                    @endphp
-                                    <span class="user-avatar">{{ $complainantInitials }}</span>
-                                    <span>{{ $complainantName }}</span>
-                                </div>
-                                @if($case->complainants->count() > 1)
-                                    <small class="text-muted">+{{ $case->complainants->count() - 1 }} more</small>
-                                @endif
-                            </td>
-                            <td>
-                                @php
-                                    // Get the first respondent's name
-                                    $firstRespondent = $case->respondents->first();
-                                    $respondentName = $firstRespondent ? $firstRespondent->name : 'N/A';
-                                @endphp
-                                <span>{{ $respondentName }}</span>
-                                @if($case->respondents->count() > 1)
-                                    <small class="text-muted">+{{ $case->respondents->count() - 1 }} more</small>
-                                @endif
-                            </td>
-                            <td>
-                                <span class="incident-type">{{ $case->incident_type }}</span>
-                            </td>
-                            <td>
-                                <span class="status-badge status-{{ strtolower($case->status) }}">
-                                    {{ $case->status }}
-                                </span>
-                            </td>
-                            <td>{{ $case->deleted_at ? $case->deleted_at->format('M d, Y h:i A') : 'N/A' }}</td>
-                            <td>
-                                <div class="action-buttons">
-                                    <button type="button" class="btn-icon restore-btn" title="Restore"
-                                        onclick="confirmRestore('{{ $case->id }}')">
-                                        <i class="fas fa-undo-alt"></i>
-                                    </button>
-                                    <form id="restore-form-{{ $case->id }}" action="{{ route('secretary.blotter.restore', $case->id) }}" method="POST" style="display: none;">
-                                        @csrf
-                                    </form>
+<tbody>
+    @forelse($archived as $case)
+    <tr>
+        <td>
+            <span class="case-id">{{ $case->case_id }}</span>
+        </td>
+        <td>
+            @php
+                // Get complainants data from various possible sources
+                $complainantsList = [];
 
-                                    {{-- Delete button visible for Admin, Secretary, and Captain (role_id 1, 2, 3) --}}
-                                    @if(in_array(auth()->user()->role_id, [1, 2, 3]))
-                                    <button type="button" class="btn-icon delete-btn" title="Delete Permanently"
-                                        onclick="confirmForceDelete('{{ $case->id }}')">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                    <form id="force-delete-form-{{ $case->id }}" action="{{ route('secretary.blotter.force-delete', $case->id) }}" method="POST" style="display: none;">
-                                        @csrf
-                                        @method('DELETE')
-                                    </form>
-                                    @endif
-                                </div>
-                            </td>
-                         </tr>
-                        @empty
-                         <tr>
-                            <td colspan="7" class="text-center">
-                                <div class="empty-state">
-                                    <i class="fas fa-archive"></i>
-                                    <h3>No archived cases found</h3>
-                                    <p>Archived blotter cases will appear here.</p>
-                                </div>
-                            </td>
-                         </tr>
-                        @endforelse
-                    </tbody>
+                // Check if there's a direct relationship loaded
+                if(isset($case->complainants) && $case->complainants instanceof \Illuminate\Database\Eloquent\Collection && $case->complainants->count() > 0) {
+                    foreach($case->complainants as $complainant) {
+                        $complainantsList[] = $complainant->full_name ?? $complainant->name ?? 'Unknown';
+                    }
+                }
+                // Check for single complainant relationship
+                elseif(isset($case->complainant) && $case->complainant) {
+                    $complainantsList[] = $case->complainant->full_name ?? $case->complainant->name ?? 'N/A';
+                }
+                // Check for complainant_name field
+                elseif(isset($case->complainant_name) && $case->complainant_name) {
+                    $complainantsList[] = $case->complainant_name;
+                }
+                // Check for complainants JSON field
+                elseif(isset($case->complainants_list) && $case->complainants_list) {
+                    $complainantList = is_array($case->complainants_list) ? $case->complainants_list : json_decode($case->complainants_list, true);
+                    if($complainantList && count($complainantList) > 0) {
+                        foreach($complainantList as $comp) {
+                            $complainantsList[] = is_array($comp) ? ($comp['name'] ?? $comp['full_name'] ?? 'Unknown') : $comp;
+                        }
+                    }
+                }
+
+                $firstComplainant = count($complainantsList) > 0 ? $complainantsList[0] : 'N/A';
+                $complainantInitials = $firstComplainant !== 'N/A' ? substr($firstComplainant, 0, 1) : '?';
+            @endphp
+            <div class="user-info">
+                <span class="user-avatar">{{ $complainantInitials }}</span>
+                <span>{{ $firstComplainant }}</span>
+            </div>
+            @if(count($complainantsList) > 1)
+                <div class="party-list">
+                    <small class="text-muted">+{{ count($complainantsList) - 1 }} more</small>
+                    <div class="hidden-details" style="display: none;">
+                        @foreach($complainantsList as $comp)
+                            <div><i class="fas fa-user"></i> {{ $comp }}</div>
+                        @endforeach
+                    </div>
+                    <button class="toggle-details-btn" onclick="toggleDetails(this)" style="background: none; border: none; color: #667eea; font-size: 0.7rem; cursor: pointer; padding: 0;">
+                        <i class="fas fa-chevron-down"></i> View all
+                    </button>
+                </div>
+            @endif
+        </td>
+        <td>
+            @php
+                // Get respondents data from various possible sources
+                $respondentsList = [];
+
+                // Check if there's a direct relationship loaded
+                if(isset($case->respondents) && $case->respondents instanceof \Illuminate\Database\Eloquent\Collection && $case->respondents->count() > 0) {
+                    foreach($case->respondents as $respondent) {
+                        $respondentsList[] = $respondent->full_name ?? $respondent->name ?? 'Unknown';
+                    }
+                }
+                // Check for single respondent relationship
+                elseif(isset($case->respondent) && $case->respondent) {
+                    $respondentsList[] = $case->respondent->full_name ?? $case->respondent->name ?? 'N/A';
+                }
+                // Check for respondent_name field
+                elseif(isset($case->respondent_name) && $case->respondent_name) {
+                    $respondentsList[] = $case->respondent_name;
+                }
+                // Check for respondents JSON field
+                elseif(isset($case->respondents_list) && $case->respondents_list) {
+                    $respondentList = is_array($case->respondents_list) ? $case->respondents_list : json_decode($case->respondents_list, true);
+                    if($respondentList && count($respondentList) > 0) {
+                        foreach($respondentList as $resp) {
+                            $respondentsList[] = is_array($resp) ? ($resp['name'] ?? $resp['full_name'] ?? 'Unknown') : $resp;
+                        }
+                    }
+                }
+
+                $firstRespondent = count($respondentsList) > 0 ? $respondentsList[0] : 'N/A';
+            @endphp
+            <div class="user-info">
+                <i class="fas fa-user-circle" style="color: #667eea; font-size: 1.2rem;"></i>
+                <span>{{ $firstRespondent }}</span>
+            </div>
+            @if(count($respondentsList) > 1)
+                <div class="party-list">
+                    <small class="text-muted">+{{ count($respondentsList) - 1 }} more</small>
+                    <div class="hidden-details" style="display: none;">
+                        @foreach($respondentsList as $resp)
+                            <div><i class="fas fa-user"></i> {{ $resp }}</div>
+                        @endforeach
+                    </div>
+                    <button class="toggle-details-btn" onclick="toggleDetails(this)" style="background: none; border: none; color: #667eea; font-size: 0.7rem; cursor: pointer; padding: 0;">
+                        <i class="fas fa-chevron-down"></i> View all
+                    </button>
+                </div>
+            @endif
+        </td>
+        <td>
+            <span class="incident-type">{{ $case->incident_type }}</span>
+        </td>
+        <td>
+            <span class="status-badge status-{{ strtolower($case->status) }}">
+                {{ $case->status }}
+            </span>
+        </td>
+        <td>{{ $case->deleted_at ? $case->deleted_at->format('M d, Y h:i A') : 'N/A' }}</td>
+        <td>
+            <div class="action-buttons">
+                <button type="button" class="btn-icon restore-btn" title="Restore"
+                    onclick="confirmRestore('{{ $case->id }}')">
+                    <i class="fas fa-undo-alt"></i>
+                </button>
+                <form id="restore-form-{{ $case->id }}" action="{{ route('secretary.blotter.restore', $case->id) }}" method="POST" style="display: none;">
+                    @csrf
+                </form>
+
+                {{-- Delete button visible for Admin, Secretary, and Captain (role_id 1, 2, 3) --}}
+                @if(in_array(auth()->user()->role_id, [1, 2, 3]))
+                <button type="button" class="btn-icon delete-btn" title="Delete Permanently"
+                    onclick="confirmForceDelete('{{ $case->id }}')">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+                <form id="force-delete-form-{{ $case->id }}" action="{{ route('secretary.blotter.force-delete', $case->id) }}" method="POST" style="display: none;">
+                    @csrf
+                    @method('DELETE')
+                </form>
+                @endif
+            </div>
+        </td>
+    </tr>
+    @empty
+    <tr>
+        <td colspan="7" class="text-center">
+            <div class="empty-state">
+                <i class="fas fa-archive"></i>
+                <h3>No archived cases found</h3>
+                <p>Archived blotter cases will appear here.</p>
+            </div>
+        </td>
+    </tr>
+    @endforelse
+</tbody>
                 </table>
             </div>
 
@@ -595,50 +667,132 @@
 
 @push('scripts')
 <script>
-let currentAction = null;
+    // Function to toggle details view for multiple parties
+function toggleDetails(button) {
+    const hiddenDiv = button.parentElement.querySelector('.hidden-details');
+    const icon = button.querySelector('i');
+
+    if (hiddenDiv) {
+        if (hiddenDiv.style.display === 'none' || hiddenDiv.style.display === '') {
+            hiddenDiv.style.display = 'block';
+            button.innerHTML = '<i class="fas fa-chevron-up"></i> Show less';
+        } else {
+            hiddenDiv.style.display = 'none';
+            button.innerHTML = '<i class="fas fa-chevron-down"></i> View all';
+        }
+    }
+}
+
+// Make toggleDetails globally available
+window.toggleDetails = toggleDetails;
+
 let currentFormId = null;
 
 function confirmRestore(id) {
+    console.log('Restore clicked for ID:', id);
     currentAction = 'restore';
     currentFormId = id;
-    document.getElementById('modalTitle').textContent = 'Restore Case';
-    document.getElementById('confirmMessage').textContent = 'Are you sure you want to restore this archived case?';
-    document.getElementById('confirmModal').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+
+    const modal = document.getElementById('confirmModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const confirmMessage = document.getElementById('confirmMessage');
+
+    if (modalTitle) modalTitle.textContent = 'Restore Case';
+    if (confirmMessage) confirmMessage.textContent = 'Are you sure you want to restore this archived case?';
+
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    } else {
+        console.error('Modal not found!');
+        alert('Error: Modal not found');
+    }
 }
 
 function confirmForceDelete(id) {
+    console.log('Force delete clicked for ID:', id);
     currentAction = 'forceDelete';
     currentFormId = id;
-    document.getElementById('modalTitle').textContent = 'Permanently Delete Case';
-    document.getElementById('confirmMessage').textContent = 'Are you sure you want to permanently delete this case? This action cannot be undone.';
-    document.getElementById('confirmModal').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+
+    const modal = document.getElementById('confirmModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const confirmMessage = document.getElementById('confirmMessage');
+
+    if (modalTitle) modalTitle.textContent = 'Permanently Delete Case';
+    if (confirmMessage) confirmMessage.textContent = 'Are you sure you want to permanently delete this case? This action cannot be undone.';
+
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    } else {
+        console.error('Modal not found!');
+        alert('Error: Modal not found');
+    }
 }
 
 function closeConfirmModal() {
-    document.getElementById('confirmModal').style.display = 'none';
-    document.body.style.overflow = '';
+    const modal = document.getElementById('confirmModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
     currentAction = null;
     currentFormId = null;
 }
 
 function executeAction() {
+    console.log('Execute action:', currentAction, 'Form ID:', currentFormId);
+
     if (currentAction === 'restore') {
-        document.getElementById('restore-form-' + currentFormId).submit();
+        const form = document.getElementById('restore-form-' + currentFormId);
+        if (form) {
+            console.log('Submitting restore form');
+            form.submit();
+        } else {
+            console.error('Restore form not found for ID:', currentFormId);
+            alert('Error: Form not found');
+        }
     } else if (currentAction === 'forceDelete') {
-        document.getElementById('force-delete-form-' + currentFormId).submit();
+        const form = document.getElementById('force-delete-form-' + currentFormId);
+        if (form) {
+            console.log('Submitting force delete form');
+            form.submit();
+        } else {
+            console.error('Force delete form not found for ID:', currentFormId);
+            alert('Error: Form not found');
+        }
     }
+
     closeConfirmModal();
 }
 
+// Initialize event listeners when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Archive page loaded');
+
+    // Find and log all restore and delete buttons for debugging
+    const restoreBtns = document.querySelectorAll('.restore-btn');
+    const deleteBtns = document.querySelectorAll('.delete-btn');
+    console.log('Found restore buttons:', restoreBtns.length);
+    console.log('Found delete buttons:', deleteBtns.length);
+
+    // Check if modal exists
+    const modal = document.getElementById('confirmModal');
+    console.log('Modal found:', !!modal);
+
+    // Add click event to confirm button
     const confirmBtn = document.getElementById('confirmActionBtn');
     if (confirmBtn) {
-        confirmBtn.addEventListener('click', executeAction);
+        // Remove any existing event listeners
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+        newConfirmBtn.addEventListener('click', executeAction);
+        console.log('Confirm button event attached');
+    } else {
+        console.error('Confirm button not found!');
     }
 
-    const modal = document.getElementById('confirmModal');
+    // Close modal when clicking outside
     if (modal) {
         modal.addEventListener('click', function(e) {
             if (e.target === modal) {
@@ -647,11 +801,46 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Close modal on Escape key
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && document.getElementById('confirmModal').style.display === 'flex') {
-            closeConfirmModal();
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('confirmModal');
+            if (modal && modal.style.display === 'flex') {
+                closeConfirmModal();
+            }
         }
     });
 });
+
+// Make functions globally available
+window.confirmRestore = confirmRestore;
+window.confirmForceDelete = confirmForceDelete;
+window.closeConfirmModal = closeConfirmModal;
+window.executeAction = executeAction;
 </script>
+
+{{-- Session messages --}}
+@if(session('success'))
+<script>document.addEventListener('DOMContentLoaded', () => {
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    if (toast && toastMessage) {
+        toastMessage.textContent = "{{ session('success') }}";
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+});</script>
+@endif
+@if(session('error'))
+<script>document.addEventListener('DOMContentLoaded', () => {
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    if (toast && toastMessage) {
+        toastMessage.textContent = "{{ session('error') }}";
+        toast.style.borderLeftColor = '#dc2626';
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+});</script>
+@endif
 @endpush

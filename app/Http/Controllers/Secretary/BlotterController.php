@@ -65,148 +65,175 @@ class BlotterController extends Controller
 
         return view('secretary.blotter.create', compact('residents', 'case_id'));
     }
+public function store(Request $request)
+{
+    // Validate the request with multiple parties
+    $validated = $request->validate([
+        'incident_type' => 'required|string|max:255',
+        'other_incident_type' => 'nullable|required_if:incident_type,Other|string',
+        'incident_date' => 'required|date|before_or_equal:today',
+        'incident_time' => 'required|date_format:H:i',
+        'incident_location' => 'required|string',
+        'description' => 'required|string',
+        'complainants' => 'required|array|min:1',
+        'complainants.*.name' => 'required|string',
+        'complainants.*.address' => 'nullable|string',
+        'complainants.*.contact' => 'nullable|string',
+        'complainants.*.resident_id' => 'nullable|exists:residents,id',
+        'respondents' => 'required|array|min:1',
+        'respondents.*.name' => 'required|string',
+        'respondents.*.address' => 'required|string',
+        'respondents.*.resident_id' => 'nullable|exists:residents,id',
+        'witnesses' => 'nullable|array',
+        'witnesses.*.name' => 'required_with:witnesses|string',
+        'witnesses.*.statement' => 'nullable|string',
+    ]);
 
-    public function store(Request $request)
-    {
-        // Validate the request with multiple parties
-        $validated = $request->validate([
-            'incident_type' => 'required|string|max:255',
-            'other_incident_type' => 'nullable|required_if:incident_type,Other|string',
-            'incident_date' => 'required|date|before_or_equal:today',
-            'incident_time' => 'required|date_format:H:i',
-            'incident_location' => 'required|string',
-            'description' => 'required|string',
-            'complainants' => 'required|array|min:1',
-            'complainants.*.name' => 'required|string',
-            'complainants.*.address' => 'nullable|string',
-            'complainants.*.contact' => 'nullable|string',
-            'complainants.*.resident_id' => 'nullable|exists:residents,id',
-            'respondents' => 'required|array|min:1',
-            'respondents.*.name' => 'required|string',
-            'respondents.*.address' => 'required|string',
-            'respondents.*.resident_id' => 'nullable|exists:residents,id',
-            'witnesses' => 'nullable|array',
-            'witnesses.*.name' => 'required_with:witnesses|string',
-            'witnesses.*.statement' => 'nullable|string',
+    // Determine final incident type
+    $finalIncidentType = $validated['incident_type'];
+    if ($finalIncidentType === 'Other' && isset($validated['other_incident_type'])) {
+        $finalIncidentType = $validated['other_incident_type'];
+    }
+
+    // Combine date and time
+    $incidentDateTime = $validated['incident_date'] . ' ' . $validated['incident_time'];
+
+    // Add additional validation: check if combined datetime is not in future
+    $incidentDateTimeObj = Carbon::parse($incidentDateTime);
+    if ($incidentDateTimeObj->isFuture()) {
+        return back()->withErrors(['incident_date' => 'Incident date and time cannot be in the future.'])->withInput();
+    }
+
+    DB::beginTransaction();
+
+    try {
+        // Generate unique case ID with retry (max 5 attempts)
+        $caseId = $this->generateUniqueCaseId();
+
+        // Create primary blotter record
+        $blotter = Blotter::create([
+            'case_id' => $caseId,
+            'status' => 'Pending',
+            'handled_by' => Auth::id(),
+            'incident_type' => $finalIncidentType,
+            'incident_date' => $incidentDateTime,
+            'incident_location' => $validated['incident_location'],
+            'description' => $validated['description'],
+            'complainant_id' => null,
+            'respondent_name' => null,
+            'respondent_address' => null,
         ]);
 
-        // Determine final incident type
-        $finalIncidentType = $validated['incident_type'];
-        if ($finalIncidentType === 'Other' && isset($validated['other_incident_type'])) {
-            $finalIncidentType = $validated['other_incident_type'];
-        }
+        // ========== START MEDIATION PROCESS (15-15-30 RULE) ==========
+        $blotter->startMediation();
+        // ========== END MEDIATION PROCESS ==========
 
-        // Combine date and time
-        $incidentDateTime = $validated['incident_date'] . ' ' . $validated['incident_time'];
-
-        // Add additional validation: check if combined datetime is not in future
-        $incidentDateTimeObj = Carbon::parse($incidentDateTime);
-        if ($incidentDateTimeObj->isFuture()) {
-            return back()->withErrors(['incident_date' => 'Incident date and time cannot be in the future.'])->withInput();
-        }
-
-        DB::beginTransaction();
-
-        try {
-            // Create primary blotter record
-            $blotter = Blotter::create([
-                'case_id' => $this->generateCaseId(),
-                'status' => 'Pending',
-                'handled_by' => Auth::id(),
-                'incident_type' => $finalIncidentType,
-                'incident_date' => $incidentDateTime,
-                'incident_location' => $validated['incident_location'],
-                'description' => $validated['description'],
-                'complainant_id' => null,
-                'respondent_name' => null,
-                'respondent_address' => null,
+        // Save complainants
+        foreach ($validated['complainants'] as $complainant) {
+            $blotter->parties()->create([
+                'party_type' => 'complainant',
+                'name' => $complainant['name'],
+                'address' => $complainant['address'] ?? null,
+                'contact_number' => $complainant['contact'] ?? null,
+                'resident_id' => $complainant['resident_id'] ?? null,
             ]);
+        }
 
-            // ========== START MEDIATION PROCESS (15-15-30 RULE) ==========
-            $blotter->startMediation();
-            // ========== END MEDIATION PROCESS ==========
+        // Save respondents
+        foreach ($validated['respondents'] as $respondent) {
+            $blotter->parties()->create([
+                'party_type' => 'respondent',
+                'name' => $respondent['name'],
+                'address' => $respondent['address'],
+                'resident_id' => $respondent['resident_id'] ?? null,
+            ]);
+        }
 
-            // Save complainants
-            foreach ($validated['complainants'] as $complainant) {
-                $blotter->parties()->create([
-                    'party_type' => 'complainant',
-                    'name' => $complainant['name'],
-                    'address' => $complainant['address'] ?? null,
-                    'contact_number' => $complainant['contact'] ?? null,
-                    'resident_id' => $complainant['resident_id'] ?? null,
-                ]);
-            }
-
-            // Save respondents
-            foreach ($validated['respondents'] as $respondent) {
-                $blotter->parties()->create([
-                    'party_type' => 'respondent',
-                    'name' => $respondent['name'],
-                    'address' => $respondent['address'],
-                    'resident_id' => $respondent['resident_id'] ?? null,
-                ]);
-            }
-
-            // Save witnesses (optional)
-            if (isset($validated['witnesses'])) {
-                foreach ($validated['witnesses'] as $witness) {
-                    if (!empty($witness['name'])) {
-                        $blotter->parties()->create([
-                            'party_type' => 'witness',
-                            'name' => $witness['name'],
-                            'additional_info' => $witness['statement'] ?? null,
-                        ]);
-                    }
+        // Save witnesses (optional)
+        if (isset($validated['witnesses'])) {
+            foreach ($validated['witnesses'] as $witness) {
+                if (!empty($witness['name'])) {
+                    $blotter->parties()->create([
+                        'party_type' => 'witness',
+                        'name' => $witness['name'],
+                        'additional_info' => $witness['statement'] ?? null,
+                    ]);
                 }
             }
-
-            // Get names for notification
-            $complainantNames = $blotter->complainants->pluck('name')->implode(', ');
-            $respondentNames = $blotter->respondents->pluck('name')->implode(', ');
-
-            // ========== REAL-TIME NOTIFICATIONS ==========
-            $currentUserId = Auth::id();
-
-            NotificationHelper::toCaptainsExceptCurrent(
-                $currentUserId,
-                'New Blotter Case',
-                'A new blotter case has been filed: ' . $blotter->case_id . ' - ' . $finalIncidentType,
-                'warning',
-                route('captain.blotters.show', $blotter->id)
-            );
-
-            NotificationHelper::toAdminsExceptCurrent(
-                $currentUserId,
-                'New Blotter Case',
-                'Case #' . $blotter->case_id . ' was filed by ' . Auth::user()->name,
-                'info',
-                route('secretary.blotter.show', $blotter->id)
-            );
-            // ========== END NOTIFICATIONS ==========
-
-            ActivityLog::create([
-                'user_id' => Auth::id(),
-                'action' => 'CREATE_BLOTTER',
-                'description' => 'Filed new blotter case: ' . $finalIncidentType .
-                                ' - Complainant(s): ' . $complainantNames .
-                                ', Respondent(s): ' . $respondentNames .
-                                ' (Case ID: ' . $blotter->case_id . ')',
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent()
-            ]);
-
-            DB::commit();
-
-            return redirect()->route('secretary.blotter.index')
-                ->with('success', 'Blotter case created successfully.');
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return redirect()->back()
-                ->with('error', 'Error creating blotter case: ' . $e->getMessage())
-                ->withInput();
         }
+
+        // Get names for notification
+        $complainantNames = $blotter->complainants->pluck('name')->implode(', ');
+        $respondentNames = $blotter->respondents->pluck('name')->implode(', ');
+
+        // ========== REAL-TIME NOTIFICATIONS ==========
+        $currentUserId = Auth::id();
+
+        NotificationHelper::toCaptainsExceptCurrent(
+            $currentUserId,
+            'New Blotter Case',
+            'A new blotter case has been filed: ' . $blotter->case_id . ' - ' . $finalIncidentType,
+            'warning',
+            route('captain.blotters.show', $blotter->id)
+        );
+
+        NotificationHelper::toAdminsExceptCurrent(
+            $currentUserId,
+            'New Blotter Case',
+            'Case #' . $blotter->case_id . ' was filed by ' . Auth::user()->name,
+            'info',
+            route('secretary.blotter.show', $blotter->id)
+        );
+        // ========== END NOTIFICATIONS ==========
+
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'CREATE_BLOTTER',
+            'description' => 'Filed new blotter case: ' . $finalIncidentType .
+                            ' - Complainant(s): ' . $complainantNames .
+                            ', Respondent(s): ' . $respondentNames .
+                            ' (Case ID: ' . $blotter->case_id . ')',
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
+        DB::commit();
+
+        return redirect()->route('secretary.blotter.index')
+            ->with('success', 'Blotter case created successfully. Case ID: ' . $blotter->case_id);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return redirect()->back()
+            ->with('error', 'Error creating blotter case: ' . $e->getMessage())
+            ->withInput();
     }
+}
+
+/**
+ * Generate a unique case ID with retry logic
+ */
+private function generateUniqueCaseId($maxRetries = 5)
+{
+    for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+        $caseId = $this->generateCaseId();
+
+        // Check if the ID already exists (including archived/soft-deleted records)
+        $exists = Blotter::withTrashed()->where('case_id', $caseId)->exists();
+
+        if (!$exists) {
+            return $caseId;
+        }
+
+        // Log the conflict for debugging
+        \Illuminate\Support\Facades\Log::warning("Case ID conflict: {$caseId} already exists. Retry {$attempt} of {$maxRetries}");
+
+        // Small delay before retry to prevent race conditions
+        usleep(100000); // 0.1 seconds
+    }
+
+    throw new \Exception('Unable to generate unique case ID after ' . $maxRetries . ' attempts. Please try again.');
+}
 
     public function show(Blotter $blotter)
     {
@@ -631,23 +658,28 @@ class BlotterController extends Controller
     {
         return $this->archive($request, $blotter);
     }
+/**
+ * Generate a unique case ID (including archived records)
+ * Format: BLT-YYYY-XXXX
+ */
+private function generateCaseId()
+{
+    $year = date('Y');
+    $prefix = 'BLT';
 
-    private function generateCaseId()
-    {
-        $year = date('Y');
-        $prefix = 'BLT';
+    // Include soft-deleted records when checking for the latest case ID
+    $lastBlotter = Blotter::withTrashed()  // Add withTrashed() to include archived
+        ->where('case_id', 'like', "{$prefix}-{$year}-%")
+        ->orderBy('case_id', 'desc')
+        ->first();
 
-        $lastBlotter = Blotter::where('case_id', 'like', "{$prefix}-{$year}-%")
-            ->orderBy('case_id', 'desc')
-            ->first();
-
-        if ($lastBlotter) {
-            $lastNumber = intval(substr($lastBlotter->case_id, -4));
-            $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
-        } else {
-            $newNumber = '0001';
-        }
-
-        return "{$prefix}-{$year}-{$newNumber}";
+    if ($lastBlotter) {
+        $lastNumber = intval(substr($lastBlotter->case_id, -4));
+        $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+    } else {
+        $newNumber = '0001';
     }
+
+    return "{$prefix}-{$year}-{$newNumber}";
+}
 }

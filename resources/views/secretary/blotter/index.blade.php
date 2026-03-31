@@ -137,6 +137,7 @@
                         </tr>
                     </thead>
                     <tbody>
+<tbody>
     @forelse($blotters as $blotter)
     <tr>
         <td>
@@ -144,18 +145,53 @@
         </td>
         <td>
             @php
-                $complainants = $blotter->complainants;
+                // Get complainants data
+                $complainantsList = [];
+
+                // Check if there's a direct relationship loaded
+                if(isset($blotter->complainants) && $blotter->complainants instanceof \Illuminate\Database\Eloquent\Collection && $blotter->complainants->count() > 0) {
+                    foreach($blotter->complainants as $complainant) {
+                        $complainantsList[] = $complainant->full_name ?? $complainant->name ?? 'Unknown';
+                    }
+                }
+                // Check for single complainant relationship
+                elseif(isset($blotter->complainant) && $blotter->complainant) {
+                    $complainantsList[] = $blotter->complainant->full_name ?? $blotter->complainant->name ?? 'N/A';
+                }
+                // Check for complainant_name field
+                elseif(isset($blotter->complainant_name) && $blotter->complainant_name) {
+                    $complainantsList[] = $blotter->complainant_name;
+                }
+                // Check for complainants JSON field
+                elseif(isset($blotter->complainants_list) && $blotter->complainants_list) {
+                    $complainantList = is_array($blotter->complainants_list) ? $blotter->complainants_list : json_decode($blotter->complainants_list, true);
+                    if($complainantList && count($complainantList) > 0) {
+                        foreach($complainantList as $comp) {
+                            $complainantsList[] = is_array($comp) ? ($comp['name'] ?? $comp['full_name'] ?? 'Unknown') : $comp;
+                        }
+                    }
+                }
             @endphp
-            @if($complainants->count() > 0)
-                <div class="resident-info">
-                    <span class="resident-name">
-                        {{ $complainants->first()->name }}
-                        @if($complainants->count() > 1)
-                            <span class="badge-more">+{{ $complainants->count() - 1 }} more</span>
+            @if(count($complainantsList) > 0)
+                <div class="party-info">
+                    <span class="party-name">
+                        <i class="fas fa-user-circle"></i> {{ $complainantsList[0] }}
+                        @if(count($complainantsList) > 1)
+                            <span class="badge-more">+{{ count($complainantsList) - 1 }} more</span>
                         @endif
                     </span>
-                    @if($complainants->count() > 1)
-                        <small class="text-muted">Total: {{ $complainants->count() }} complainant(s)</small>
+                    @if(count($complainantsList) > 1)
+                        <div class="party-list">
+                            <small class="text-muted">Total: {{ count($complainantsList) }} complainant(s)</small>
+                            <div class="hidden-details" style="display: none;">
+                                @foreach($complainantsList as $comp)
+                                    <div><i class="fas fa-user"></i> {{ $comp }}</div>
+                                @endforeach
+                            </div>
+                            <button class="toggle-details-btn" onclick="toggleDetails(this)" style="background: none; border: none; color: #667eea; font-size: 0.7rem; cursor: pointer; padding: 0;">
+                                <i class="fas fa-chevron-down"></i> View all
+                            </button>
+                        </div>
                     @endif
                 </div>
             @else
@@ -164,18 +200,53 @@
         </td>
         <td>
             @php
-                $respondents = $blotter->respondents;
+                // Get respondents data
+                $respondentsList = [];
+
+                // Check if there's a direct relationship loaded
+                if(isset($blotter->respondents) && $blotter->respondents instanceof \Illuminate\Database\Eloquent\Collection && $blotter->respondents->count() > 0) {
+                    foreach($blotter->respondents as $respondent) {
+                        $respondentsList[] = $respondent->full_name ?? $respondent->name ?? 'Unknown';
+                    }
+                }
+                // Check for single respondent relationship
+                elseif(isset($blotter->respondent) && $blotter->respondent) {
+                    $respondentsList[] = $blotter->respondent->full_name ?? $blotter->respondent->name ?? 'N/A';
+                }
+                // Check for respondent_name field
+                elseif(isset($blotter->respondent_name) && $blotter->respondent_name) {
+                    $respondentsList[] = $blotter->respondent_name;
+                }
+                // Check for respondents JSON field
+                elseif(isset($blotter->respondents_list) && $blotter->respondents_list) {
+                    $respondentList = is_array($blotter->respondents_list) ? $blotter->respondents_list : json_decode($blotter->respondents_list, true);
+                    if($respondentList && count($respondentList) > 0) {
+                        foreach($respondentList as $resp) {
+                            $respondentsList[] = is_array($resp) ? ($resp['name'] ?? $resp['full_name'] ?? 'Unknown') : $resp;
+                        }
+                    }
+                }
             @endphp
-            @if($respondents->count() > 0)
-                <div class="resident-info">
-                    <span class="resident-name">
-                        {{ $respondents->first()->name }}
-                        @if($respondents->count() > 1)
-                            <span class="badge-more">+{{ $respondents->count() - 1 }} more</span>
+            @if(count($respondentsList) > 0)
+                <div class="party-info">
+                    <span class="party-name">
+                        <i class="fas fa-user-circle"></i> {{ $respondentsList[0] }}
+                        @if(count($respondentsList) > 1)
+                            <span class="badge-more">+{{ count($respondentsList) - 1 }} more</span>
                         @endif
                     </span>
-                    @if($respondents->count() > 1)
-                        <small class="text-muted">Total: {{ $respondents->count() }} respondent(s)</small>
+                    @if(count($respondentsList) > 1)
+                        <div class="party-list">
+                            <small class="text-muted">Total: {{ count($respondentsList) }} respondent(s)</small>
+                            <div class="hidden-details" style="display: none;">
+                                @foreach($respondentsList as $resp)
+                                    <div><i class="fas fa-user"></i> {{ $resp }}</div>
+                                @endforeach
+                            </div>
+                            <button class="toggle-details-btn" onclick="toggleDetails(this)" style="background: none; border: none; color: #667eea; font-size: 0.7rem; cursor: pointer; padding: 0;">
+                                <i class="fas fa-chevron-down"></i> View all
+                            </button>
+                        </div>
                     @endif
                 </div>
             @else
@@ -1046,6 +1117,24 @@
 </style>
 @endpush
 <script>
+    // Function to toggle details view for multiple parties
+function toggleDetails(button) {
+    const hiddenDiv = button.parentElement.querySelector('.hidden-details');
+    const icon = button.querySelector('i');
+
+    if (hiddenDiv) {
+        if (hiddenDiv.style.display === 'none' || hiddenDiv.style.display === '') {
+            hiddenDiv.style.display = 'block';
+            button.innerHTML = '<i class="fas fa-chevron-up"></i> Show less';
+        } else {
+            hiddenDiv.style.display = 'none';
+            button.innerHTML = '<i class="fas fa-chevron-down"></i> View all';
+        }
+    }
+}
+
+// Make toggleDetails globally available
+window.toggleDetails = toggleDetails;
 console.log('=== BLOTTER DEBUG START ===');
 console.log('1. Script loaded at:', new Date().toISOString());
 

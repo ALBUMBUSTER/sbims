@@ -73,7 +73,7 @@
     </div>
 </div>
 
-    <!-- Pending Blotters -->
+<!-- Pending Blotters -->
 <div class="card">
     <div class="card-header">
         <h3><i class="fas fa-gavel"></i> Pending Blotter Cases</h3>
@@ -83,33 +83,100 @@
             <div class="table-responsive">
                 <table class="table">
                     <thead>
-                        <tr>
-                            <th>Blotter #</th>
-                            <th>Complainant</th>
-                            <th>Respondent</th>
+                         <tr>
+                            <th>Case ID</th>
+                            <th>Complainant(s)</th>
+                            <th>Respondent(s)</th>
                             <th>Incident Type</th>
                             <th>Status</th>
                             <th>Action</th>
-                        </tr>
+                         </tr>
                     </thead>
                     <tbody>
                         @foreach($pendingBlotters as $blotter)
-                        <tr>
-                            <td>{{ $blotter->blotter_number }}</td>
-                            <td>{{ $blotter->complainant->full_name ?? $blotter->complainant_name ?? 'N/A' }}</td>
-                            <td>{{ $blotter->respondent_name }}</td>
-                            <td>{{ $blotter->incident_type }}</td>
+                         <tr>
                             <td>
-                                <span class="status-badge status-{{ strtolower($blotter->status) }}">
-                                    {{ $blotter->status }}
+                                <span class="case-id">{{ $blotter->case_id ?? $blotter->blotter_number ?? 'N/A' }}</span>
+                            </td>
+                            <td>
+                                @php
+                                    $complainants = [];
+                                    // Check if there are multiple complainants
+                                    if(isset($blotter->complainants) && $blotter->complainants->count() > 0) {
+                                        foreach($blotter->complainants as $complainant) {
+                                            $complainants[] = $complainant->full_name ?? $complainant->name ?? 'Unknown';
+                                        }
+                                    }
+                                    // Check for single complainant relationship
+                                    elseif(isset($blotter->complainant) && $blotter->complainant) {
+                                        $complainants[] = $blotter->complainant->full_name ?? $blotter->complainant->name ?? 'N/A';
+                                    }
+                                    // Check for complainant_name field
+                                    elseif(isset($blotter->complainant_name) && $blotter->complainant_name) {
+                                        $complainants[] = $blotter->complainant_name;
+                                    }
+                                @endphp
+                                @if(count($complainants) > 0)
+                                    @foreach($complainants as $index => $name)
+                                        <div class="party-name">
+                                            <i class="fas fa-user-circle"></i> {{ $name }}
+                                        </div>
+                                    @endforeach
+                                @else
+                                    <span class="text-muted">N/A</span>
+                                @endif
+                            </td>
+                            <td>
+                                @php
+                                    $respondents = [];
+                                    // Check if there are multiple respondents
+                                    if(isset($blotter->respondents) && $blotter->respondents->count() > 0) {
+                                        foreach($blotter->respondents as $respondent) {
+                                            $respondents[] = $respondent->full_name ?? $respondent->name ?? 'Unknown';
+                                        }
+                                    }
+                                    // Check for respondent relationship
+                                    elseif(isset($blotter->respondent) && $blotter->respondent) {
+                                        $respondents[] = $blotter->respondent->full_name ?? $blotter->respondent->name ?? 'N/A';
+                                    }
+                                    // Check for respondent_name field
+                                    elseif(isset($blotter->respondent_name) && $blotter->respondent_name) {
+                                        $respondents[] = $blotter->respondent_name;
+                                    }
+                                    // Check for respondents JSON field
+                                    elseif(isset($blotter->respondents_list) && $blotter->respondents_list) {
+                                        $respondentList = is_array($blotter->respondents_list) ? $blotter->respondents_list : json_decode($blotter->respondents_list, true);
+                                        if($respondentList && count($respondentList) > 0) {
+                                            foreach($respondentList as $resp) {
+                                                $respondents[] = is_array($resp) ? ($resp['name'] ?? $resp) : $resp;
+                                            }
+                                        }
+                                    }
+                                @endphp
+                                @if(count($respondents) > 0)
+                                    @foreach($respondents as $index => $name)
+                                        <div class="party-name">
+                                            <i class="fas fa-user-circle"></i> {{ $name }}
+                                        </div>
+                                    @endforeach
+                                @else
+                                    <span class="text-muted">N/A</span>
+                                @endif
+                            </td>
+                            <td>
+                                <span class="incident-type">{{ $blotter->incident_type ?? 'N/A' }}</span>
+                            </td>
+                            <td>
+                                <span class="status-badge status-{{ strtolower($blotter->status ?? 'pending') }}">
+                                    {{ $blotter->status ?? 'Pending' }}
                                 </span>
                             </td>
                             <td>
                                 <a href="{{ route('captain.blotters.show', $blotter) }}" class="btn-view">
-                                    <i class="fas fa-eye"></i> View
+                                    <i class="fas fa-eye"></i> View Details
                                 </a>
                             </td>
-                        </tr>
+                         </tr>
                         @endforeach
                     </tbody>
                 </table>
@@ -174,6 +241,53 @@
 
 @push('styles')
 <style>
+    /* Case ID Styles */
+.case-id {
+    font-family: monospace;
+    font-weight: 600;
+    color: #667eea;
+    background: #eef2ff;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    display: inline-block;
+}
+
+/* Party Names Styles */
+.party-name {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0;
+    font-size: 0.9rem;
+}
+
+.party-name i {
+    color: #667eea;
+    font-size: 0.8rem;
+    width: 20px;
+}
+
+.party-name:not(:last-child) {
+    border-bottom: 1px dashed #e2e8f0;
+    margin-bottom: 0.25rem;
+}
+
+/* Incident Type Styles */
+.incident-type {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background: #f3f4f6;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    color: #4b5563;
+}
+
+/* Text Muted */
+.text-muted {
+    color: #9ca3af;
+    font-style: italic;
+}
 .container-fluid {
     padding: 1.5rem;
 }

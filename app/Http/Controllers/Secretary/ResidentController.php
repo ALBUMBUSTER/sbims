@@ -33,24 +33,56 @@ class ResidentController extends Controller
         return $role == 1 || $role == 3;
     }
 
-    private function generateResidentId()
-    {
-        $year = date('Y');
-        $month = date('m');
+/**
+ * Generate a unique resident ID (including archived records)
+ * Format: RES-YYYYMM-XXXX
+ */
+private function generateResidentId()
+{
+    $year = date('Y');
+    $month = date('m');
 
-        $latest = Resident::where('resident_id', 'LIKE', "RES-{$year}{$month}-%")
-                          ->orderBy('resident_id', 'desc')
-                          ->first();
+    // Include soft-deleted records when checking for the latest resident ID
+    $latest = Resident::withTrashed()  // Add withTrashed() to include archived
+        ->where('resident_id', 'LIKE', "RES-{$year}{$month}-%")
+        ->orderBy('resident_id', 'desc')
+        ->first();
 
-        if ($latest) {
-            $parts = explode('-', $latest->resident_id);
-            $sequence = intval(end($parts)) + 1;
-        } else {
-            $sequence = 1;
+    if ($latest) {
+        // Extract the sequence number and increment
+        $parts = explode('-', $latest->resident_id);
+        $sequence = intval(end($parts)) + 1;
+    } else {
+        $sequence = 1;
+    }
+
+    return 'RES-' . $year . $month . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+}
+
+/**
+ * Generate a unique resident ID with retry logic
+ */
+private function generateUniqueResidentId($maxRetries = 5)
+{
+    for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+        $residentId = $this->generateResidentId();
+
+        // Check if the ID already exists (including archived/soft-deleted records)
+        $exists = Resident::withTrashed()->where('resident_id', $residentId)->exists();
+
+        if (!$exists) {
+            return $residentId;
         }
 
-        return 'RES-' . $year . $month . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+        // Log the conflict for debugging
+        \Illuminate\Support\Facades\Log::warning("Resident ID conflict: {$residentId} already exists. Retry {$attempt} of {$maxRetries}");
+
+        // Small delay before retry to prevent race conditions
+        usleep(100000); // 0.1 seconds
     }
+
+    throw new \Exception('Unable to generate unique resident ID after ' . $maxRetries . ' attempts. Please try again.');
+}
 
     public function generatePwdId()
     {
@@ -199,134 +231,136 @@ class ResidentController extends Controller
         return view('secretary.residents.index', compact('residents'));
     }
 
-    public function create()
-    {
-        $generatedId = $this->generateResidentId();
-        $pwdResponse = $this->generatePwdId();
-        $generatedPwdId = $pwdResponse->getData()->id;
+/**
+ * Show the form for creating a new resident.
+ */
+public function create()
+{
+    $generatedId = $this->generateUniqueResidentId();
+    $pwdResponse = $this->generatePwdId();
+    $generatedPwdId = $pwdResponse->getData()->id;
 
-        return view('secretary.residents.create', compact('generatedId', 'generatedPwdId'));
+    return view('secretary.residents.create', compact('generatedId', 'generatedPwdId'));
+}
+/**
+ * Generate ID for AJAX request (used in create form)
+ */
+public function generateId()
+{
+    try {
+        $id = $this->generateUniqueResidentId();
+        return response()->json(['id' => $id]);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
     }
+}
+/**
+ * Store a newly created resident in storage.
+ */
+public function store(Request $request)
+{
+    try {
+        $validated = $request->validate([
+            'resident_id' => 'nullable|string|max:20|unique:residents',
+            'first_name' => 'required|string|max:50',
+            'last_name' => 'required|string|max:50',
+            'middle_name' => 'nullable|string|max:50',
+            'birthdate' => 'required|date',
+            'gender' => 'required|in:Male,Female,Other',
+            'civil_status' => 'required|in:Single,Married,Widowed,Divorced',
+            'contact_number' => 'nullable|string|max:15',
+            'email' => 'nullable|email|max:100',
+            'address' => 'required|string',
+            'purok' => 'required|string|max:50',
+            'household_number' => 'nullable|string|max:20',
+            'is_voter' => 'sometimes|boolean',
+            'is_4ps' => 'sometimes|boolean',
+            'is_senior' => 'sometimes|boolean',
+            'is_pwd' => 'sometimes|boolean',
+            'pwd_id' => 'nullable|required_if:is_pwd,true|string|max:50',
+            'disability_type' => 'nullable|required_if:is_pwd,true|string|max:100',
+            'spouse_name' => 'nullable|string|max:255',
+            'children' => 'nullable|array',
+            'children.*.name' => 'nullable|string|max:255',
+            'children.*.birthdate' => 'nullable|date',
+            'children.*.gender' => 'nullable|in:Male,Female',
+        ]);
 
-    public function generateId()
-    {
-        return response()->json(['id' => $this->generateResidentId()]);
-    }
-
-    public function store(Request $request)
-    {
-        try {
-            $validated = $request->validate([
-                'resident_id' => 'required|string|max:20|unique:residents',
-                'first_name' => 'required|string|max:50',
-                'last_name' => 'required|string|max:50',
-                'middle_name' => 'nullable|string|max:50',
-                'birthdate' => 'required|date',
-                'gender' => 'required|in:Male,Female,Other',
-                'civil_status' => 'required|in:Single,Married,Widowed,Divorced',
-                'contact_number' => 'nullable|string|max:15',
-                'email' => 'nullable|email|max:100',
-                'address' => 'required|string',
-                'purok' => 'required|string|max:50',
-                'household_number' => 'nullable|string|max:20',
-                'is_voter' => 'sometimes|boolean',
-                'is_4ps' => 'sometimes|boolean',
-                'is_senior' => 'sometimes|boolean',
-                'is_pwd' => 'sometimes|boolean',
-                'pwd_id' => 'nullable|required_if:is_pwd,true|string|max:50',
-                'disability_type' => 'nullable|required_if:is_pwd,true|string|max:100',
-                'spouse_name' => 'nullable|string|max:255',
-                'children' => 'nullable|array',
-                'children.*.name' => 'nullable|string|max:255',
-                'children.*.birthdate' => 'nullable|date',
-                'children.*.gender' => 'nullable|in:Male,Female',
-            ]);
-            // CHECK FOR DUPLICATE RESIDENT
-            $duplicate = Resident::checkDuplicate($validated);
-
-            if ($duplicate) {
-            $duplicateName = $duplicate->full_name;
-            $duplicateId = $duplicate->resident_id;
-            $duplicateAge = $duplicate->age;
-
-            $errorMessage = "A resident with the same name and birthdate already exists.\n\n";
-            $errorMessage .= "Existing Resident:\n";
-            $errorMessage .= "• Name: {$duplicateName}\n";
-            $errorMessage .= "• Resident ID: {$duplicateId}\n";
-            $errorMessage .= "• Age: {$duplicateAge} years old\n";
-            $errorMessage .= "• Purok: {$duplicate->purok}\n\n";
-            $errorMessage .= "Please check if this is a duplicate entry or use a different name.";
-
-            return redirect()->back()
-                ->withInput()
-                ->with('duplicate_error', $errorMessage)
-                ->with('duplicate_resident', $duplicate)
-                ->with('error', 'Duplicate resident found!');
+        // Generate unique resident ID if not provided
+        if (empty($validated['resident_id'])) {
+            $validated['resident_id'] = $this->generateUniqueResidentId();
+        } else {
+            // Verify the provided ID doesn't exist (including archived)
+            $exists = Resident::withTrashed()->where('resident_id', $validated['resident_id'])->exists();
+            if ($exists) {
+                throw new \Exception('Resident ID already exists. Please refresh the page and try again.');
             }
+        }
 
-            $validated['is_voter'] = $request->has('is_voter') ? 1 : 0;
-            $validated['is_4ps'] = $request->has('is_4ps') ? 1 : 0;
-            $validated['is_senior'] = $request->has('is_senior') ? 1 : 0;
-            $validated['is_pwd'] = $request->has('is_pwd') ? 1 : 0;
+        // Convert checkbox values to integers
+        $validated['is_voter'] = $request->has('is_voter') ? 1 : 0;
+        $validated['is_4ps'] = $request->has('is_4ps') ? 1 : 0;
+        $validated['is_senior'] = $request->has('is_senior') ? 1 : 0;
+        $validated['is_pwd'] = $request->has('is_pwd') ? 1 : 0;
 
-            if (!$validated['is_pwd']) {
+        // Clear PWD fields if not PWD
+        if (!$validated['is_pwd']) {
             $validated['pwd_id'] = null;
             $validated['disability_type'] = null;
-            }
+        }
 
         $spouseName = $request->spouse_name ?? null;
         $children = $request->children ?? [];
 
         $resident = Resident::create($validated);
 
-            // Save spouse relationship
-            if ($validated['civil_status'] === 'Married' && !empty($spouseName)) {
+        // Save spouse relationship
+        if ($validated['civil_status'] === 'Married' && !empty($spouseName)) {
+            $resident->familyRelationships()->create([
+                'relationship_type' => 'spouse',
+                'full_name' => $spouseName,
+                'birthdate' => null,
+                'gender' => null,
+            ]);
+        }
+
+        // Save children relationships
+        foreach ($children as $child) {
+            if (!empty($child['name'])) {
                 $resident->familyRelationships()->create([
-                    'relationship_type' => 'spouse',
-                    'full_name' => $spouseName,
-                    'birthdate' => null,
-                    'gender' => null,
+                    'relationship_type' => 'child',
+                    'full_name' => $child['name'],
+                    'birthdate' => !empty($child['birthdate']) ? $child['birthdate'] : null,
+                    'gender' => !empty($child['gender']) ? $child['gender'] : null,
                 ]);
             }
-
-            // Save children relationships
-            foreach ($children as $child) {
-                if (!empty($child['name'])) {
-                    $resident->familyRelationships()->create([
-                        'relationship_type' => 'child',
-                        'full_name' => $child['name'],
-                        'birthdate' => !empty($child['birthdate']) ? $child['birthdate'] : null,
-                        'gender' => !empty($child['gender']) ? $child['gender'] : null,
-                    ]);
-                }
-            }
-
-            $statuses = [];
-            if ($validated['is_voter']) $statuses[] = 'Voter';
-            if ($validated['is_senior']) $statuses[] = 'Senior';
-            if ($validated['is_4ps']) $statuses[] = '4Ps';
-            if ($validated['is_pwd']) $statuses[] = 'PWD';
-            $statusText = !empty($statuses) ? ' (' . implode(', ', $statuses) . ')' : '';
-
-            ActivityLog::create([
-                'user_id' => Auth::id(),
-                'action' => 'CREATE_RESIDENT',
-                'description' => 'Created new resident: ' . $resident->first_name . ' ' . $resident->last_name .
-                                ' (ID: ' . $resident->resident_id . ', Purok: ' . $resident->purok . ')' . $statusText,
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent()
-            ]);
-
-            return redirect()->route('secretary.residents.index')
-                ->with('success', 'Resident created successfully!');
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return redirect()->back()->withErrors($e->errors())->withInput();
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Error creating resident: ' . $e->getMessage())->withInput();
         }
-    }
 
+        $statuses = [];
+        if ($validated['is_voter']) $statuses[] = 'Voter';
+        if ($validated['is_senior']) $statuses[] = 'Senior';
+        if ($validated['is_4ps']) $statuses[] = '4Ps';
+        if ($validated['is_pwd']) $statuses[] = 'PWD';
+        $statusText = !empty($statuses) ? ' (' . implode(', ', $statuses) . ')' : '';
+
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'CREATE_RESIDENT',
+            'description' => 'Created new resident: ' . $resident->first_name . ' ' . $resident->last_name .
+                            ' (ID: ' . $resident->resident_id . ', Purok: ' . $resident->purok . ')' . $statusText,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
+        return redirect()->route('secretary.residents.index')
+            ->with('success', 'Resident created successfully!');
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return redirect()->back()->withErrors($e->errors())->withInput();
+    } catch (\Exception $e) {
+        return redirect()->back()->with('error', 'Error creating resident: ' . $e->getMessage())->withInput();
+    }
+}
     public function show(Resident $resident)
     {
         $resident->load(['spouse', 'children']);

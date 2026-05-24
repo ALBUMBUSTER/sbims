@@ -39,12 +39,10 @@ public function dashboard()
             ->orderBy('c.created_at', 'desc')
             ->limit(5)
             ->get();
-
-        // Recent blotters
-        $recentBlotters = DB::table('blotters')
-            ->orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get();
+$recentBlotters = Blotter::with(['complainants', 'respondents'])
+    ->orderBy('created_at', 'desc')
+    ->take(5)
+    ->get();
 
         // Monthly statistics
         $certificateStats = DB::table('certificates')
@@ -424,15 +422,11 @@ public function rejectCertificate(Request $request, Certificate $certificate)
         return view('captain.blotters.index', compact('blotters', 'statusCounts'));
     }
 
-    /**
-     * View single blotter details
-     */
-    public function showBlotter(Blotter $blotter)
-    {
-        $blotter->load('complainant');
-        return view('captain.blotters.show', compact('blotter'));
-    }
-
+ public function showBlotter(Blotter $blotter)
+{
+    $blotter->load(['complainants', 'respondents', 'witnesses']);
+    return view('captain.blotters.show', compact('blotter'));
+}
     /**
      * Update blotter status (captain can update status)
      */
@@ -515,5 +509,5 @@ public function rejectCertificate(Request $request, Certificate $certificate)
 
         return redirect()->back()->with('success', 'Report generation started. You will be notified when it\'s ready.');
     }
-    
+
 }

@@ -303,9 +303,9 @@
                     required
                     style="width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 0.5rem; font-family: inherit; resize: vertical;"
                 ></textarea>
-                <small class="help-text" style="display: block; margin-top: 0.5rem; color: #666;">
+                {{-- <small class="help-text" style="display: block; margin-top: 0.5rem; color: #666;">
                     <i class="fas fa-info-circle"></i> Minimum 5 characters required
-                </small>
+                </small> --}}
             </div>
             <div class="confirm-modal-footer">
                 <button type="button" class="btn-cancel" onclick="closeArchiveReasonModal()">Cancel</button>

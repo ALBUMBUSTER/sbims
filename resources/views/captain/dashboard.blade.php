@@ -166,97 +166,139 @@
                     <canvas id="monthlyChart" height="200"></canvas>
                 </div>
             </div>
-
-            <!-- Pending Approvals -->
-            <div class="approvals-card">
-                <div class="card-header">
-                    <h3><i class="fas fa-clock"></i> Pending Approvals</h3>
-                    <a href="{{ route('captain.approvals.index') }}" class="view-link">
-                        View All <i class="fas fa-arrow-right"></i>
-                    </a>
-                </div>
-                <div class="card-body">
-                    @if(count($pendingApprovals) > 0)
-                        <div class="approvals-list">
-                            @foreach($pendingApprovals as $approval)
-                            <div class="approval-item">
-                                <div class="approval-info">
-                                    <span class="approval-name">{{ $approval->first_name }} {{ $approval->last_name }}</span>
-                                    <span class="approval-type">{{ $approval->certificate_type }}</span>
-                                </div>
-                                <div class="approval-actions">
-                                    <a href="{{ route('captain.approvals.index') }}" class="btn-approve" title="Approve">
-                                        <i class="fas fa-check"></i>
-                                    </a>
-                                    <a href="{{ route('captain.approvals.index') }}" class="btn-reject" title="Reject">
-                                        <i class="fas fa-times"></i>
-                                    </a>
-                                </div>
-                            </div>
-                            @endforeach
-                        </div>
-                    @else
-                        <div class="no-data">
-                            <i class="fas fa-inbox fa-2x"></i>
-                            <p>No pending approvals</p>
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-
-        <!-- Recent Blotter Cases -->
-        <div class="recent-cases">
-            <div class="card-header">
-                <h3><i class="fas fa-gavel"></i> Recent Blotter Cases</h3>
-                <a href="{{ route('captain.blotters.index') }}" class="view-link">
-                    View All <i class="fas fa-arrow-right"></i>
-                </a>
-            </div>
-            <div class="card-body">
-                @if(count($recentBlotters) > 0)
-                    <table class="cases-table">
-                        <thead>
-                            <tr>
-                                <th><i class="fas fa-hashtag"></i> Case #</th>
-                                <th><i class="fas fa-user"></i> Complainant</th>
-                                <th><i class="fas fa-user-tie"></i> Respondent</th>
-                                <th><i class="fas fa-tag"></i> Incident Type</th>
-                                <th><i class="fas fa-calendar"></i> Date</th>
-                                <th><i class="fas fa-circle"></i> Status</th>
-                                <th><i class="fas fa-cog"></i> Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($recentBlotters as $case)
-                            <tr>
-                                <td><span class="case-number">{{ $case->blotter_number ?? $case->case_id ?? 'N/A' }}</span></td>
-                                <td>{{ $case->complainant_name ?? $case->complainant->first_name ?? 'N/A' }}</td>
-                                <td>{{ $case->respondent_name }}</td>
-                                <td>{{ $case->incident_type }}</td>
-                                <td>{{ \Carbon\Carbon::parse($case->created_at)->format('M d, Y') }}</td>
-                                <td>
-                                    <span class="status-badge status-{{ strtolower($case->status) }}">
-                                        {{ $case->status }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <a href="{{ route('captain.blotters.show', $case->id) }}" class="btn-view" title="View Details">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                @else
-                    <div class="no-data">
-                        <i class="fas fa-folder-open fa-2x"></i>
-                        <p>No blotter cases found</p>
+<!-- Pending Approvals -->
+<div class="approvals-card">
+    <div class="card-header">
+        <h3><i class="fas fa-clock"></i> Pending Approvals</h3>
+        <a href="{{ route('captain.approvals.index') }}" class="view-link">
+            View All <i class="fas fa-arrow-right"></i>
+        </a>
+    </div>
+    <div class="card-body">
+        @if(count($pendingApprovals) > 0)
+            <div class="approvals-list">
+                @foreach($pendingApprovals as $approval)
+                <div class="approval-item">
+                    <div class="approval-info">
+                        <span class="approval-name">{{ $approval->resident->first_name ?? 'N/A' }} {{ $approval->resident->last_name ?? '' }}</span>
+                        <span class="approval-type">{{ $approval->certificate_type }}</span>
                     </div>
-                @endif
+                    <div class="approval-actions">
+                        <a href="{{ route('captain.approvals.index') }}" class="btn-approve" title="Approve">
+                            <i class="fas fa-check"></i>
+                        </a>
+                        <a href="{{ route('captain.approvals.index') }}" class="btn-reject" title="Reject">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    </div>
+                </div>
+                @endforeach
             </div>
-        </div>
+        @else
+            <div class="no-data">
+                <i class="fas fa-inbox fa-2x"></i>
+                <p>No pending approvals</p>
+            </div>
+        @endif
+    </div>
+</div>
+</div>
+<!-- Recent Blotter Cases -->
+<div class="recent-cases">
+    <div class="card-header">
+        <h3><i class="fas fa-gavel"></i> Recent Blotter Cases</h3>
+        <a href="{{ route('captain.blotters.index') }}" class="view-link">
+            View All <i class="fas fa-arrow-right"></i>
+        </a>
+    </div>
+    <div class="card-body">
+        @if(count($recentBlotters) > 0)
+            <table class="cases-table">
+                <thead>
+                    <tr>
+                        <th><i class="fas fa-hashtag"></i> Case #</th>
+                        <th><i class="fas fa-user"></i> Complainant(s)</th>
+                        <th><i class="fas fa-user-tie"></i> Respondent(s)</th>
+                        <th><i class="fas fa-tag"></i> Incident Type</th>
+                        <th><i class="fas fa-calendar"></i> Date</th>
+                        <th><i class="fas fa-circle"></i> Status</th>
+                        <th><i class="fas fa-cog"></i> Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($recentBlotters as $case)
+                    <tr>
+                        <td>
+                            <span class="case-number">{{ $case->case_id ?? $case->blotter_number ?? 'N/A' }}</span>
+                        </td>
+                        <td>
+                            @php
+                                // Get complainants names
+                                $complainantNames = [];
+                                if(isset($case->complainants) && $case->complainants->count() > 0) {
+                                    foreach($case->complainants as $complainant) {
+                                        $complainantNames[] = $complainant->name ?? $complainant->full_name ?? 'Unknown';
+                                    }
+                                }
+                                // Fallback to old field
+                                elseif(isset($case->complainant_name)) {
+                                    $complainantNames[] = $case->complainant_name;
+                                }
+                                $complainantDisplay = count($complainantNames) > 0 ? implode(', ', array_slice($complainantNames, 0, 2)) : 'N/A';
+                                $complainantCount = count($complainantNames);
+                            @endphp
+                            <span>{{ $complainantDisplay }}</span>
+                            @if($complainantCount > 2)
+                                <small class="text-muted"> +{{ $complainantCount - 2 }} more</small>
+                            @endif
+                        </td>
+                        <td>
+                            @php
+                                // Get respondents names
+                                $respondentNames = [];
+                                if(isset($case->respondents) && $case->respondents->count() > 0) {
+                                    foreach($case->respondents as $respondent) {
+                                        $respondentNames[] = $respondent->name ?? $respondent->full_name ?? 'Unknown';
+                                    }
+                                }
+                                // Fallback to old field
+                                elseif(isset($case->respondent_name)) {
+                                    $respondentNames[] = $case->respondent_name;
+                                }
+                                $respondentDisplay = count($respondentNames) > 0 ? implode(', ', array_slice($respondentNames, 0, 2)) : 'N/A';
+                                $respondentCount = count($respondentNames);
+                            @endphp
+                            <span>{{ $respondentDisplay }}</span>
+                            @if($respondentCount > 2)
+                                <small class="text-muted"> +{{ $respondentCount - 2 }} more</small>
+                            @endif
+                        </td>
+                        <td>
+                            <span class="incident-type">{{ $case->incident_type }}</span>
+                        </td>
+                        <td>{{ \Carbon\Carbon::parse($case->incident_date ?? $case->created_at)->format('M d, Y') }}</td>
+                        <td>
+                            <span class="status-badge status-{{ strtolower($case->status) }}">
+                                {{ $case->status }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ route('captain.blotters.show', $case->id) }}" class="btn-view" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @else
+            <div class="no-data">
+                <i class="fas fa-folder-open fa-2x"></i>
+                <p>No blotter cases found</p>
+            </div>
+        @endif
+    </div>
+</div>
     </main>
 </div>
 @endsection
